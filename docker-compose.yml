@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: gym-postgres
+    environment:
+      POSTGRES_USER: gym_admin
+      POSTGRES_PASSWORD: gym_password
+      POSTGRES_DB: gym_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql
+    networks:
+      - gym-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gym_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: gym-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+      SPRING_DATASOURCE_USERNAME: gym_admin
+      SPRING_DATASOURCE_PASSWORD: gym_password
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gym-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: gym-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+      SPRING_DATASOURCE_USERNAME: gym_admin
+      SPRING_DATASOURCE_PASSWORD: gym_password
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: auth_schema
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: 86400000
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gym-network
+
+  training-service:
+    build:
+      context: ./training-service
+      dockerfile: Dockerfile
+    container_name: gym-training-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+      SPRING_DATASOURCE_USERNAME: gym_admin
+      SPRING_DATASOURCE_PASSWORD: gym_password
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: training_schema
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gym-network
+
+  tracking-service:
+    build:
+      context: ./tracking-service
+      dockerfile: Dockerfile
+    container_name: gym-tracking-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://gym_db
+      SPRING_DATASOURCE_USERNAME: gym_admin
+      SPRING_DATASOURCE_PASSWORD: gym_password
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: tracking_schema
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gym-network
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: gym-notification-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+      SPRING_DATASOURCE_USERNAME: gym_admin
+      SPRING_DATASOURCE_PASSWORD: gym_password
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: notification_schema
+      JWT_SECRET: ${JWT_SECRET}
+      FIREBASE_CONFIG_PATH: /app/firebase-config.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./firebase-config.json:/app/firebase-config.json:ro
+    networks:
+      - gym-network
+
+volumes:
+  postgres_data:
+
+networks:
+  gym-network:
+    driver: bridge
