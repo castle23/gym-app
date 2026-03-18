@@ -1,0 +1,34 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - RewritePath=/api/v1/auth(?<segment>/?.*), /auth$\{segment}
+
+        - id: training-service
+          uri: http://training-service:8082
+          predicates:
+            - Path=/api/v1/training/**
+          filters:
+            - RewritePath=/api/v1/training(?<segment>/?.*), /training$\{segment}
+
+        - id: tracking-service
+          uri: http://tracking-service:8083
+          predicates:
+            - Path=/api/v1/tracking/**
+          filters:
+            - RewritePath=/api/v1/tracking(?<segment>/?.*), /tracking$\{segment}
+
+        - id: notification-service
+          uri: http://notification-service:8084
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - RewritePath=/api/v1/notifications(?<segment>/?.*), /notifications$\{segment}
+
+server:
+  port: 8080
