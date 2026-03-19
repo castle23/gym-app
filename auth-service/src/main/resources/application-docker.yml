@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/gym_db
+    username: gym_admin
+    password: gym_password
+
+server:
+  port: 8081
