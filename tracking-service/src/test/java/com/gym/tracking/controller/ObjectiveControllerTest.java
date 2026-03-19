@@ -6,8 +6,6 @@ import com.gym.tracking.dto.ObjectiveRequestDTO;
 import com.gym.tracking.service.ObjectiveService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -24,7 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ObjectiveController.class)
-@ExtendWith(MockitoExtension.class)
 class ObjectiveControllerTest {
     
     @Autowired
@@ -98,14 +95,14 @@ class ObjectiveControllerTest {
     @Test
     void testGetObjectiveById_NotFound() throws Exception {
         when(objectiveService.getObjectiveById(999L, 1L))
-                .thenThrow(new IllegalArgumentException("Objective not found or unauthorized"));
+                .thenThrow(new IllegalArgumentException("Objective not found: 999"));
         
         mockMvc.perform(get("/api/v1/objectives/999")
                 .header("X-User-Id", "1")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value("Objective not found or unauthorized"))
+                .andExpect(jsonPath("$.message").value("Objective not found: 999"))
                 .andDo(print());
     }
     
@@ -201,7 +198,7 @@ class ObjectiveControllerTest {
     
     @Test
     void testDeleteObjective_NotFound() throws Exception {
-        doThrow(new IllegalArgumentException("Objective not found or unauthorized"))
+        doThrow(new IllegalArgumentException("Objective not found: 999"))
                 .when(objectiveService).deleteObjective(999L, 1L);
         
         mockMvc.perform(delete("/api/v1/objectives/999")

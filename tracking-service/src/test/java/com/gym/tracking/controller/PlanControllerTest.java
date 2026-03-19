@@ -7,8 +7,6 @@ import com.gym.tracking.entity.Plan;
 import com.gym.tracking.service.PlanService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -25,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PlanController.class)
-@ExtendWith(MockitoExtension.class)
 class PlanControllerTest {
     
     @Autowired
@@ -54,7 +51,9 @@ class PlanControllerTest {
         planRequestDTO = PlanRequestDTO.builder()
                 .name("Summer Fitness Plan")
                 .description("Get fit for summer")
+                .objectiveId(1L)
                 .status("ACTIVE")
+                .startDate(LocalDateTime.now())
                 .build();
     }
     
@@ -103,7 +102,7 @@ class PlanControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value("Plan not found: 999"))
+                .andExpect(jsonPath("$.message").value("Plan not found or unauthorized"))
                 .andDo(print());
     }
     
