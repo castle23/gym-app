@@ -1,0 +1,252 @@
+package com.gym.training.service;
+
+import com.gym.training.dto.ExerciseDTO;
+import com.gym.training.dto.ExerciseRequestDTO;
+import com.gym.training.entity.Discipline;
+import com.gym.training.entity.DisciplineType;
+import com.gym.training.entity.Exercise;
+import com.gym.training.entity.ExerciseType;
+import com.gym.training.repository.DisciplineRepository;
+import com.gym.training.repository.ExerciseRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class ExerciseServiceTest {
+    
+    @Mock
+    private ExerciseRepository exerciseRepository;
+    
+    @Mock
+    private DisciplineRepository disciplineRepository;
+    
+    @InjectMocks
+    private ExerciseService exerciseService;
+    
+    private Discipline strength;
+    private Exercise pushUp;
+    
+    @BeforeEach
+    void setUp() {
+        strength = Discipline.builder()
+                .id(1L)
+                .type(DisciplineType.Strength)
+                .build();
+        
+        pushUp = Exercise.builder()
+                .id(1L)
+                .name("Push Up")
+                .description("Upper body exercise")
+                .type(ExerciseType.SYSTEM)
+                .discipline(strength)
+                .createdBy(null)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+    
+    @Test
+    void testGetAllSystemExercises() {
+        when(exerciseRepository.findByType(ExerciseType.SYSTEM))
+                .thenReturn(List.of(pushUp));
+        
+        List<ExerciseDTO> result = exerciseService.getAllSystemExercises();
+        
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Push Up", result.get(0).getName());
+        verify(exerciseRepository, times(1)).findByType(ExerciseType.SYSTEM);
+    }
+    
+    @Test
+    void testGetExercisesByDiscipline() {
+        when(disciplineRepository.findById(1L))
+                .thenReturn(Optional.of(strength));
+        when(exerciseRepository.findByDiscipline(strength))
+                .thenReturn(List.of(pushUp));
+        
+        List<ExerciseDTO> result = exerciseService.getExercisesByDiscipline(1L);
+        
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(disciplineRepository, times(1)).findById(1L);
+        verify(exerciseRepository, times(1)).findByDiscipline(strength);
+    }
+    
+    @Test
+    void testGetExercisesByDisciplineNotFound() {
+        when(disciplineRepository.findById(999L))
+                .thenReturn(Optional.empty());
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            exerciseService.getExercisesByDiscipline(999L);
+        });
+    }
+    
+    @Test
+    void testGetUserExercises() {
+        when(exerciseRepository.findByCreatedBy(1L))
+                .thenReturn(List.of(pushUp));
+        
+        List<ExerciseDTO> result = exerciseService.getUserExercises(1L);
+        
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(exerciseRepository, times(1)).findByCreatedBy(1L);
+    }
+    
+    @Test
+    void testGetExerciseById() {
+        when(exerciseRepository.findById(1L))
+                .thenReturn(Optional.of(pushUp));
+        
+        ExerciseDTO result = exerciseService.getExerciseById(1L);
+        
+        assertNotNull(result);
+        assertEquals("Push Up", result.getName());
+        verify(exerciseRepository, times(1)).findById(1L);
+    }
+    
+    @Test
+    void testGetExerciseByIdNotFound() {
+        when(exerciseRepository.findById(999L))
+                .thenReturn(Optional.empty());
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            exerciseService.getExerciseById(999L);
+        });
+    }
+    
+    @Test
+    void testCreateExercise() {
+        ExerciseRequestDTO request = ExerciseRequestDTO.builder()
+                .name("Squat")
+                .description("Lower body exercise")
+                .type(ExerciseType.PROFESSIONAL)
+                .disciplineId(1L)
+                .build();
+        
+        Exercise newExercise = Exercise.builder()
+                .id(2L)
+                .name(request.getName())
+                .description(request.getDescription())
+                .type(request.getType())
+                .discipline(strength)
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        
+        when(disciplineRepository.findById(1L))
+                .thenReturn(Optional.of(strength));
+        when(exerciseRepository.save(any(Exercise.class)))
+                .thenReturn(newExercise);
+        
+        ExerciseDTO result = exerciseService.createExercise(request, 1L);
+        
+        assertNotNull(result);
+        assertEquals("Squat", result.getName());
+        assertEquals(ExerciseType.PROFESSIONAL, result.getType());
+        verify(disciplineRepository, times(1)).findById(1L);
+        verify(exerciseRepository, times(1)).save(any(Exercise.class));
+    }
+    
+    @Test
+    void testCreateExerciseDisciplineNotFound() {
+        ExerciseRequestDTO request = ExerciseRequestDTO.builder()
+                .name("Squat")
+                .disciplineId(999L)
+                .type(ExerciseType.PROFESSIONAL)
+                .build();
+        
+        when(disciplineRepository.findById(999L))
+                .thenReturn(Optional.empty());
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            exerciseService.createExercise(request, 1L);
+        });
+    }
+    
+    @Test
+    void testUpdateExercise() {
+        ExerciseRequestDTO request = ExerciseRequestDTO.builder()
+                .name("Updated Push Up")
+                .description("Updated description")
+                .type(ExerciseType.SYSTEM)
+                .disciplineId(1L)
+                .build();
+        
+        Exercise updatedExercise = Exercise.builder()
+                .id(1L)
+                .name(request.getName())
+                .description(request.getDescription())
+                .type(request.getType())
+                .discipline(strength)
+                .createdBy(1L)
+                .updatedAt(LocalDateTime.now())
+                .build();
+        
+        when(exerciseRepository.findByIdAndCreatedBy(1L, 1L))
+                .thenReturn(Optional.of(pushUp));
+        when(disciplineRepository.findById(1L))
+                .thenReturn(Optional.of(strength));
+        when(exerciseRepository.save(any(Exercise.class)))
+                .thenReturn(updatedExercise);
+        
+        ExerciseDTO result = exerciseService.updateExercise(1L, request, 1L);
+        
+        assertNotNull(result);
+        assertEquals("Updated Push Up", result.getName());
+        verify(exerciseRepository, times(1)).findByIdAndCreatedBy(1L, 1L);
+        verify(exerciseRepository, times(1)).save(any(Exercise.class));
+    }
+    
+    @Test
+    void testUpdateExerciseNotFound() {
+        ExerciseRequestDTO request = ExerciseRequestDTO.builder()
+                .name("Updated")
+                .disciplineId(1L)
+                .type(ExerciseType.SYSTEM)
+                .build();
+        
+        when(exerciseRepository.findByIdAndCreatedBy(999L, 1L))
+                .thenReturn(Optional.empty());
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            exerciseService.updateExercise(999L, request, 1L);
+        });
+    }
+    
+    @Test
+    void testDeleteExercise() {
+        when(exerciseRepository.findByIdAndCreatedBy(1L, 1L))
+                .thenReturn(Optional.of(pushUp));
+        
+        exerciseService.deleteExercise(1L, 1L);
+        
+        verify(exerciseRepository, times(1)).findByIdAndCreatedBy(1L, 1L);
+        verify(exerciseRepository, times(1)).delete(pushUp);
+    }
+    
+    @Test
+    void testDeleteExerciseNotFound() {
+        when(exerciseRepository.findByIdAndCreatedBy(999L, 1L))
+                .thenReturn(Optional.empty());
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            exerciseService.deleteExercise(999L, 1L);
+        });
+    }
+}
