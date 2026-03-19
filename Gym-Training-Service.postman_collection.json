@@ -1,0 +1,621 @@
+{
+  "info": {
+    "_postman_id": "gym-training-service-2025",
+    "name": "Gym Training Service API",
+    "description": "Collection for testing Gym Training Service endpoints\n\nBase URL: http://localhost:8082\n\nHeaders required for all requests:\n- X-User-Id: User identifier (numeric)\n- Content-Type: application/json",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "🔧 Setup",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/actuator/health",
+              "host": ["{{base_url}}"],
+              "path": ["actuator", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Exercise Management",
+      "item": [
+        {
+          "name": "Get All System Exercises",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/system",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "system"]
+            },
+            "description": "Retrieves all system-wide exercises available to all users"
+          }
+        },
+        {
+          "name": "Get Exercises by Discipline",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/discipline/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "discipline", "1"]
+            },
+            "description": "Get all exercises for a specific discipline. Replace '1' with discipline ID"
+          }
+        },
+        {
+          "name": "Get User's Custom Exercises",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/user",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "user"]
+            },
+            "description": "Get all exercises created by the current user"
+          }
+        },
+        {
+          "name": "Get Exercise by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "1"]
+            },
+            "description": "Get a specific exercise by ID. Replace '1' with exercise ID"
+          }
+        },
+        {
+          "name": "Create Custom Exercise",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Custom Push-up Variation\",\n  \"description\": \"Diamond push-ups for tricep focus\",\n  \"type\": \"USER\",\n  \"disciplineId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises"]
+            },
+            "description": "Create a new custom exercise. Only visible to the user who created it"
+          }
+        },
+        {
+          "name": "Update Exercise",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Exercise Name\",\n  \"description\": \"Updated description\",\n  \"type\": \"USER\",\n  \"disciplineId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "1"]
+            },
+            "description": "Update an exercise. Only the creator can update it. Replace '1' with exercise ID"
+          }
+        },
+        {
+          "name": "Delete Exercise",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "1"]
+            },
+            "description": "Delete an exercise. Only the creator can delete it. Replace '1' with exercise ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎯 Routine Template Management",
+      "item": [
+        {
+          "name": "Get All System Routine Templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/routine-templates/system",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "routine-templates", "system"]
+            },
+            "description": "Get all pre-designed routine templates available to all users"
+          }
+        },
+        {
+          "name": "Get User's Custom Routine Templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/routine-templates/user",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "routine-templates", "user"]
+            },
+            "description": "Get all routine templates created by the current user"
+          }
+        },
+        {
+          "name": "Get Routine Template by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/routine-templates/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "routine-templates", "1"]
+            },
+            "description": "Get a specific routine template by ID. Replace '1' with template ID"
+          }
+        },
+        {
+          "name": "Create Custom Routine Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Custom Routine\",\n  \"description\": \"5-day custom training routine focused on strength\",\n  \"type\": \"USER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/routine-templates",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "routine-templates"]
+            },
+            "description": "Create a new custom routine template"
+          }
+        },
+        {
+          "name": "Update Routine Template",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Routine Name\",\n  \"description\": \"Updated description with new focus\",\n  \"type\": \"USER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/routine-templates/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "routine-templates", "1"]
+            },
+            "description": "Update a routine template. Only the creator can update it. Replace '1' with template ID"
+          }
+        },
+        {
+          "name": "Delete Routine Template",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/routine-templates/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "routine-templates", "1"]
+            },
+            "description": "Delete a routine template. Only the creator can delete it. Replace '1' with template ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 User Routine Management",
+      "item": [
+        {
+          "name": "Get User's Active Routines",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines/active",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines", "active"]
+            },
+            "description": "Get all currently active routines for the user"
+          }
+        },
+        {
+          "name": "Get All User's Routines",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines"]
+            },
+            "description": "Get all routines (active and inactive) for the user"
+          }
+        },
+        {
+          "name": "Get User Routine by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines", "1"]
+            },
+            "description": "Get a specific user routine by ID. Replace '1' with routine ID"
+          }
+        },
+        {
+          "name": "Assign Routine Template to User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routineTemplateId\": 1,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines/assign",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines", "assign"]
+            },
+            "description": "Assign a routine template to the current user. Replace template ID with actual ID"
+          }
+        },
+        {
+          "name": "Update User Routine",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true,\n  \"endDate\": \"2025-12-31T23:59:59\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines", "1"]
+            },
+            "description": "Update a user routine. Replace '1' with routine ID"
+          }
+        },
+        {
+          "name": "Deactivate User Routine",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines/1/deactivate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines", "1", "deactivate"]
+            },
+            "description": "Deactivate a user routine (soft delete). Replace '1' with routine ID"
+          }
+        },
+        {
+          "name": "Delete User Routine",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines", "1"]
+            },
+            "description": "Delete a user routine (hard delete). Replace '1' with routine ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "💪 Exercise Session Management",
+      "item": [
+        {
+          "name": "Get Sessions by Routine ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercise-sessions/routine/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercise-sessions", "routine", "1"]
+            },
+            "description": "Get all exercise sessions for a specific routine. Replace '1' with routine ID"
+          }
+        },
+        {
+          "name": "Get Sessions by Date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercise-sessions/date/2025-03-18",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercise-sessions", "date", "2025-03-18"]
+            },
+            "description": "Get all exercise sessions for a specific date. Replace date with desired date in YYYY-MM-DD format"
+          }
+        },
+        {
+          "name": "Get Session by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercise-sessions/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercise-sessions", "1"]
+            },
+            "description": "Get a specific exercise session by ID. Replace '1' with session ID"
+          }
+        },
+        {
+          "name": "Log Exercise Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userRoutineId\": 1,\n  \"exerciseId\": 1,\n  \"sets\": 3,\n  \"reps\": 12,\n  \"weight\": 100.0,\n  \"duration\": 600,\n  \"notes\": \"Good form, felt strong\",\n  \"sessionDate\": \"2025-03-18T10:30:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercise-sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercise-sessions"]
+            },
+            "description": "Log a new exercise session. Track workout performance and metrics"
+          }
+        },
+        {
+          "name": "Update Exercise Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sets\": 4,\n  \"reps\": 15,\n  \"weight\": 110.0,\n  \"duration\": 720,\n  \"notes\": \"Increased weight, still good form\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercise-sessions/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercise-sessions", "1"]
+            },
+            "description": "Update an exercise session. Replace '1' with session ID"
+          }
+        },
+        {
+          "name": "Delete Exercise Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercise-sessions/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercise-sessions", "1"]
+            },
+            "description": "Delete an exercise session. Replace '1' with session ID"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8082",
+      "type": "string"
+    }
+  ]
+}
