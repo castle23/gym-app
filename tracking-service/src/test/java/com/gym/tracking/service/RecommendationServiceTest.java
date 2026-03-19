@@ -128,7 +128,7 @@ class RecommendationServiceTest {
         when(recommendationRepository.save(any(Recommendation.class)))
                 .thenReturn(recommendation);
         
-        RecommendationDTO result = recommendationService.createRecommendation(request);
+        RecommendationDTO result = recommendationService.createRecommendation(1L, request);
         
         assertNotNull(result);
         assertEquals("Cardio Recommendation", result.getTitle());
@@ -173,6 +173,6 @@ class RecommendationServiceTest {
                 .build();
         
         assertThrows(IllegalArgumentException.class,
-                () -> recommendationService.createRecommendation(request));
+                () -> recommendationService.createRecommendation(1L, request));
     }
 }

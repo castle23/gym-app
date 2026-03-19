@@ -6,11 +6,9 @@ import com.gym.tracking.dto.DietLogRequestDTO;
 import com.gym.tracking.service.DietLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(DietLogController.class)
-@ExtendWith(MockitoExtension.class)
 class DietLogControllerTest {
     
     @Autowired
@@ -176,7 +173,7 @@ class DietLogControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
-                .andExpect(jsonPath("$.message").contains("Invalid date format"))
+                .andExpect(jsonPath("$.message").value("Invalid date format. Please use YYYY-MM-DD"))
                 .andDo(print());
     }
     

@@ -97,7 +97,7 @@ class PlanServiceTest {
     
     @Test
     void testGetPlansByStatus() {
-        when(planRepository.findByUserIdAndStatus(1L, Plan.PlanStatus.ACTIVE))
+        when(planRepository.findAllByUserIdAndStatus(1L, Plan.PlanStatus.ACTIVE))
                 .thenReturn(List.of(plan));
         
         List<PlanDTO> result = planService.getPlansByStatus(1L, Plan.PlanStatus.ACTIVE);

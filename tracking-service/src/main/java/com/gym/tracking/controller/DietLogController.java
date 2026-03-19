@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 /**
@@ -96,8 +97,7 @@ public class DietLogController {
             LocalDate parsedDate = LocalDate.parse(date);
             List<DietLogDTO> dietLogs = dietLogService.getDietLogsByDate(userId, parsedDate);
             return ResponseEntity.ok(dietLogs);
-        } catch (IllegalArgumentException e) {
-            log.warn("Error fetching diet logs by date: {}", e.getMessage());
+        } catch (DateTimeParseException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ErrorResponse.builder()
                             .status("BAD_REQUEST")

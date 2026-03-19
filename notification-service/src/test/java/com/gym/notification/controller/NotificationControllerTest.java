@@ -8,7 +8,7 @@ import com.gym.notification.entity.NotificationType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -53,7 +53,7 @@ class NotificationControllerTest {
                         .userId(VALID_USER_ID)
                         .title("Test Title 2")
                         .body("Test Body 2")
-                        .type(NotificationType.GOAL_ACHIEVEMENT)
+                        .type(NotificationType.ACHIEVEMENT)
                         .isRead(true)
                         .createdAt(LocalDateTime.now())
                         .sentAt(LocalDateTime.now())
