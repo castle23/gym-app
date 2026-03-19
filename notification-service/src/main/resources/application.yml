@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: notification-service
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        default_schema: notification_schema
+  datasource:
+    url: jdbc:postgresql://localhost:5432/gym_db
+    username: gym_admin
+    password: gym_password
+
+server:
+  port: 8084
+  servlet:
+    context-path: /notifications
+
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-change-in-production}
+
+firebase:
+  config-path: ${FIREBASE_CONFIG_PATH:}

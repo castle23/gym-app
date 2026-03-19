@@ -2,6 +2,7 @@ package com.gym.tracking.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -23,10 +24,37 @@ public class DietLog {
     private DietComponent dietComponent;
 
     @Column(nullable = false)
-    private String mealType;
+    private LocalDate logDate;
 
     @Column(nullable = false)
+    private String meal;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String foodItems;
 
     @Column(nullable = false)
-    private Integer calories;
+    private Double calories;
+
+    @Column
+    private String macros;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}

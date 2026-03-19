@@ -12,7 +12,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql
+      - ./init-schemas.sql:/docker-entrypoint-initdb.d/01-init-schemas.sql
+      - ./init-auth-data.sql:/docker-entrypoint-initdb.d/02-init-auth-data.sql
+      - ./init-training-data.sql:/docker-entrypoint-initdb.d/03-init-training-data.sql
+      - ./init-tracking-data.sql:/docker-entrypoint-initdb.d/04-init-tracking-data.sql
+      - ./init-notification-data.sql:/docker-entrypoint-initdb.d/05-init-notification-data.sql
     networks:
       - gym-network
     healthcheck:
@@ -94,7 +98,7 @@ services:
       - "8083:8083"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://gym_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
       SPRING_DATASOURCE_USERNAME: gym_admin
       SPRING_DATASOURCE_PASSWORD: gym_password
       SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: tracking_schema
