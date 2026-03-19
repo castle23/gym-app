@@ -1,0 +1,81 @@
+# =============================================================================
+# Pagination Configuration - Shared Across All Microservices
+# =============================================================================
+# This configuration file defines pagination defaults for all services
+# Each service includes this in their application.yml
+#
+# Usage in application.yml:
+#   spring:
+#     config:
+#       import: "optional:file:../application-pagination.yml"
+
+spring:
+  data:
+    web:
+      pageable:
+        # Default page size when not specified
+        default-page-size: 20
+        # Maximum allowed page size (prevents abuse)
+        max-page-size: 100
+        # Enable @PageableDefault annotation
+        one-indexed-parameters: false
+        # Page parameter name (URL: ?page=0)
+        page-parameter-name: page
+        # Size parameter name (URL: ?size=20)
+        size-parameter-name: size
+        # Sort parameter name (URL: ?sort=createdAt,desc)
+        sort-parameter-name: sort
+
+# =============================================================================
+# Pagination Constants (for documentation and client usage)
+# =============================================================================
+pagination:
+  # Default configuration
+  defaults:
+    page: 0              # First page (0-indexed)
+    size: 20             # Items per page
+    max-size: 100        # Maximum items per page
+  
+  # Common sort fields (service-specific, override in each service)
+  default-sort: "createdAt,desc"
+  
+  # Sort options documentation
+  sort-options:
+    available-fields:
+      - "id"             # Entity ID
+      - "name"           # Entity name
+      - "createdAt"      # Creation timestamp
+      - "updatedAt"      # Update timestamp
+    
+    available-directions:
+      - "asc"            # Ascending order
+      - "desc"           # Descending order (default)
+  
+  # Response metadata
+  response:
+    # Include total count in response (performance consideration)
+    include-total-count: true
+    # Include page navigation info
+    include-navigation: true
+
+# =============================================================================
+# Example Usage in Client Code
+# =============================================================================
+# Query parameters for pagination:
+#
+# Default (page 0, size 20):
+#   GET /api/v1/exercises/system
+#
+# Custom page size:
+#   GET /api/v1/exercises/system?size=50
+#
+# Specific page:
+#   GET /api/v1/exercises/system?page=2&size=20
+#
+# With sorting:
+#   GET /api/v1/exercises/system?page=0&size=20&sort=name,asc
+#
+# Multiple sort fields (advanced):
+#   GET /api/v1/exercises/system?sort=createdAt,desc&sort=name,asc
+#
+# =============================================================================

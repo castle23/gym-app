@@ -1,5 +1,6 @@
 package com.gym.training.service;
 
+import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.ExerciseSessionDTO;
 import com.gym.training.dto.ExerciseSessionRequestDTO;
 import com.gym.training.entity.Exercise;
@@ -10,6 +11,8 @@ import com.gym.training.repository.ExerciseSessionRepository;
 import com.gym.training.repository.UserRoutineRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,25 +32,21 @@ public class ExerciseSessionService {
     private final ExerciseRepository exerciseRepository;
     
     /**
-     * Get all sessions for a user routine
+     * Get all sessions for a user routine with pagination
      */
-    public List<ExerciseSessionDTO> getSessionsByRoutineId(Long userRoutineId) {
-        log.info("Fetching sessions for routine: {}", userRoutineId);
-        return exerciseSessionRepository.findByUserRoutineId(userRoutineId)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<ExerciseSessionDTO> getSessionsByRoutineId(Long userRoutineId, Pageable pageable) {
+        log.info("Fetching sessions for routine: {} with pagination", userRoutineId);
+        Page<ExerciseSession> page = exerciseSessionRepository.findByUserRoutineId(userRoutineId, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**
-     * Get sessions for a user on a specific date
+     * Get sessions for a user on a specific date with pagination
      */
-    public List<ExerciseSessionDTO> getSessionsByUserIdAndDate(Long userId, LocalDate date) {
-        log.info("Fetching sessions for user: {} on date: {}", userId, date);
-        return exerciseSessionRepository.findByUserIdAndDate(userId, date)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<ExerciseSessionDTO> getSessionsByUserIdAndDate(Long userId, LocalDate date, Pageable pageable) {
+        log.info("Fetching sessions for user: {} on date: {} with pagination", userId, date);
+        Page<ExerciseSession> page = exerciseSessionRepository.findByUserIdAndDate(userId, date, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**

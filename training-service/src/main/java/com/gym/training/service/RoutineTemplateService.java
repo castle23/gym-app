@@ -1,5 +1,6 @@
 package com.gym.training.service;
 
+import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.RoutineTemplateDTO;
 import com.gym.training.dto.RoutineTemplateRequestDTO;
 import com.gym.training.entity.Exercise;
@@ -9,6 +10,8 @@ import com.gym.training.repository.ExerciseRepository;
 import com.gym.training.repository.RoutineTemplateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,25 +29,22 @@ public class RoutineTemplateService {
     private final ExerciseRepository exerciseRepository;
     
     /**
-     * Get all system templates
+     * Get all system templates with pagination
      */
-    public List<RoutineTemplateDTO> getAllSystemTemplates() {
-        log.info("Fetching all system routine templates");
-        return routineTemplateRepository.findByType(TemplateType.SYSTEM)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<RoutineTemplateDTO> getAllSystemTemplates(Pageable pageable) {
+        log.info("Fetching all system routine templates with pagination: page={}, size={}", 
+                pageable.getPageNumber(), pageable.getPageSize());
+        Page<RoutineTemplate> page = routineTemplateRepository.findByType(TemplateType.SYSTEM, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**
-     * Get templates created by a user
+     * Get templates created by a user with pagination
      */
-    public List<RoutineTemplateDTO> getUserTemplates(Long userId) {
-        log.info("Fetching routine templates created by user: {}", userId);
-        return routineTemplateRepository.findByCreatedBy(userId)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<RoutineTemplateDTO> getUserTemplates(Long userId, Pageable pageable) {
+        log.info("Fetching routine templates created by user: {} with pagination", userId);
+        Page<RoutineTemplate> page = routineTemplateRepository.findByCreatedBy(userId, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**

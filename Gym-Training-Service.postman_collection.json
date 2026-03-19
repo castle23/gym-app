@@ -2,9 +2,9 @@
   "info": {
     "_postman_id": "gym-training-service-2025",
     "name": "Gym Training Service API",
-    "description": "Collection for testing Gym Training Service endpoints\n\nBase URL: http://localhost:8082\n\nHeaders required for all requests:\n- X-User-Id: User identifier (numeric)\n- Content-Type: application/json",
+    "description": "Collection for testing Gym Training Service endpoints with pagination support\n\nBase URL: http://localhost:8082\n\nHeaders required for all requests:\n- X-User-Id: User identifier (numeric)\n- Content-Type: application/json\n\nPagination Parameters (available on all list endpoints):\n- page: Page number (0-indexed, default: 0)\n- size: Page size (default: 20, max: 100)\n- sort: Sort order (e.g., 'name,asc' or 'createdAt,desc')",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "item": [
     {
@@ -28,7 +28,7 @@
       "name": "📋 Exercise Management",
       "item": [
         {
-          "name": "Get All System Exercises",
+          "name": "Get All System Exercises (Default Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -43,11 +43,44 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercises", "system"]
             },
-            "description": "Retrieves all system-wide exercises available to all users"
+            "description": "Retrieves all system-wide exercises (page 0, size 20, sorted by createdAt desc)"
           }
         },
         {
-          "name": "Get Exercises by Discipline",
+          "name": "Get All System Exercises (Custom Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/system?page=0&size=50&sort=name,asc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "system"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "50"
+                },
+                {
+                  "key": "sort",
+                  "value": "name,asc"
+                }
+              ]
+            },
+            "description": "Get system exercises with custom pagination (page 0, size 50, sorted by name)"
+          }
+        },
+        {
+          "name": "Get Exercises by Discipline (Default Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -62,11 +95,11 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercises", "discipline", "1"]
             },
-            "description": "Get all exercises for a specific discipline. Replace '1' with discipline ID"
+            "description": "Get exercises for a discipline (default pagination)"
           }
         },
         {
-          "name": "Get User's Custom Exercises",
+          "name": "Get Exercises by Discipline (Custom Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -77,11 +110,77 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/exercises/user",
+              "raw": "{{base_url}}/api/v1/exercises/discipline/1?page=0&size=20&sort=name,asc",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "exercises", "user"]
+              "path": ["api", "v1", "exercises", "discipline", "1"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "name,asc"
+                }
+              ]
             },
-            "description": "Get all exercises created by the current user"
+            "description": "Get exercises for a discipline with pagination"
+          }
+        },
+        {
+          "name": "Get User's Custom Exercises (Default Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/my-exercises",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "my-exercises"]
+            },
+            "description": "Get user's custom exercises (default pagination)"
+          }
+        },
+        {
+          "name": "Get User's Custom Exercises (Custom Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercises/my-exercises?page=0&size=30&sort=createdAt,desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercises", "my-exercises"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "30"
+                },
+                {
+                  "key": "sort",
+                  "value": "createdAt,desc"
+                }
+              ]
+            },
+            "description": "Get user's custom exercises with custom pagination"
           }
         },
         {
@@ -100,7 +199,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercises", "1"]
             },
-            "description": "Get a specific exercise by ID. Replace '1' with exercise ID"
+            "description": "Get a specific exercise by ID (no pagination)"
           }
         },
         {
@@ -128,7 +227,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercises"]
             },
-            "description": "Create a new custom exercise. Only visible to the user who created it"
+            "description": "Create a new custom exercise"
           }
         },
         {
@@ -156,7 +255,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercises", "1"]
             },
-            "description": "Update an exercise. Only the creator can update it. Replace '1' with exercise ID"
+            "description": "Update an exercise (only creator can update)"
           }
         },
         {
@@ -175,7 +274,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercises", "1"]
             },
-            "description": "Delete an exercise. Only the creator can delete it. Replace '1' with exercise ID"
+            "description": "Delete an exercise (only creator can delete)"
           }
         }
       ]
@@ -184,7 +283,7 @@
       "name": "🎯 Routine Template Management",
       "item": [
         {
-          "name": "Get All System Routine Templates",
+          "name": "Get All System Routine Templates (Default Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -199,11 +298,11 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "routine-templates", "system"]
             },
-            "description": "Get all pre-designed routine templates available to all users"
+            "description": "Get all pre-designed routine templates (default pagination)"
           }
         },
         {
-          "name": "Get User's Custom Routine Templates",
+          "name": "Get All System Routine Templates (Custom Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -214,11 +313,77 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/routine-templates/user",
+              "raw": "{{base_url}}/api/v1/routine-templates/system?page=0&size=20&sort=name,asc",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "routine-templates", "user"]
+              "path": ["api", "v1", "routine-templates", "system"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "name,asc"
+                }
+              ]
             },
-            "description": "Get all routine templates created by the current user"
+            "description": "Get system templates with custom pagination"
+          }
+        },
+        {
+          "name": "Get User's Custom Routine Templates (Default Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/routine-templates/my-templates",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "routine-templates", "my-templates"]
+            },
+            "description": "Get user's custom templates (default pagination)"
+          }
+        },
+        {
+          "name": "Get User's Custom Routine Templates (Custom Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/routine-templates/my-templates?page=0&size=25&sort=createdAt,desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "routine-templates", "my-templates"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "25"
+                },
+                {
+                  "key": "sort",
+                  "value": "createdAt,desc"
+                }
+              ]
+            },
+            "description": "Get user's templates with custom pagination"
           }
         },
         {
@@ -237,7 +402,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "routine-templates", "1"]
             },
-            "description": "Get a specific routine template by ID. Replace '1' with template ID"
+            "description": "Get a specific routine template by ID (no pagination)"
           }
         },
         {
@@ -258,7 +423,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"My Custom Routine\",\n  \"description\": \"5-day custom training routine focused on strength\",\n  \"type\": \"USER\"\n}"
+              "raw": "{\n  \"name\": \"My Custom Routine\",\n  \"description\": \"5-day custom training routine focused on strength\",\n  \"type\": \"USER\",\n  \"exerciseIds\": [1, 2, 3]\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/routine-templates",
@@ -286,14 +451,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Routine Name\",\n  \"description\": \"Updated description with new focus\",\n  \"type\": \"USER\"\n}"
+              "raw": "{\n  \"name\": \"Updated Routine Name\",\n  \"description\": \"Updated description with new focus\",\n  \"type\": \"USER\",\n  \"exerciseIds\": [1, 2, 3, 4]\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/routine-templates/1",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "routine-templates", "1"]
             },
-            "description": "Update a routine template. Only the creator can update it. Replace '1' with template ID"
+            "description": "Update a routine template (only creator can update)"
           }
         },
         {
@@ -312,7 +477,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "routine-templates", "1"]
             },
-            "description": "Delete a routine template. Only the creator can delete it. Replace '1' with template ID"
+            "description": "Delete a routine template (only creator can delete)"
           }
         }
       ]
@@ -321,7 +486,7 @@
       "name": "👤 User Routine Management",
       "item": [
         {
-          "name": "Get User's Active Routines",
+          "name": "Get User's Active Routines (Default Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -336,11 +501,44 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "user-routines", "active"]
             },
-            "description": "Get all currently active routines for the user"
+            "description": "Get all currently active routines for the user (default pagination)"
           }
         },
         {
-          "name": "Get All User's Routines",
+          "name": "Get User's Active Routines (Custom Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines/active?page=0&size=10&sort=startDate,desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines", "active"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sort",
+                  "value": "startDate,desc"
+                }
+              ]
+            },
+            "description": "Get active routines with custom pagination"
+          }
+        },
+        {
+          "name": "Get All User's Routines (Default Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -355,7 +553,40 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "user-routines"]
             },
-            "description": "Get all routines (active and inactive) for the user"
+            "description": "Get all routines (active and inactive) for the user (default pagination)"
+          }
+        },
+        {
+          "name": "Get All User's Routines (Custom Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/user-routines?page=0&size=15&sort=createdAt,desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "user-routines"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "15"
+                },
+                {
+                  "key": "sort",
+                  "value": "createdAt,desc"
+                }
+              ]
+            },
+            "description": "Get all routines with custom pagination"
           }
         },
         {
@@ -374,7 +605,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "user-routines", "1"]
             },
-            "description": "Get a specific user routine by ID. Replace '1' with routine ID"
+            "description": "Get a specific user routine by ID (no pagination)"
           }
         },
         {
@@ -402,7 +633,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "user-routines", "assign"]
             },
-            "description": "Assign a routine template to the current user. Replace template ID with actual ID"
+            "description": "Assign a routine template to the current user"
           }
         },
         {
@@ -430,7 +661,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "user-routines", "1"]
             },
-            "description": "Update a user routine. Replace '1' with routine ID"
+            "description": "Update a user routine"
           }
         },
         {
@@ -449,7 +680,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "user-routines", "1", "deactivate"]
             },
-            "description": "Deactivate a user routine (soft delete). Replace '1' with routine ID"
+            "description": "Deactivate a user routine (soft delete)"
           }
         },
         {
@@ -468,7 +699,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "user-routines", "1"]
             },
-            "description": "Delete a user routine (hard delete). Replace '1' with routine ID"
+            "description": "Delete a user routine (hard delete)"
           }
         }
       ]
@@ -477,7 +708,7 @@
       "name": "💪 Exercise Session Management",
       "item": [
         {
-          "name": "Get Sessions by Routine ID",
+          "name": "Get Sessions by Routine ID (Default Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -492,11 +723,44 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercise-sessions", "routine", "1"]
             },
-            "description": "Get all exercise sessions for a specific routine. Replace '1' with routine ID"
+            "description": "Get all exercise sessions for a specific routine (default pagination)"
           }
         },
         {
-          "name": "Get Sessions by Date",
+          "name": "Get Sessions by Routine ID (Custom Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercise-sessions/routine/1?page=0&size=30&sort=sessionDate,desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercise-sessions", "routine", "1"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "30"
+                },
+                {
+                  "key": "sort",
+                  "value": "sessionDate,desc"
+                }
+              ]
+            },
+            "description": "Get sessions by routine with custom pagination"
+          }
+        },
+        {
+          "name": "Get Sessions by Date (Default Pagination)",
           "request": {
             "method": "GET",
             "header": [
@@ -511,7 +775,40 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercise-sessions", "date", "2025-03-18"]
             },
-            "description": "Get all exercise sessions for a specific date. Replace date with desired date in YYYY-MM-DD format"
+            "description": "Get all exercise sessions for a specific date (default pagination). Use YYYY-MM-DD format"
+          }
+        },
+        {
+          "name": "Get Sessions by Date (Custom Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exercise-sessions/date/2025-03-18?page=0&size=20&sort=sessionDate,desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exercise-sessions", "date", "2025-03-18"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "sessionDate,desc"
+                }
+              ]
+            },
+            "description": "Get sessions by date with custom pagination"
           }
         },
         {
@@ -530,7 +827,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercise-sessions", "1"]
             },
-            "description": "Get a specific exercise session by ID. Replace '1' with session ID"
+            "description": "Get a specific exercise session by ID (no pagination)"
           }
         },
         {
@@ -586,7 +883,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercise-sessions", "1"]
             },
-            "description": "Update an exercise session. Replace '1' with session ID"
+            "description": "Update an exercise session"
           }
         },
         {
@@ -605,7 +902,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "exercise-sessions", "1"]
             },
-            "description": "Delete an exercise session. Replace '1' with session ID"
+            "description": "Delete an exercise session"
           }
         }
       ]

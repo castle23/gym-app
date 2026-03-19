@@ -1,5 +1,6 @@
 package com.gym.training.service;
 
+import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.ExerciseDTO;
 import com.gym.training.dto.ExerciseRequestDTO;
 import com.gym.training.entity.Discipline;
@@ -9,11 +10,12 @@ import com.gym.training.repository.DisciplineRepository;
 import com.gym.training.repository.ExerciseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,39 +28,34 @@ public class ExerciseService {
     private final DisciplineRepository disciplineRepository;
     
     /**
-     * Get all system exercises
+     * Get all system exercises with pagination
      */
-    public List<ExerciseDTO> getAllSystemExercises() {
-        log.info("Fetching all system exercises");
-        return exerciseRepository.findByType(ExerciseType.SYSTEM)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<ExerciseDTO> getAllSystemExercises(Pageable pageable) {
+        log.info("Fetching all system exercises with pagination: page={}, size={}", 
+                pageable.getPageNumber(), pageable.getPageSize());
+        Page<Exercise> page = exerciseRepository.findByType(ExerciseType.SYSTEM, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**
-     * Get exercises by discipline
+     * Get exercises by discipline with pagination
      */
-    public List<ExerciseDTO> getExercisesByDiscipline(Long disciplineId) {
-        log.info("Fetching exercises for discipline: {}", disciplineId);
+    public PageResponse<ExerciseDTO> getExercisesByDiscipline(Long disciplineId, Pageable pageable) {
+        log.info("Fetching exercises for discipline: {} with pagination", disciplineId);
         Discipline discipline = disciplineRepository.findById(disciplineId)
                 .orElseThrow(() -> new IllegalArgumentException("Discipline not found: " + disciplineId));
         
-        return exerciseRepository.findByDiscipline(discipline)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+        Page<Exercise> page = exerciseRepository.findByDiscipline(discipline, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**
-     * Get exercises created by a user
+     * Get exercises created by a user with pagination
      */
-    public List<ExerciseDTO> getUserExercises(Long userId) {
-        log.info("Fetching exercises created by user: {}", userId);
-        return exerciseRepository.findByCreatedBy(userId)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<ExerciseDTO> getUserExercises(Long userId, Pageable pageable) {
+        log.info("Fetching exercises created by user: {} with pagination", userId);
+        Page<Exercise> page = exerciseRepository.findByCreatedBy(userId, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**

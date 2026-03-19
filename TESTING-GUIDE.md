@@ -59,7 +59,7 @@ docker exec -it gym-postgres psql -U gym_admin -d gym_db -f /docker-entrypoint-i
 8. Endurance Training
 
 ### 2. `Gym-Training-Service.postman_collection.json`
-Complete Postman collection for testing all Training Service endpoints.
+Complete Postman collection for testing all Training Service endpoints with pagination support.
 
 **How to import:**
 1. Open Postman
@@ -71,13 +71,17 @@ Complete Postman collection for testing all Training Service endpoints.
 ```
 ├── 🔧 Setup
 │   └── Health Check
-├── 📋 Exercise Management (6 endpoints)
-├── 🎯 Routine Template Management (6 endpoints)
-├── 👤 User Routine Management (7 endpoints)
-└── 💪 Exercise Session Management (6 endpoints)
+├── 📋 Exercise Management (10 endpoints - 4 paginated)
+├── 🎯 Routine Template Management (10 endpoints - 4 paginated)
+├── 👤 User Routine Management (12 endpoints - 4 paginated)
+└── 💪 Exercise Session Management (10 endpoints - 4 paginated)
 ```
 
-**Total endpoints: 25 requests**
+**Total endpoints: 42 requests**
+- Single resource endpoints (no pagination): 14
+- List endpoints with default pagination: 12
+- List endpoints with custom pagination examples: 12
+- Non-paginated operations (create, update, delete): 4
 
 ---
 
@@ -189,6 +193,185 @@ Body:
 ```
 GET /api/v1/exercise-sessions/date/2025-03-18
 Header: X-User-Id: 1
+```
+
+---
+
+## 📄 Pagination Guide
+
+### Overview
+All list endpoints in the Gym Training Service support pagination. This allows efficient retrieval of large datasets with configurable page size and sorting.
+
+### Pagination Parameters
+
+All paginated endpoints accept these query parameters:
+
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `page` | integer | 0 | N/A | Zero-indexed page number (0 = first page) |
+| `size` | integer | 20 | 100 | Number of records per page |
+| `sort` | string | createdAt,desc | N/A | Sort order (field,direction) |
+
+### Pagination Response Format
+
+All paginated endpoints return a `PageResponse` object with:
+
+```json
+{
+  "data": [
+    { "id": 1, "name": "Exercise 1", ... },
+    { "id": 2, "name": "Exercise 2", ... }
+  ],
+  "currentPage": 0,
+  "pageSize": 20,
+  "totalElements": 150,
+  "totalPages": 8,
+  "hasNext": true,
+  "hasPrevious": false
+}
+```
+
+**Response Fields:**
+- `data` - Array of results for current page
+- `currentPage` - Current page number (0-indexed)
+- `pageSize` - Records per page
+- `totalElements` - Total records across all pages
+- `totalPages` - Total number of pages
+- `hasNext` - Whether next page exists
+- `hasPrevious` - Whether previous page exists
+
+### Paginated Endpoints
+
+**Exercise Management (3 endpoints):**
+- `GET /api/v1/exercises/system` - System exercises list
+- `GET /api/v1/exercises/discipline/{id}` - Exercises by discipline
+- `GET /api/v1/exercises/my-exercises` - User's custom exercises
+
+**Routine Template Management (2 endpoints):**
+- `GET /api/v1/routine-templates/system` - System templates list
+- `GET /api/v1/routine-templates/my-templates` - User's custom templates
+
+**User Routine Management (2 endpoints):**
+- `GET /api/v1/user-routines/active` - User's active routines
+- `GET /api/v1/user-routines` - All user routines
+
+**Exercise Session Management (2 endpoints):**
+- `GET /api/v1/exercise-sessions/routine/{id}` - Sessions by routine
+- `GET /api/v1/exercise-sessions/date/{date}` - Sessions by date
+
+### Usage Examples
+
+#### Default Pagination (first 20 records)
+```bash
+curl -X GET "http://localhost:8082/api/v1/exercises/system" \
+  -H "X-User-Id: 1"
+```
+
+#### Custom Page Size
+```bash
+# Get 50 records per page, page 0
+curl -X GET "http://localhost:8082/api/v1/exercises/system?page=0&size=50" \
+  -H "X-User-Id: 1"
+```
+
+#### Custom Sorting
+```bash
+# Sort by name ascending
+curl -X GET "http://localhost:8082/api/v1/exercises/system?sort=name,asc" \
+  -H "X-User-Id: 1"
+
+# Sort by creation date descending (default)
+curl -X GET "http://localhost:8082/api/v1/exercises/system?sort=createdAt,desc" \
+  -H "X-User-Id: 1"
+```
+
+#### Pagination with Sorting
+```bash
+# Page 1, size 30, sorted by name
+curl -X GET "http://localhost:8082/api/v1/exercises/system?page=1&size=30&sort=name,asc" \
+  -H "X-User-Id: 1"
+```
+
+#### Get Next Page
+```bash
+# Response indicates hasNext=true
+# Get next page:
+curl -X GET "http://localhost:8082/api/v1/exercises/system?page=1&size=20" \
+  -H "X-User-Id: 1"
+```
+
+### Postman Usage
+
+The collection includes both default and custom pagination examples for each paginated endpoint:
+
+1. **Default Pagination Requests** (e.g., "Get All System Exercises")
+   - No query parameters
+   - Uses service defaults: page=0, size=20, sort=createdAt,desc
+
+2. **Custom Pagination Requests** (e.g., "Get All System Exercises (Custom Pagination)")
+   - Includes example query parameters
+   - Shows how to adjust page size and sorting
+   - Modify values as needed for testing
+
+**To test pagination in Postman:**
+1. Open request "Get All System Exercises (Custom Pagination)"
+2. Modify `page`, `size`, or `sort` parameters in the URL
+3. Click **Send**
+4. Examine `totalElements` and `totalPages` to understand dataset size
+5. Navigate to next page by incrementing `page` parameter
+
+### Common Sorting Fields
+
+By endpoint:
+
+**Exercises:**
+- `id` - Exercise ID
+- `name` - Exercise name
+- `createdAt` - Creation date (default)
+- `type` - Exercise type (SYSTEM or USER)
+
+**Routine Templates:**
+- `id` - Template ID
+- `name` - Template name
+- `createdAt` - Creation date (default)
+- `type` - Template type (SYSTEM or USER)
+
+**User Routines:**
+- `id` - Routine ID
+- `startDate` - Start date (default)
+- `createdAt` - Creation date
+- `isActive` - Active status
+
+**Exercise Sessions:**
+- `id` - Session ID
+- `sessionDate` - Session date (default)
+- `createdAt` - Creation date
+- `sets` - Sets completed
+
+### Error Handling
+
+**Invalid Page Number:**
+```json
+{
+  "status": "BAD_REQUEST",
+  "message": "Page index must not be less than zero"
+}
+```
+
+**Invalid Page Size (> 100):**
+```json
+{
+  "status": "BAD_REQUEST",
+  "message": "Page size must not exceed maximum of 100"
+}
+```
+
+**Invalid Sort Field:**
+```json
+{
+  "status": "BAD_REQUEST",
+  "message": "Unknown sort field: invalidField"
+}
 ```
 
 ---
@@ -348,4 +531,6 @@ For issues or questions:
 ---
 
 **Last Updated:** 2025-03-18  
-**Collection Version:** 1.0.0 (Phase 4a - Services Only)
+**Collection Version:** 2.0.0 (Phase 4b - Controllers with Pagination Support)
+**Total Endpoints:** 42 requests
+**Paginated Endpoints:** 9 (with 12 example requests including default and custom pagination)

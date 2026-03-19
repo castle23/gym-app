@@ -1,5 +1,6 @@
 package com.gym.training.service;
 
+import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.UserRoutineDTO;
 import com.gym.training.dto.UserRoutineRequestDTO;
 import com.gym.training.entity.RoutineTemplate;
@@ -8,11 +9,12 @@ import com.gym.training.repository.RoutineTemplateRepository;
 import com.gym.training.repository.UserRoutineRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -25,25 +27,21 @@ public class UserRoutineService {
     private final RoutineTemplateRepository routineTemplateRepository;
     
     /**
-     * Get all active routines for a user
+     * Get all active routines for a user with pagination
      */
-    public List<UserRoutineDTO> getUserActiveRoutines(Long userId) {
-        log.info("Fetching active routines for user: {}", userId);
-        return userRoutineRepository.findByUserIdAndIsActive(userId, true)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<UserRoutineDTO> getUserActiveRoutines(Long userId, Pageable pageable) {
+        log.info("Fetching active routines for user: {} with pagination", userId);
+        Page<UserRoutine> page = userRoutineRepository.findByUserIdAndIsActive(userId, true, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**
-     * Get all routines for a user
+     * Get all routines for a user with pagination
      */
-    public List<UserRoutineDTO> getUserRoutines(Long userId) {
-        log.info("Fetching all routines for user: {}", userId);
-        return userRoutineRepository.findByUserId(userId)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public PageResponse<UserRoutineDTO> getUserRoutines(Long userId, Pageable pageable) {
+        log.info("Fetching all routines for user: {} with pagination", userId);
+        Page<UserRoutine> page = userRoutineRepository.findByUserId(userId, pageable);
+        return PageResponse.of(page.map(this::toDTO));
     }
     
     /**

@@ -1,28 +1,22 @@
 spring:
   application:
-    name: training-service
+    name: tracking-service
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
-        default_schema: training_schema
+        default_schema: tracking_schema
   datasource:
     url: jdbc:postgresql://localhost:5432/gym_db
     username: gym_admin
     password: gym_password
-  data:
-    web:
-      pageable:
-        default-page-size: 20
-        max-page-size: 100
-        one-indexed-parameters: false
 
 server:
-  port: 8082
+  port: 8083
   servlet:
-    context-path: /training
+    context-path: /tracking
 
 jwt:
   secret: ${JWT_SECRET:your-secret-key-change-in-production}
