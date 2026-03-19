@@ -11,28 +11,28 @@ SET search_path TO training_schema;
 -- =============================================================================
 -- 1. DISCIPLINES - Master data for exercise categories
 -- =============================================================================
-INSERT INTO disciplines (name, description, type, created_at)
+INSERT INTO disciplines (name, description, type)
 VALUES 
-    ('Chest', 'Upper body pushing exercises focusing on chest muscles', 'STRENGTH', NOW()),
-    ('Back', 'Upper body pulling exercises focusing on back muscles', 'STRENGTH', NOW()),
-    ('Shoulders', 'Exercises targeting deltoids and shoulder stability', 'STRENGTH', NOW()),
-    ('Biceps', 'Arm exercises focusing on biceps', 'STRENGTH', NOW()),
-    ('Triceps', 'Arm exercises focusing on triceps', 'STRENGTH', NOW()),
-    ('Forearms', 'Exercises for forearm strength and endurance', 'STRENGTH', NOW()),
-    ('Legs', 'Lower body exercises including quads, glutes, hamstrings', 'STRENGTH', NOW()),
-    ('Quads', 'Exercises focusing on quadriceps', 'STRENGTH', NOW()),
-    ('Hamstrings', 'Exercises focusing on hamstring muscles', 'STRENGTH', NOW()),
-    ('Glutes', 'Exercises targeting glute muscles', 'STRENGTH', NOW()),
-    ('Calves', 'Calf muscle exercises', 'STRENGTH', NOW()),
-    ('Core', 'Ab and core stability exercises', 'STRENGTH', NOW()),
-    ('Running', 'Cardio exercises with running', 'CARDIO', NOW()),
-    ('Cycling', 'Cardio exercises with cycling', 'CARDIO', NOW()),
-    ('Swimming', 'Cardio exercises with swimming', 'CARDIO', NOW()),
-    ('Stretching', 'Flexibility and stretching exercises', 'FLEXIBILITY', NOW()),
-    ('Yoga', 'Yoga and mind-body exercises', 'MIND_BODY', NOW()),
-    ('Pilates', 'Pilates core and flexibility training', 'MIND_BODY', NOW()),
-    ('CrossFit', 'High-intensity functional fitness', 'SPORTS', NOW()),
-    ('Boxing', 'Boxing and combat sports training', 'SPORTS', NOW())
+    ('Chest', 'Upper body pushing exercises focusing on chest muscles', 'STRENGTH'),
+    ('Back', 'Upper body pulling exercises focusing on back muscles', 'STRENGTH'),
+    ('Shoulders', 'Exercises targeting deltoids and shoulder stability', 'STRENGTH'),
+    ('Biceps', 'Arm exercises focusing on biceps', 'STRENGTH'),
+    ('Triceps', 'Arm exercises focusing on triceps', 'STRENGTH'),
+    ('Forearms', 'Exercises for forearm strength and endurance', 'STRENGTH'),
+    ('Legs', 'Lower body exercises including quads, glutes, hamstrings', 'STRENGTH'),
+    ('Quads', 'Exercises focusing on quadriceps', 'STRENGTH'),
+    ('Hamstrings', 'Exercises focusing on hamstring muscles', 'STRENGTH'),
+    ('Glutes', 'Exercises targeting glute muscles', 'STRENGTH'),
+    ('Calves', 'Calf muscle exercises', 'STRENGTH'),
+    ('Core', 'Ab and core stability exercises', 'STRENGTH'),
+    ('Running', 'Cardio exercises with running', 'CARDIO'),
+    ('Cycling', 'Cardio exercises with cycling', 'CARDIO'),
+    ('Swimming', 'Cardio exercises with swimming', 'CARDIO'),
+    ('Stretching', 'Flexibility and stretching exercises', 'FLEXIBILITY'),
+    ('Yoga', 'Yoga and mind-body exercises', 'MIND_BODY'),
+    ('Pilates', 'Pilates core and flexibility training', 'MIND_BODY'),
+    ('CrossFit', 'High-intensity functional fitness', 'SPORTS'),
+    ('Boxing', 'Boxing and combat sports training', 'SPORTS')
 ON CONFLICT (name) DO NOTHING;
 
 -- =============================================================================
