@@ -6,11 +6,9 @@ import com.gym.tracking.dto.RecommendationRequestDTO;
 import com.gym.tracking.service.RecommendationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RecommendationController.class)
-@ExtendWith(MockitoExtension.class)
 class RecommendationControllerTest {
     
     @Autowired
@@ -146,10 +143,11 @@ class RecommendationControllerTest {
     // POST /api/v1/recommendations - Create
     @Test
     void testCreateRecommendation_Success() throws Exception {
-        when(recommendationService.createRecommendation(any(RecommendationRequestDTO.class)))
+        when(recommendationService.createRecommendation(eq(1L), any(RecommendationRequestDTO.class)))
                 .thenReturn(recommendationDTO);
         
         mockMvc.perform(post("/api/v1/recommendations")
+                .header("X-User-Id", "1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(recommendationRequestDTO)))
                 .andExpect(status().isCreated())
@@ -158,7 +156,7 @@ class RecommendationControllerTest {
                 .andExpect(jsonPath("$.professionalName").value("Coach John"))
                 .andDo(print());
         
-        verify(recommendationService, times(1)).createRecommendation(any(RecommendationRequestDTO.class));
+        verify(recommendationService, times(1)).createRecommendation(eq(1L), any(RecommendationRequestDTO.class));
     }
     
     @Test
@@ -171,17 +169,18 @@ class RecommendationControllerTest {
                 .professionalName("")
                 .build();
         
-        when(recommendationService.createRecommendation(any(RecommendationRequestDTO.class)))
+        when(recommendationService.createRecommendation(eq(1L), any(RecommendationRequestDTO.class)))
                 .thenThrow(new IllegalArgumentException("At least one component (training or diet) is required"));
         
         mockMvc.perform(post("/api/v1/recommendations")
+                .header("X-User-Id", "1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
                 .andDo(print());
         
-        verify(recommendationService, times(1)).createRecommendation(any(RecommendationRequestDTO.class));
+        verify(recommendationService, times(1)).createRecommendation(eq(1L), any(RecommendationRequestDTO.class));
     }
     
     // PUT /api/v1/recommendations/{id} - Update

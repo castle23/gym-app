@@ -21,10 +21,10 @@ public class JwtService {
     public String generateToken(String userId, String roles) {
         try {
             return Jwts.builder()
-                    .setSubject(userId)
+                    .subject(userId)
                     .claim("roles", roles)
-                    .setIssuedAt(new Date())
-                    .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                    .issuedAt(new Date())
+                    .expiration(new Date(System.currentTimeMillis() + expirationMs))
                     .signWith(secretKey)
                     .compact();
         } catch (Exception e) {
@@ -35,11 +35,11 @@ public class JwtService {
 
     public String extractSubject(String token) {
         try {
-            Jws<Claims> jws = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            Jws<Claims> jws = Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token);
-            return jws.getBody().getSubject();
+                    .parseSignedClaims(token);
+            return jws.getPayload().getSubject();
         } catch (Exception e) {
             log.error("Error extracting subject from JWT token", e);
             return null;
@@ -48,11 +48,11 @@ public class JwtService {
 
     public String extractRoles(String token) {
         try {
-            Jws<Claims> jws = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            Jws<Claims> jws = Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token);
-            return (String) jws.getBody().get("roles");
+                    .parseSignedClaims(token);
+            return (String) jws.getPayload().get("roles");
         } catch (Exception e) {
             log.error("Error extracting roles from JWT token", e);
             return null;
@@ -61,11 +61,11 @@ public class JwtService {
 
     public boolean isTokenValid(String token) {
         try {
-            Jws<Claims> jws = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            Jws<Claims> jws = Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token);
-            return !jws.getBody().getExpiration().before(new Date());
+                    .parseSignedClaims(token);
+            return !jws.getPayload().getExpiration().before(new Date());
         } catch (Exception e) {
             log.debug("Invalid JWT token: {}", e.getMessage());
             return false;

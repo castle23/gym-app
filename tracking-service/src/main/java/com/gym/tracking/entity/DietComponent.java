@@ -20,16 +20,13 @@ public class DietComponent {
     private Plan plan;
 
     @Column(nullable = false)
-    private Long dietTemplateId;
-
-    @Column
-    private Long professionalId;
+    private String dietType;
 
     @Column(nullable = false)
-    private Boolean isCustom;
+    private Integer dailyCalories;
 
-    @Column(nullable = false)
-    private Integer calorieGoal;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String macroDistribution;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

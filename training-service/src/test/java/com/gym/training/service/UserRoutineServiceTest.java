@@ -3,7 +3,7 @@ package com.gym.training.service;
 import com.gym.training.dto.UserRoutineDTO;
 import com.gym.training.dto.UserRoutineRequestDTO;
 import com.gym.training.entity.RoutineTemplate;
-import com.gym.training.entity.TemplateType;
+import com.gym.training.entity.RoutineTemplate.TemplateType;
 import com.gym.training.entity.UserRoutine;
 import com.gym.training.repository.RoutineTemplateRepository;
 import com.gym.training.repository.UserRoutineRepository;
@@ -17,6 +17,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -56,12 +60,14 @@ class UserRoutineServiceTest {
                 .build();
     }
     
+    private final Pageable pageable = PageRequest.of(0, 20);
+
     @Test
     void testGetUserActiveRoutines() {
-        when(userRoutineRepository.findByUserIdAndIsActive(1L, true))
-                .thenReturn(List.of(userRoutine));
+        when(userRoutineRepository.findByUserIdAndIsActive(1L, true, pageable))
+                .thenReturn(new PageImpl<>(List.of(userRoutine)));
         
-        List<UserRoutineDTO> result = userRoutineService.getUserActiveRoutines(1L);
+        List<UserRoutineDTO> result = userRoutineService.getUserActiveRoutines(1L, pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -70,10 +76,10 @@ class UserRoutineServiceTest {
     
     @Test
     void testGetUserRoutines() {
-        when(userRoutineRepository.findByUserId(1L))
-                .thenReturn(List.of(userRoutine));
+        when(userRoutineRepository.findByUserId(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(userRoutine)));
         
-        List<UserRoutineDTO> result = userRoutineService.getUserRoutines(1L);
+        List<UserRoutineDTO> result = userRoutineService.getUserRoutines(1L, pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());

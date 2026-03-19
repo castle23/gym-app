@@ -20,13 +20,13 @@ public class TrainingComponent {
     private Plan plan;
 
     @Column(nullable = false)
-    private Long trainingTemplateId;
-
-    @Column
-    private Long professionalId;
+    private String focus;
 
     @Column(nullable = false)
-    private Boolean isCustom;
+    private String intensity;
+
+    @Column(nullable = false)
+    private Integer frequencyPerWeek;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

@@ -27,8 +27,8 @@ services:
 
   api-gateway:
     build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api-gateway/Dockerfile
     container_name: gym-api-gateway
     ports:
       - "8080:8080"
@@ -46,8 +46,8 @@ services:
 
   auth-service:
     build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: auth-service/Dockerfile
     container_name: gym-auth-service
     ports:
       - "8081:8081"
@@ -71,8 +71,8 @@ services:
 
   training-service:
     build:
-      context: ./training-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: training-service/Dockerfile
     container_name: gym-training-service
     ports:
       - "8082:8082"
@@ -89,30 +89,31 @@ services:
     networks:
       - gym-network
 
-  tracking-service:
-    build:
-      context: ./tracking-service
-      dockerfile: Dockerfile
-    container_name: gym-tracking-service
-    ports:
-      - "8083:8083"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
-      SPRING_DATASOURCE_USERNAME: gym_admin
-      SPRING_DATASOURCE_PASSWORD: gym_password
-      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: tracking_schema
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - gym-network
+  # TEMPORARILY DISABLED - Lombok annotation processing issue
+  # tracking-service:
+  #   build:
+  #     context: .
+  #     dockerfile: tracking-service/Dockerfile
+  #   container_name: gym-tracking-service
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+  #     SPRING_DATASOURCE_USERNAME: gym_admin
+  #     SPRING_DATASOURCE_PASSWORD: gym_password
+  #     SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: tracking_schema
+  #     JWT_SECRET: ${JWT_SECRET}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - gym-network
 
   notification-service:
     build:
-      context: ./notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: notification-service/Dockerfile
     container_name: gym-notification-service
     ports:
       - "8084:8084"

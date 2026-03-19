@@ -5,11 +5,13 @@ import com.gym.training.entity.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,9 +58,11 @@ class ExerciseRepositoryTest {
         entityManager.flush();
     }
     
+    private final Pageable pageable = PageRequest.of(0, 20);
+
     @Test
     void testFindByType() {
-        List<Exercise> result = exerciseRepository.findByType(Exercise.ExerciseType.SYSTEM);
+        List<Exercise> result = exerciseRepository.findByType(Exercise.ExerciseType.SYSTEM, pageable).getContent();
         
         assertNotNull(result);
         assertTrue(result.stream().anyMatch(e -> e.getId().equals(exercise.getId())));
@@ -66,7 +70,7 @@ class ExerciseRepositoryTest {
     
     @Test
     void testFindByTypeNotFound() {
-        List<Exercise> result = exerciseRepository.findByType(Exercise.ExerciseType.USER);
+        List<Exercise> result = exerciseRepository.findByType(Exercise.ExerciseType.USER, pageable).getContent();
         
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -74,7 +78,7 @@ class ExerciseRepositoryTest {
     
     @Test
     void testFindByDiscipline() {
-        List<Exercise> result = exerciseRepository.findByDiscipline(discipline);
+        List<Exercise> result = exerciseRepository.findByDiscipline(discipline, pageable).getContent();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -90,7 +94,7 @@ class ExerciseRepositoryTest {
                 .build();
         disciplineRepository.save(newDiscipline);
         
-        List<Exercise> result = exerciseRepository.findByDiscipline(newDiscipline);
+        List<Exercise> result = exerciseRepository.findByDiscipline(newDiscipline, pageable).getContent();
         
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -98,7 +102,7 @@ class ExerciseRepositoryTest {
     
     @Test
     void testFindByCreatedBy() {
-        List<Exercise> result = exerciseRepository.findByCreatedBy(1L);
+        List<Exercise> result = exerciseRepository.findByCreatedBy(1L, pageable).getContent();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -107,7 +111,7 @@ class ExerciseRepositoryTest {
     
     @Test
     void testFindByCreatedByNotFound() {
-        List<Exercise> result = exerciseRepository.findByCreatedBy(999L);
+        List<Exercise> result = exerciseRepository.findByCreatedBy(999L, pageable).getContent();
         
         assertNotNull(result);
         assertTrue(result.isEmpty());

@@ -5,7 +5,7 @@ import com.gym.training.dto.RoutineTemplateDTO;
 import com.gym.training.dto.RoutineTemplateRequestDTO;
 import com.gym.training.entity.Exercise;
 import com.gym.training.entity.RoutineTemplate;
-import com.gym.training.entity.TemplateType;
+import com.gym.training.entity.RoutineTemplate.TemplateType;
 import com.gym.training.repository.ExerciseRepository;
 import com.gym.training.repository.RoutineTemplateRepository;
 import lombok.RequiredArgsConstructor;

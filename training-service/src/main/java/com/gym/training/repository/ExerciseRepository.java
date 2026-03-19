@@ -1,7 +1,7 @@
 package com.gym.training.repository;
 
 import com.gym.training.entity.Exercise;
-import com.gym.training.entity.ExerciseType;
+import com.gym.training.entity.Exercise.ExerciseType;
 import com.gym.training.entity.Discipline;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

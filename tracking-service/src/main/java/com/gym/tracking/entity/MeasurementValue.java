@@ -2,6 +2,7 @@ package com.gym.tracking.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,11 +26,11 @@ public class MeasurementValue {
     @Column(nullable = false)
     private Double value;
 
+    @Column(nullable = false)
+    private LocalDate measurementDate;
+
     @Column
     private String notes;
-
-    @Column(nullable = false)
-    private LocalDateTime recordedAt;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -37,5 +38,8 @@ public class MeasurementValue {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (measurementDate == null) {
+            measurementDate = LocalDate.now();
+        }
     }
 }

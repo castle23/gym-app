@@ -1,5 +1,6 @@
 # Maven
 target/
+*/target/
 *.jar
 *.war
 *.ear
@@ -8,6 +9,7 @@ pom.xml.releaseBackup
 
 # IDE
 .idea/
+*/.idea/
 *.iml
 *.iws
 *.ipr

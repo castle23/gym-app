@@ -5,7 +5,7 @@ import com.gym.training.dto.ExerciseDTO;
 import com.gym.training.dto.ExerciseRequestDTO;
 import com.gym.training.entity.Discipline;
 import com.gym.training.entity.Exercise;
-import com.gym.training.entity.ExerciseType;
+import com.gym.training.entity.Exercise.ExerciseType;
 import com.gym.training.repository.DisciplineRepository;
 import com.gym.training.repository.ExerciseRepository;
 import lombok.RequiredArgsConstructor;

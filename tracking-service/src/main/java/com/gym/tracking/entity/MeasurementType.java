@@ -16,22 +16,31 @@ public class MeasurementType {
     private Long id;
 
     @Column(nullable = false)
-    private String name;
+    private String type;
 
     @Column(nullable = false)
     private String unit;
 
     @Column
-    private Double minValue;
-
-    @Column
-    private Double maxValue;
+    private Boolean isSystem;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (isSystem == null) {
+            isSystem = false;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

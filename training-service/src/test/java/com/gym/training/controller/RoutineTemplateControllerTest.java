@@ -4,15 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.RoutineTemplateDTO;
 import com.gym.training.dto.RoutineTemplateRequestDTO;
-import com.gym.training.entity.TemplateType;
+import com.gym.training.entity.RoutineTemplate;
+import com.gym.training.entity.RoutineTemplate.TemplateType;
 import com.gym.training.service.RoutineTemplateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -30,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RoutineTemplateController.class)
-@ExtendWith(MockitoExtension.class)
 class RoutineTemplateControllerTest {
     
     @Autowired
@@ -60,7 +58,7 @@ class RoutineTemplateControllerTest {
         templateRequestDTO = RoutineTemplateRequestDTO.builder()
                 .name("Full Body Workout")
                 .description("Complete full body routine")
-                .type("SYSTEM")
+                .type(TemplateType.SYSTEM)
                 .exerciseIds(List.of(1L, 2L, 3L))
                 .build();
     }
@@ -152,7 +150,7 @@ class RoutineTemplateControllerTest {
         RoutineTemplateRequestDTO createRequest = RoutineTemplateRequestDTO.builder()
                 .name("Upper Body Workout")
                 .description("Upper body focus routine")
-                .type("USER")
+                .type(TemplateType.USER)
                 .exerciseIds(List.of(1L, 2L))
                 .build();
         
@@ -176,7 +174,7 @@ class RoutineTemplateControllerTest {
         RoutineTemplateRequestDTO createRequest = RoutineTemplateRequestDTO.builder()
                 .name("Template")
                 .description("Description")
-                .type("USER")
+                .type(TemplateType.USER)
                 .exerciseIds(List.of(999L))
                 .build();
         
@@ -208,7 +206,7 @@ class RoutineTemplateControllerTest {
         RoutineTemplateRequestDTO updateRequest = RoutineTemplateRequestDTO.builder()
                 .name("Updated Template")
                 .description("Updated description")
-                .type("USER")
+                .type(TemplateType.USER)
                 .exerciseIds(List.of(1L, 2L, 3L, 4L))
                 .build();
         
@@ -231,7 +229,7 @@ class RoutineTemplateControllerTest {
         RoutineTemplateRequestDTO updateRequest = RoutineTemplateRequestDTO.builder()
                 .name("Updated Template")
                 .description("Updated description")
-                .type("USER")
+                .type(TemplateType.USER)
                 .exerciseIds(List.of(1L, 2L))
                 .build();
         

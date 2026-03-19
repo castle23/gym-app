@@ -18,17 +18,19 @@ public class Objective {
     @Column(nullable = false)
     private Long userId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ObjectiveType type;
-
     @Column(nullable = false, length = 500)
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private LocalDateTime targetDate;
+    @Column(nullable = false, length = 100)
+    private String category;
 
     @Column(nullable = false)
+    private Boolean isActive;
+
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
@@ -38,14 +40,13 @@ public class Objective {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (isActive == null) {
+            isActive = true;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    public enum ObjectiveType {
-        WEIGHT_LOSS, MUSCLE_GAIN, STRENGTH, ENDURANCE, FLEXIBILITY, GENERAL_FITNESS, OTHER
     }
 }

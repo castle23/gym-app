@@ -18,6 +18,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -54,7 +58,7 @@ class ExerciseSessionServiceTest {
                 .id(1L)
                 .name("Bench Press")
                 .description("Barbell bench press")
-                .type(ExerciseType.SYSTEM)
+                .type(Exercise.ExerciseType.SYSTEM)
                 .discipline(discipline)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -63,7 +67,7 @@ class ExerciseSessionServiceTest {
         template = RoutineTemplate.builder()
                 .id(1L)
                 .name("Beginner")
-                .type(TemplateType.SYSTEM)
+                .type(RoutineTemplate.TemplateType.SYSTEM)
                 .build();
         
         userRoutine = UserRoutine.builder()
@@ -91,12 +95,14 @@ class ExerciseSessionServiceTest {
                 .build();
     }
     
+    private final Pageable pageable = PageRequest.of(0, 20);
+
     @Test
     void testGetSessionsByRoutineId() {
-        when(exerciseSessionRepository.findByUserRoutineId(1L))
-                .thenReturn(List.of(session));
+        when(exerciseSessionRepository.findByUserRoutineId(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(session)));
         
-        List<ExerciseSessionDTO> result = exerciseSessionService.getSessionsByRoutineId(1L);
+        List<ExerciseSessionDTO> result = exerciseSessionService.getSessionsByRoutineId(1L, pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -105,10 +111,10 @@ class ExerciseSessionServiceTest {
     
     @Test
     void testGetSessionsByRoutineIdEmpty() {
-        when(exerciseSessionRepository.findByUserRoutineId(1L))
-                .thenReturn(List.of());
+        when(exerciseSessionRepository.findByUserRoutineId(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of()));
         
-        List<ExerciseSessionDTO> result = exerciseSessionService.getSessionsByRoutineId(1L);
+        List<ExerciseSessionDTO> result = exerciseSessionService.getSessionsByRoutineId(1L, pageable).getData();
         
         assertNotNull(result);
         assertEquals(0, result.size());
@@ -117,10 +123,10 @@ class ExerciseSessionServiceTest {
     @Test
     void testGetSessionsByUserIdAndDate() {
         LocalDate date = LocalDate.now();
-        when(exerciseSessionRepository.findByUserIdAndDate(1L, date))
-                .thenReturn(List.of(session));
+        when(exerciseSessionRepository.findByUserIdAndDate(1L, date, pageable))
+                .thenReturn(new PageImpl<>(List.of(session)));
         
-        List<ExerciseSessionDTO> result = exerciseSessionService.getSessionsByUserIdAndDate(1L, date);
+        List<ExerciseSessionDTO> result = exerciseSessionService.getSessionsByUserIdAndDate(1L, date, pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());

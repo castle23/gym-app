@@ -62,8 +62,8 @@ public class RecommendationService {
      * Create recommendation
      */
     @Transactional
-    public RecommendationDTO createRecommendation(RecommendationRequestDTO request) {
-        log.info("Creating recommendation");
+    public RecommendationDTO createRecommendation(Long userId, RecommendationRequestDTO request) {
+        log.info("Creating recommendation for user: {}", userId);
         
         TrainingComponent trainingComponent = null;
         DietComponent dietComponent = null;
@@ -83,6 +83,7 @@ public class RecommendationService {
         }
         
         Recommendation recommendation = Recommendation.builder()
+                .userId(userId)
                 .trainingComponent(trainingComponent)
                 .dietComponent(dietComponent)
                 .title(request.getTitle())

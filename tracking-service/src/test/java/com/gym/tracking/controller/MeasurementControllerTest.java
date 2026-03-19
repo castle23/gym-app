@@ -8,11 +8,9 @@ import com.gym.tracking.dto.MeasurementTypeRequestDTO;
 import com.gym.tracking.service.MeasurementService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MeasurementController.class)
-@ExtendWith(MockitoExtension.class)
 class MeasurementControllerTest {
     
     @Autowired
@@ -47,13 +44,13 @@ class MeasurementControllerTest {
     void setUp() {
         typeDTO = MeasurementTypeDTO.builder()
                 .id(1L)
-                .name("Weight")
+                .type("Weight")
                 .unit("kg")
                 .createdAt(LocalDateTime.now())
                 .build();
         
         typeRequestDTO = MeasurementTypeRequestDTO.builder()
-                .name("Weight")
+                .type("Weight")
                 .unit("kg")
                 .build();
         
@@ -62,14 +59,14 @@ class MeasurementControllerTest {
                 .userId(1L)
                 .measurementTypeId(1L)
                 .value(75.5)
-                .recordedDate(LocalDateTime.now())
+                .measurementDate(java.time.LocalDate.now())
                 .createdAt(LocalDateTime.now())
                 .build();
         
         measurementRequestDTO = MeasurementValueRequestDTO.builder()
                 .measurementTypeId(1L)
                 .value(75.5)
-                .recordedDate(LocalDateTime.now())
+                .measurementDate(java.time.LocalDate.now())
                 .build();
     }
     
@@ -145,7 +142,7 @@ class MeasurementControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Weight"))
+                .andExpect(jsonPath("$.type").value("Weight"))
                 .andExpect(jsonPath("$.unit").value("kg"))
                 .andDo(print());
         
@@ -175,7 +172,7 @@ class MeasurementControllerTest {
                 .content(objectMapper.writeValueAsString(typeRequestDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Weight"))
+                .andExpect(jsonPath("$.type").value("Weight"))
                 .andDo(print());
         
         verify(measurementService, times(1)).createMeasurementType(any(MeasurementTypeRequestDTO.class));
@@ -303,7 +300,7 @@ class MeasurementControllerTest {
     @Test
     void testDeleteMeasurement_NotFound() throws Exception {
         doThrow(new IllegalArgumentException("Measurement not found: 999"))
-                .when(measurementService).deleteMeasurement(999L, 1L);
+                .when(measurementService).deleteMeasurement(1L, 999L);
         
         mockMvc.perform(delete("/api/v1/measurements/999")
                 .header("X-User-Id", "1")
@@ -316,7 +313,7 @@ class MeasurementControllerTest {
     @Test
     void testDeleteMeasurement_Unauthorized() throws Exception {
         doThrow(new IllegalArgumentException("unauthorized: userId mismatch"))
-                .when(measurementService).deleteMeasurement(1L, 2L);
+                .when(measurementService).deleteMeasurement(2L, 1L);
         
         mockMvc.perform(delete("/api/v1/measurements/1")
                 .header("X-User-Id", "2")

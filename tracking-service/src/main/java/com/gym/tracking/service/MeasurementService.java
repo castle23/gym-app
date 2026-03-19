@@ -68,6 +68,39 @@ public class MeasurementService {
     }
     
     /**
+     * Get measurement value by ID with authorization check
+     */
+    public MeasurementValueDTO getMeasurementValueById(Long id, Long userId) {
+        log.info("Fetching measurement: {} for user: {}", id, userId);
+        MeasurementValue value = measurementValueRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Measurement not found: " + id));
+        if (!value.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("unauthorized: userId mismatch");
+        }
+        return toMeasurementValueDTO(value);
+    }
+
+    /**
+     * Update measurement value
+     */
+    @Transactional
+    public MeasurementValueDTO updateMeasurement(Long id, Long userId, MeasurementValueRequestDTO request) {
+        log.info("Updating measurement: {} for user: {}", id, userId);
+        MeasurementValue value = measurementValueRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Measurement not found: " + id));
+        if (!value.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("unauthorized: userId mismatch");
+        }
+        verifyMeasurementTypeExists(request.getMeasurementTypeId());
+        MeasurementType type = measurementTypeRepository.findById(request.getMeasurementTypeId()).get();
+        value.setMeasurementType(type);
+        value.setValue(request.getValue());
+        value.setMeasurementDate(request.getMeasurementDate());
+        value.setNotes(request.getNotes());
+        return toMeasurementValueDTO(measurementValueRepository.save(value));
+    }
+
+    /**
      * Get user measurement values
      */
     public List<MeasurementValueDTO> getUserMeasurements(Long userId) {

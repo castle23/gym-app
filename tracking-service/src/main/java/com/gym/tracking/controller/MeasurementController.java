@@ -223,7 +223,7 @@ public class MeasurementController {
         log.info("DELETE /api/v1/measurements/{} - Delete measurement for user: {}", id, userId);
         
         try {
-            measurementService.deleteMeasurement(id, userId);
+            measurementService.deleteMeasurement(userId, id);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             log.warn("Error deleting measurement: {}", e.getMessage());

@@ -49,7 +49,7 @@ public class PlanService {
      */
     public List<PlanDTO> getPlansByStatus(Long userId, Plan.PlanStatus status) {
         log.info("Fetching plans with status {} for user: {}", status, userId);
-        return planRepository.findByUserIdAndStatus(userId, status)
+        return planRepository.findAllByUserIdAndStatus(userId, status)
                 .stream()
                 .map(this::toDTO)
                 .toList();

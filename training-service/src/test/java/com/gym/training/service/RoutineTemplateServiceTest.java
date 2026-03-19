@@ -4,7 +4,7 @@ import com.gym.training.dto.RoutineTemplateDTO;
 import com.gym.training.dto.RoutineTemplateRequestDTO;
 import com.gym.training.entity.Exercise;
 import com.gym.training.entity.RoutineTemplate;
-import com.gym.training.entity.TemplateType;
+import com.gym.training.entity.RoutineTemplate.TemplateType;
 import com.gym.training.repository.ExerciseRepository;
 import com.gym.training.repository.RoutineTemplateRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +17,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -49,12 +53,14 @@ class RoutineTemplateServiceTest {
                 .build();
     }
     
+    private final Pageable pageable = PageRequest.of(0, 20);
+
     @Test
     void testGetAllSystemTemplates() {
-        when(routineTemplateRepository.findByType(TemplateType.SYSTEM))
-                .thenReturn(List.of(begginerTemplate));
+        when(routineTemplateRepository.findByType(TemplateType.SYSTEM, pageable))
+                .thenReturn(new PageImpl<>(List.of(begginerTemplate)));
         
-        List<RoutineTemplateDTO> result = routineTemplateService.getAllSystemTemplates();
+        List<RoutineTemplateDTO> result = routineTemplateService.getAllSystemTemplates(pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -63,10 +69,10 @@ class RoutineTemplateServiceTest {
     
     @Test
     void testGetUserTemplates() {
-        when(routineTemplateRepository.findByCreatedBy(1L))
-                .thenReturn(List.of(begginerTemplate));
+        when(routineTemplateRepository.findByCreatedBy(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(begginerTemplate)));
         
-        List<RoutineTemplateDTO> result = routineTemplateService.getUserTemplates(1L);
+        List<RoutineTemplateDTO> result = routineTemplateService.getUserTemplates(1L, pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());

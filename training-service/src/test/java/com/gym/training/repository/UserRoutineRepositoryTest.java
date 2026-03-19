@@ -10,6 +10,9 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +41,7 @@ class UserRoutineRepositoryTest {
         template = RoutineTemplate.builder()
                 .name("Beginner")
                 .description("Beginner routine")
-                .type(TemplateType.SYSTEM)
+                .type(RoutineTemplate.TemplateType.SYSTEM)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -57,9 +60,11 @@ class UserRoutineRepositoryTest {
         entityManager.flush();
     }
     
+    private final Pageable pageable = PageRequest.of(0, 20);
+
     @Test
     void testFindByUserId() {
-        List<UserRoutine> result = userRoutineRepository.findByUserId(1L);
+        List<UserRoutine> result = userRoutineRepository.findByUserId(1L, pageable).getContent();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -68,7 +73,7 @@ class UserRoutineRepositoryTest {
     
     @Test
     void testFindByUserIdNotFound() {
-        List<UserRoutine> result = userRoutineRepository.findByUserId(999L);
+        List<UserRoutine> result = userRoutineRepository.findByUserId(999L, pageable).getContent();
         
         assertNotNull(result);
         assertTrue(result.isEmpty());

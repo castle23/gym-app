@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
@@ -69,7 +72,7 @@ class ExerciseSessionRepositoryTest {
         RoutineTemplate template = RoutineTemplate.builder()
                 .name("Beginner")
                 .description("Beginner routine")
-                .type(TemplateType.SYSTEM)
+                .type(RoutineTemplate.TemplateType.SYSTEM)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -103,9 +106,11 @@ class ExerciseSessionRepositoryTest {
         entityManager.flush();
     }
     
+    private final Pageable pageable = PageRequest.of(0, 20);
+
     @Test
     void testFindByUserRoutineId() {
-        List<ExerciseSession> result = exerciseSessionRepository.findByUserRoutineId(userRoutine.getId());
+        List<ExerciseSession> result = exerciseSessionRepository.findByUserRoutineId(userRoutine.getId(), pageable).getContent();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -114,7 +119,7 @@ class ExerciseSessionRepositoryTest {
     
     @Test
     void testFindByUserRoutineIdEmpty() {
-        List<ExerciseSession> result = exerciseSessionRepository.findByUserRoutineId(999L);
+        List<ExerciseSession> result = exerciseSessionRepository.findByUserRoutineId(999L, pageable).getContent();
         
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -123,7 +128,7 @@ class ExerciseSessionRepositoryTest {
     @Test
     void testFindByUserIdAndDate() {
         LocalDate today = LocalDate.now();
-        List<ExerciseSession> result = exerciseSessionRepository.findByUserIdAndDate(1L, today);
+        List<ExerciseSession> result = exerciseSessionRepository.findByUserIdAndDate(1L, today, pageable).getContent();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -133,7 +138,7 @@ class ExerciseSessionRepositoryTest {
     @Test
     void testFindByUserIdAndDateDifferentDate() {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
-        List<ExerciseSession> result = exerciseSessionRepository.findByUserIdAndDate(1L, tomorrow);
+        List<ExerciseSession> result = exerciseSessionRepository.findByUserIdAndDate(1L, tomorrow, pageable).getContent();
         
         assertNotNull(result);
         assertTrue(result.isEmpty());

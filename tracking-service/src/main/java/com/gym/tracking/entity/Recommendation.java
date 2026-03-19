@@ -26,8 +26,14 @@ public class Recommendation {
     @JoinColumn(name = "diet_component_id")
     private DietComponent dietComponent;
 
-    @Column(nullable = false, length = 1000)
-    private String content;
+    @Column(nullable = false, length = 500)
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String description;
+
+    @Column(nullable = false)
+    private String professionalName;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

@@ -3,9 +3,9 @@ package com.gym.training.service;
 import com.gym.training.dto.ExerciseDTO;
 import com.gym.training.dto.ExerciseRequestDTO;
 import com.gym.training.entity.Discipline;
-import com.gym.training.entity.DisciplineType;
+import com.gym.training.entity.Discipline.DisciplineType;
 import com.gym.training.entity.Exercise;
-import com.gym.training.entity.ExerciseType;
+import com.gym.training.entity.Exercise.ExerciseType;
 import com.gym.training.repository.DisciplineRepository;
 import com.gym.training.repository.ExerciseRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,7 +45,7 @@ class ExerciseServiceTest {
     void setUp() {
         strength = Discipline.builder()
                 .id(1L)
-                .type(DisciplineType.Strength)
+                .type(DisciplineType.STRENGTH)
                 .build();
         
         pushUp = Exercise.builder()
@@ -57,32 +60,34 @@ class ExerciseServiceTest {
                 .build();
     }
     
+    private final Pageable pageable = PageRequest.of(0, 20);
+
     @Test
     void testGetAllSystemExercises() {
-        when(exerciseRepository.findByType(ExerciseType.SYSTEM))
-                .thenReturn(List.of(pushUp));
+        when(exerciseRepository.findByType(ExerciseType.SYSTEM, pageable))
+                .thenReturn(new PageImpl<>(List.of(pushUp)));
         
-        List<ExerciseDTO> result = exerciseService.getAllSystemExercises();
+        List<ExerciseDTO> result = exerciseService.getAllSystemExercises(pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("Push Up", result.get(0).getName());
-        verify(exerciseRepository, times(1)).findByType(ExerciseType.SYSTEM);
+        verify(exerciseRepository, times(1)).findByType(ExerciseType.SYSTEM, pageable);
     }
     
     @Test
     void testGetExercisesByDiscipline() {
         when(disciplineRepository.findById(1L))
                 .thenReturn(Optional.of(strength));
-        when(exerciseRepository.findByDiscipline(strength))
-                .thenReturn(List.of(pushUp));
+        when(exerciseRepository.findByDiscipline(strength, pageable))
+                .thenReturn(new PageImpl<>(List.of(pushUp)));
         
-        List<ExerciseDTO> result = exerciseService.getExercisesByDiscipline(1L);
+        List<ExerciseDTO> result = exerciseService.getExercisesByDiscipline(1L, pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());
         verify(disciplineRepository, times(1)).findById(1L);
-        verify(exerciseRepository, times(1)).findByDiscipline(strength);
+        verify(exerciseRepository, times(1)).findByDiscipline(strength, pageable);
     }
     
     @Test
@@ -90,21 +95,20 @@ class ExerciseServiceTest {
         when(disciplineRepository.findById(999L))
                 .thenReturn(Optional.empty());
         
-        assertThrows(IllegalArgumentException.class, () -> {
-            exerciseService.getExercisesByDiscipline(999L);
-        });
+        assertThrows(IllegalArgumentException.class, () ->
+            exerciseService.getExercisesByDiscipline(999L, pageable));
     }
     
     @Test
     void testGetUserExercises() {
-        when(exerciseRepository.findByCreatedBy(1L))
-                .thenReturn(List.of(pushUp));
+        when(exerciseRepository.findByCreatedBy(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(pushUp)));
         
-        List<ExerciseDTO> result = exerciseService.getUserExercises(1L);
+        List<ExerciseDTO> result = exerciseService.getUserExercises(1L, pageable).getData();
         
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(exerciseRepository, times(1)).findByCreatedBy(1L);
+        verify(exerciseRepository, times(1)).findByCreatedBy(1L, pageable);
     }
     
     @Test

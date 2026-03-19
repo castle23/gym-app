@@ -56,12 +56,12 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
         try {
             SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-            Jws<Claims> jws = Jwts.parserBuilder()
-                    .setSigningKey(key)
+            Jws<Claims> jws = Jwts.parser()
+                    .verifyWith(key)
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
 
-            Claims claims = jws.getBody();
+            Claims claims = jws.getPayload();
             String userId = claims.getSubject();
             String roles = (String) claims.get("roles");
 

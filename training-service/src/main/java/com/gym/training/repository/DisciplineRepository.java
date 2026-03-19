@@ -1,7 +1,7 @@
 package com.gym.training.repository;
 
 import com.gym.training.entity.Discipline;
-import com.gym.training.entity.DisciplineType;
+import com.gym.training.entity.Discipline.DisciplineType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

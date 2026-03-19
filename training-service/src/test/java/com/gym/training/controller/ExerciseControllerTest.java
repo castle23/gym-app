@@ -4,14 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.ExerciseDTO;
 import com.gym.training.dto.ExerciseRequestDTO;
+import com.gym.training.entity.Exercise;
 import com.gym.training.service.ExerciseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -29,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ExerciseController.class)
-@ExtendWith(MockitoExtension.class)
 class ExerciseControllerTest {
     
     @Autowired
@@ -50,7 +48,7 @@ class ExerciseControllerTest {
                 .id(1L)
                 .name("Push Up")
                 .description("Upper body exercise")
-                .type("SYSTEM")
+                .type(Exercise.ExerciseType.SYSTEM)
                 .disciplineId(1L)
                 .disciplineName("Strength")
                 .createdAt(LocalDateTime.now())
@@ -59,7 +57,7 @@ class ExerciseControllerTest {
         exerciseRequestDTO = ExerciseRequestDTO.builder()
                 .name("Push Up")
                 .description("Upper body exercise")
-                .type("USER")
+                .type(Exercise.ExerciseType.USER)
                 .disciplineId(1L)
                 .build();
     }
@@ -178,7 +176,7 @@ class ExerciseControllerTest {
                 .id(2L)
                 .name("Custom Push Up")
                 .description("Upper body exercise")
-                .type("USER")
+                .type(Exercise.ExerciseType.USER)
                 .disciplineId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -219,7 +217,7 @@ class ExerciseControllerTest {
                 .id(1L)
                 .name("Updated Push Up")
                 .description("Updated description")
-                .type("USER")
+                .type(Exercise.ExerciseType.USER)
                 .disciplineId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();

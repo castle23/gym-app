@@ -20,7 +20,7 @@ public class UserRoutine {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id")
-    private RoutineTemplate template;
+    private RoutineTemplate routineTemplate;
 
     @Column(nullable = false)
     private String name;
@@ -30,6 +30,12 @@ public class UserRoutine {
 
     @Column(nullable = false)
     private Boolean isActive;
+
+    @Column(nullable = false)
+    private LocalDateTime startDate;
+
+    @Column
+    private LocalDateTime endDate;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

@@ -1,6 +1,6 @@
 package com.gym.training.dto;
 
-import com.gym.training.entity.TemplateType;
+import com.gym.training.entity.RoutineTemplate.TemplateType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
