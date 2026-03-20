@@ -89,26 +89,25 @@ services:
     networks:
       - gym-network
 
-  # TEMPORARILY DISABLED - Lombok annotation processing issue
-  # tracking-service:
-  #   build:
-  #     context: .
-  #     dockerfile: tracking-service/Dockerfile
-  #   container_name: gym-tracking-service
-  #   ports:
-  #     - "8083:8083"
-  #   environment:
-  #     SPRING_PROFILES_ACTIVE: docker
-  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
-  #     SPRING_DATASOURCE_USERNAME: gym_admin
-  #     SPRING_DATASOURCE_PASSWORD: gym_password
-  #     SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: tracking_schema
-  #     JWT_SECRET: ${JWT_SECRET}
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   networks:
-  #     - gym-network
+  tracking-service:
+    build:
+      context: .
+      dockerfile: tracking-service/Dockerfile
+    container_name: gym-tracking-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+      SPRING_DATASOURCE_USERNAME: gym_admin
+      SPRING_DATASOURCE_PASSWORD: gym_password
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: tracking_schema
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gym-network
 
   notification-service:
     build:

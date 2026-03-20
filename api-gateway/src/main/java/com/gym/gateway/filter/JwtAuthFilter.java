@@ -47,45 +47,54 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        String authHeader = exchange.getRequest().getHeaders().getFirst(AUTHORIZATION_HEADER);
 
+        // Try to validate JWT if Authorization header is present
+        if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+            String token = authHeader.substring(BEARER_PREFIX.length());
+            try {
+                SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+                Jws<Claims> jws = Jwts.parser()
+                        .verifyWith(key)
+                        .build()
+                        .parseSignedClaims(token);
+
+                Claims claims = jws.getPayload();
+                String userId = claims.getSubject();
+                String roles = (String) claims.get("roles");
+
+                log.info("JWT validated for user: {}", userId);
+
+                return chain.filter(exchange.mutate()
+                        .request(exchange.getRequest().mutate()
+                                .header(USER_ID_HEADER, userId)
+                                .header(USER_ROLES_HEADER, roles != null ? roles : "")
+                                .build())
+                        .build());
+
+            } catch (Exception e) {
+                log.error("JWT validation failed: {}", e.getMessage());
+                // If JWT is invalid and it's a public path, allow it through
+                if (isPublicPath(path)) {
+                    log.info("Invalid JWT for public path {}, allowing access without authentication", path);
+                    return chain.filter(exchange);
+                }
+                // For protected paths, reject invalid JWT
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
+            }
+        }
+
+        // No JWT provided
         if (isPublicPath(path)) {
+            // Public path without JWT, allow it through
             return chain.filter(exchange);
         }
 
-        String authHeader = exchange.getRequest().getHeaders().getFirst(AUTHORIZATION_HEADER);
-        if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
-            log.warn("Missing or invalid Authorization header for path: {}", path);
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
-
-        String token = authHeader.substring(BEARER_PREFIX.length());
-
-        try {
-            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-            Jws<Claims> jws = Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token);
-
-            Claims claims = jws.getPayload();
-            String userId = claims.getSubject();
-            String roles = (String) claims.get("roles");
-
-            log.info("JWT validated for user: {}", userId);
-
-            return chain.filter(exchange.mutate()
-                    .request(exchange.getRequest().mutate()
-                            .header(USER_ID_HEADER, userId)
-                            .header(USER_ROLES_HEADER, roles != null ? roles : "")
-                            .build())
-                    .build());
-
-        } catch (Exception e) {
-            log.error("JWT validation failed: {}", e.getMessage());
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
+        // Protected path without JWT
+        log.warn("Missing Authorization header for protected path: {}", path);
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
     }
 
     private boolean isPublicPath(String path) {

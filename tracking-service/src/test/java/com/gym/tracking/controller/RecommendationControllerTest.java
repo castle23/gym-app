@@ -165,8 +165,8 @@ class RecommendationControllerTest {
                 .trainingComponentId(null)
                 .dietComponentId(null)
                 .title("Incomplete")
-                .description("Missing professional name")
-                .professionalName("")
+                .description("Missing component")
+                .professionalName("Coach John")
                 .build();
         
         when(recommendationService.createRecommendation(eq(1L), any(RecommendationRequestDTO.class)))

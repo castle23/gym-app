@@ -11,54 +11,53 @@ SET search_path TO tracking_schema;
 -- =============================================================================
 -- 1. MEASUREMENT TYPES - Standard body metrics catalogue
 -- =============================================================================
-INSERT INTO measurement_types (name, unit, min_value, max_value, created_at)
+INSERT INTO measurement_types (type, unit, is_system, created_at, updated_at)
 VALUES
-    ('Body Weight',                'kg',       20.0,   500.0,  NOW()),
-    ('Body Fat Percentage',        '%',         1.0,    70.0,  NOW()),
-    ('BMI',                        'kg/m²',    10.0,    70.0,  NOW()),
-    ('Muscle Mass',                'kg',        5.0,   150.0,  NOW()),
-    ('Waist Circumference',        'cm',       40.0,   250.0,  NOW()),
-    ('Hip Circumference',          'cm',       40.0,   250.0,  NOW()),
-    ('Chest Circumference',        'cm',       40.0,   200.0,  NOW()),
-    ('Arm Circumference',          'cm',       10.0,   100.0,  NOW()),
-    ('Thigh Circumference',        'cm',       20.0,   150.0,  NOW()),
-    ('Neck Circumference',         'cm',       20.0,    80.0,  NOW()),
-    ('Resting Heart Rate',         'bpm',      30.0,   200.0,  NOW()),
-    ('Blood Pressure Systolic',    'mmHg',     60.0,   250.0,  NOW()),
-    ('Blood Pressure Diastolic',   'mmHg',     40.0,   150.0,  NOW()),
-    ('VO2 Max',                    'ml/kg/min',10.0,    90.0,  NOW()),
-    ('Flexibility (Sit & Reach)',  'cm',      -30.0,    50.0,  NOW())
-ON CONFLICT (name) DO NOTHING;
+    ('Body Weight',                'kg',       TRUE,  NOW(), NOW()),
+    ('Body Fat Percentage',        '%',        TRUE,  NOW(), NOW()),
+    ('BMI',                        'kg/m²',    TRUE,  NOW(), NOW()),
+    ('Muscle Mass',                'kg',       TRUE,  NOW(), NOW()),
+    ('Waist Circumference',        'cm',       TRUE,  NOW(), NOW()),
+    ('Hip Circumference',          'cm',       TRUE,  NOW(), NOW()),
+    ('Chest Circumference',        'cm',       TRUE,  NOW(), NOW()),
+    ('Arm Circumference',          'cm',       TRUE,  NOW(), NOW()),
+    ('Thigh Circumference',        'cm',       TRUE,  NOW(), NOW()),
+    ('Neck Circumference',         'cm',       TRUE,  NOW(), NOW()),
+    ('Resting Heart Rate',         'bpm',      TRUE,  NOW(), NOW()),
+    ('Blood Pressure Systolic',    'mmHg',     TRUE,  NOW(), NOW()),
+    ('Blood Pressure Diastolic',   'mmHg',     TRUE,  NOW(), NOW()),
+    ('VO2 Max',                    'ml/kg/min',TRUE,  NOW(), NOW()),
+    ('Flexibility (Sit & Reach)',  'cm',       TRUE,  NOW(), NOW());
 
 -- =============================================================================
 -- 2. OBJECTIVES - One per test user (subquery by email, schema-qualified)
 -- =============================================================================
-INSERT INTO objectives (user_id, type, description, target_date, created_at, updated_at)
+INSERT INTO objectives (user_id, title, description, category, is_active, created_at, updated_at)
 SELECT u.id,
-       'WEIGHT_LOSS',
+       'Weight Loss Goal',
        'Lose 10kg by improving diet and exercising 4 times per week',
-       NOW() + INTERVAL '3 months', NOW(), NOW()
+       'WEIGHT_LOSS', TRUE, NOW(), NOW()
 FROM   auth_schema.users u
 WHERE  u.email = 'john.doe@example.com'
-  AND  NOT EXISTS (SELECT 1 FROM objectives o WHERE o.user_id = u.id AND o.type = 'WEIGHT_LOSS');
+  AND  NOT EXISTS (SELECT 1 FROM objectives o WHERE o.user_id = u.id);
 
-INSERT INTO objectives (user_id, type, description, target_date, created_at, updated_at)
+INSERT INTO objectives (user_id, title, description, category, is_active, created_at, updated_at)
 SELECT u.id,
-       'MUSCLE_GAIN',
+       'Muscle Gain Goal',
        'Gain 5kg of lean muscle mass through progressive overload training',
-       NOW() + INTERVAL '6 months', NOW(), NOW()
+       'MUSCLE_GAIN', TRUE, NOW(), NOW()
 FROM   auth_schema.users u
 WHERE  u.email = 'jane.smith@example.com'
-  AND  NOT EXISTS (SELECT 1 FROM objectives o WHERE o.user_id = u.id AND o.type = 'MUSCLE_GAIN');
+  AND  NOT EXISTS (SELECT 1 FROM objectives o WHERE o.user_id = u.id);
 
-INSERT INTO objectives (user_id, type, description, target_date, created_at, updated_at)
+INSERT INTO objectives (user_id, title, description, category, is_active, created_at, updated_at)
 SELECT u.id,
-       'GENERAL_FITNESS',
+       'General Fitness Goal',
        'Complete a 5km run without stopping and improve overall endurance',
-       NOW() + INTERVAL '2 months', NOW(), NOW()
+       'GENERAL_FITNESS', TRUE, NOW(), NOW()
 FROM   auth_schema.users u
 WHERE  u.email = 'mike.johnson@example.com'
-  AND  NOT EXISTS (SELECT 1 FROM objectives o WHERE o.user_id = u.id AND o.type = 'GENERAL_FITNESS');
+  AND  NOT EXISTS (SELECT 1 FROM objectives o WHERE o.user_id = u.id);
 
 -- =============================================================================
 -- 3. PLANS - One active plan per test user
@@ -96,55 +95,82 @@ WHERE  u.email = 'mike.johnson@example.com'
 -- =============================================================================
 -- 4. MEASUREMENT VALUES - Baseline readings per test user
 -- =============================================================================
-INSERT INTO measurement_values (user_id, measurement_type_id, value, notes, recorded_at, created_at)
+INSERT INTO measurement_values (user_id, measurement_type_id, value, measurement_date, notes, created_at)
 SELECT u.id,
-       (SELECT id FROM measurement_types WHERE name = 'Body Weight'),
-       90.5, 'Initial weigh-in', NOW() - INTERVAL '7 days', NOW()
-FROM   auth_schema.users u WHERE u.email = 'john.doe@example.com';
+       (SELECT id FROM measurement_types WHERE type = 'Body Weight' LIMIT 1),
+       75.0, NOW()::DATE, 'Starting weight', NOW()
+FROM   auth_schema.users u
+WHERE  u.email = 'john.doe@example.com'
+  AND  NOT EXISTS (SELECT 1 FROM measurement_values mv WHERE mv.user_id = u.id);
 
-INSERT INTO measurement_values (user_id, measurement_type_id, value, notes, recorded_at, created_at)
+INSERT INTO measurement_values (user_id, measurement_type_id, value, measurement_date, notes, created_at)
 SELECT u.id,
-       (SELECT id FROM measurement_types WHERE name = 'Body Fat Percentage'),
-       24.0, 'DEXA scan', NOW() - INTERVAL '7 days', NOW()
-FROM   auth_schema.users u WHERE u.email = 'john.doe@example.com';
+       (SELECT id FROM measurement_types WHERE type = 'Body Weight' LIMIT 1),
+       62.0, NOW()::DATE, 'Starting weight', NOW()
+FROM   auth_schema.users u
+WHERE  u.email = 'jane.smith@example.com'
+  AND  NOT EXISTS (SELECT 1 FROM measurement_values mv WHERE mv.user_id = u.id);
 
-INSERT INTO measurement_values (user_id, measurement_type_id, value, notes, recorded_at, created_at)
+INSERT INTO measurement_values (user_id, measurement_type_id, value, measurement_date, notes, created_at)
 SELECT u.id,
-       (SELECT id FROM measurement_types WHERE name = 'Waist Circumference'),
-       95.0, 'Morning measurement', NOW() - INTERVAL '7 days', NOW()
-FROM   auth_schema.users u WHERE u.email = 'john.doe@example.com';
-
-INSERT INTO measurement_values (user_id, measurement_type_id, value, notes, recorded_at, created_at)
-SELECT u.id,
-       (SELECT id FROM measurement_types WHERE name = 'Body Weight'),
-       62.0, 'Initial weigh-in', NOW() - INTERVAL '7 days', NOW()
-FROM   auth_schema.users u WHERE u.email = 'jane.smith@example.com';
-
-INSERT INTO measurement_values (user_id, measurement_type_id, value, notes, recorded_at, created_at)
-SELECT u.id,
-       (SELECT id FROM measurement_types WHERE name = 'Muscle Mass'),
-       28.5, 'InBody scan', NOW() - INTERVAL '7 days', NOW()
-FROM   auth_schema.users u WHERE u.email = 'jane.smith@example.com';
-
-INSERT INTO measurement_values (user_id, measurement_type_id, value, notes, recorded_at, created_at)
-SELECT u.id,
-       (SELECT id FROM measurement_types WHERE name = 'Body Weight'),
-       78.0, 'Initial weigh-in', NOW() - INTERVAL '7 days', NOW()
-FROM   auth_schema.users u WHERE u.email = 'mike.johnson@example.com';
-
-INSERT INTO measurement_values (user_id, measurement_type_id, value, notes, recorded_at, created_at)
-SELECT u.id,
-       (SELECT id FROM measurement_types WHERE name = 'Resting Heart Rate'),
-       72.0, 'Morning resting HR', NOW() - INTERVAL '7 days', NOW()
-FROM   auth_schema.users u WHERE u.email = 'mike.johnson@example.com';
+       (SELECT id FROM measurement_types WHERE type = 'Body Weight' LIMIT 1),
+       85.0, NOW()::DATE, 'Starting weight', NOW()
+FROM   auth_schema.users u
+WHERE  u.email = 'mike.johnson@example.com'
+  AND  NOT EXISTS (SELECT 1 FROM measurement_values mv WHERE mv.user_id = u.id);
 
 -- =============================================================================
--- 5. SUMMARY
+-- 5. TRAINING COMPONENTS - Strength and cardio programs
 -- =============================================================================
-SELECT COUNT(*) AS total_measurement_types  FROM measurement_types;
-SELECT COUNT(*) AS total_objectives         FROM objectives;
-SELECT COUNT(*) AS total_plans              FROM plans;
-SELECT COUNT(*) AS total_measurement_values FROM measurement_values;
+INSERT INTO training_components (plan_id, focus, intensity, frequency_per_week, created_at, updated_at)
+SELECT p.id, 'Cardio', 'Moderate', 3, NOW(), NOW()
+FROM   plans p
+WHERE  p.name = 'Weight Loss Plan'
+  AND  NOT EXISTS (SELECT 1 FROM training_components tc WHERE tc.plan_id = p.id);
 
-SELECT 'Measurement Types:' AS info;
-SELECT id, name, unit FROM measurement_types ORDER BY id;
+INSERT INTO training_components (plan_id, focus, intensity, frequency_per_week, created_at, updated_at)
+SELECT p.id, 'Strength', 'High', 4, NOW(), NOW()
+FROM   plans p
+WHERE  p.name = 'Muscle Building Plan'
+  AND  NOT EXISTS (SELECT 1 FROM training_components tc WHERE tc.plan_id = p.id);
+
+INSERT INTO training_components (plan_id, focus, intensity, frequency_per_week, created_at, updated_at)
+SELECT p.id, 'Mixed', 'Moderate', 4, NOW(), NOW()
+FROM   plans p
+WHERE  p.name = 'Fitness Foundation Plan'
+  AND  NOT EXISTS (SELECT 1 FROM training_components tc WHERE tc.plan_id = p.id);
+
+-- =============================================================================
+-- 6. DIET COMPONENTS - Nutrition programs
+-- =============================================================================
+INSERT INTO diet_components (plan_id, diet_type, daily_calories, macro_distribution, created_at, updated_at)
+SELECT p.id, 'Calorie Deficit', 2200, 'Protein:30%, Carbs:40%, Fat:30%', NOW(), NOW()
+FROM   plans p
+WHERE  p.name = 'Weight Loss Plan'
+  AND  NOT EXISTS (SELECT 1 FROM diet_components dc WHERE dc.plan_id = p.id);
+
+INSERT INTO diet_components (plan_id, diet_type, daily_calories, macro_distribution, created_at, updated_at)
+SELECT p.id, 'High Protein', 2800, 'Protein:40%, Carbs:40%, Fat:20%', NOW(), NOW()
+FROM   plans p
+WHERE  p.name = 'Muscle Building Plan'
+  AND  NOT EXISTS (SELECT 1 FROM diet_components dc WHERE dc.plan_id = p.id);
+
+INSERT INTO diet_components (plan_id, diet_type, daily_calories, macro_distribution, created_at, updated_at)
+SELECT p.id, 'Balanced', 2400, 'Protein:30%, Carbs:45%, Fat:25%', NOW(), NOW()
+FROM   plans p
+WHERE  p.name = 'Fitness Foundation Plan'
+  AND  NOT EXISTS (SELECT 1 FROM diet_components dc WHERE dc.plan_id = p.id);
+
+-- =============================================================================
+-- 7. DIET LOGS - Daily nutrition tracking
+-- =============================================================================
+INSERT INTO diet_logs (user_id, diet_component_id, log_date, meal, food_items, calories, macros, notes, created_at, updated_at)
+SELECT u.id,
+       (SELECT dc.id FROM diet_components dc WHERE dc.plan_id = (SELECT id FROM plans WHERE user_id = u.id LIMIT 1) LIMIT 1),
+       NOW()::DATE, 'Breakfast', 'Eggs, toast, orange juice', 500.0, 'Protein: 20g, Carbs: 60g, Fat: 15g', 'Morning meal', NOW(), NOW()
+FROM   auth_schema.users u
+WHERE  u.email = 'john.doe@example.com'
+  AND  NOT EXISTS (SELECT 1 FROM diet_logs dl WHERE dl.user_id = u.id AND dl.log_date = NOW()::DATE);
+
+-- Reset path
+SET search_path TO public;

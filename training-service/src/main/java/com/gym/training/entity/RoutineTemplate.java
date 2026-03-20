@@ -19,10 +19,10 @@ public class RoutineTemplate {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, length = 1000)
+    @Column(length = 1000)
     private String description;
 
-    @Column(nullable = false)
+    @Column
     private Long createdBy;
 
     @Enumerated(EnumType.STRING)

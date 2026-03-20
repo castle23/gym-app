@@ -17,6 +17,7 @@ import com.gym.notification.repository.NotificationRepository;
 import com.gym.notification.repository.PushTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,13 +31,22 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @Slf4j
-@RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
-    private final FirebaseMessaging firebaseMessaging;
     private final NotificationPreferenceRepository notificationPreferenceRepository;
     private final PushTokenRepository pushTokenRepository;
+
+    @Autowired(required = false)
+    private FirebaseMessaging firebaseMessaging;
+
+    public NotificationService(NotificationRepository notificationRepository,
+                               NotificationPreferenceRepository notificationPreferenceRepository,
+                               PushTokenRepository pushTokenRepository) {
+        this.notificationRepository = notificationRepository;
+        this.notificationPreferenceRepository = notificationPreferenceRepository;
+        this.pushTokenRepository = pushTokenRepository;
+    }
 
     /**
      * Sends a notification to a user's active push tokens.
@@ -50,6 +60,21 @@ public class NotificationService {
         // Validate input
         if (request.getUserId() == null) {
             throw new InvalidDataException("User ID is required");
+        }
+
+        // Check if Firebase is available
+        if (firebaseMessaging == null) {
+            log.warn("Firebase is not configured. Saving notification without push notification.");
+            Notification notification = Notification.builder()
+                    .userId(request.getUserId())
+                    .title(request.getTitle())
+                    .body(request.getBody())
+                    .type(request.getType())
+                    .isRead(false)
+                    .sentAt(LocalDateTime.now())
+                    .build();
+            Notification savedNotification = notificationRepository.save(notification);
+            return buildNotificationResponse(savedNotification);
         }
 
         // Find active push tokens for user

@@ -1,13 +1,11 @@
 package com.gym.training.repository;
 
-import com.gym.training.config.TestContainerConfig;
 import com.gym.training.entity.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +18,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import(TestContainerConfig.class)
 @ActiveProfiles("test")
 class ExerciseRepositoryTest {
     

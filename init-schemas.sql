@@ -90,12 +90,18 @@ CREATE TABLE IF NOT EXISTS exercises (
 
 CREATE TABLE IF NOT EXISTS routine_templates (
     id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
+    name        VARCHAR(255) NOT NULL UNIQUE,
     description TEXT         NOT NULL,
     created_by  BIGINT       NOT NULL,
     type        VARCHAR(20)  NOT NULL CHECK (type IN ('SYSTEM','PROFESSIONAL','USER')),
     created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS routine_template_exercises (
+    template_id BIGINT NOT NULL REFERENCES routine_templates(id) ON DELETE CASCADE,
+    exercise_id BIGINT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    PRIMARY KEY (template_id, exercise_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_routines (
@@ -105,6 +111,8 @@ CREATE TABLE IF NOT EXISTS user_routines (
     name        VARCHAR(255) NOT NULL,
     description TEXT         NOT NULL,
     is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
+    start_date  TIMESTAMP    NOT NULL,
+    end_date    TIMESTAMP,
     created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMP    NOT NULL DEFAULT NOW()
 );
@@ -141,9 +149,10 @@ SET search_path TO tracking_schema;
 CREATE TABLE IF NOT EXISTS objectives (
     id          BIGSERIAL    PRIMARY KEY,
     user_id     BIGINT       NOT NULL,
-    type        VARCHAR(30)  NOT NULL CHECK (type IN ('WEIGHT_LOSS','MUSCLE_GAIN','STRENGTH','ENDURANCE','FLEXIBILITY','GENERAL_FITNESS','OTHER')),
-    description VARCHAR(500) NOT NULL,
-    target_date TIMESTAMP    NOT NULL,
+    title       VARCHAR(500) NOT NULL,
+    description TEXT         NOT NULL,
+    category    VARCHAR(100) NOT NULL,
+    is_active   BOOLEAN      NOT NULL,
     created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMP    NOT NULL DEFAULT NOW()
 );
@@ -164,22 +173,21 @@ CREATE TABLE IF NOT EXISTS plans (
 CREATE TABLE IF NOT EXISTS training_components (
     id                  BIGSERIAL PRIMARY KEY,
     plan_id             BIGINT    NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
-    training_template_id BIGINT   NOT NULL,
-    professional_id     BIGINT,
-    is_custom           BOOLEAN   NOT NULL DEFAULT FALSE,
+    focus               VARCHAR(100) NOT NULL,
+    intensity           VARCHAR(100) NOT NULL,
+    frequency_per_week  INTEGER   NOT NULL,
     created_at          TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS diet_components (
-    id               BIGSERIAL PRIMARY KEY,
-    plan_id          BIGINT    NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
-    diet_template_id BIGINT    NOT NULL,
-    professional_id  BIGINT,
-    is_custom        BOOLEAN   NOT NULL DEFAULT FALSE,
-    calorie_goal     INTEGER   NOT NULL,
-    created_at       TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at       TIMESTAMP NOT NULL DEFAULT NOW()
+    id                   BIGSERIAL PRIMARY KEY,
+    plan_id              BIGINT    NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+    diet_type            VARCHAR(100) NOT NULL,
+    daily_calories       INTEGER   NOT NULL,
+    macro_distribution   TEXT      NOT NULL,
+    created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at           TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS recommendations (
@@ -187,26 +195,28 @@ CREATE TABLE IF NOT EXISTS recommendations (
     user_id               BIGINT    NOT NULL,
     training_component_id BIGINT    REFERENCES training_components(id) ON DELETE CASCADE,
     diet_component_id     BIGINT    REFERENCES diet_components(id) ON DELETE CASCADE,
-    content               TEXT      NOT NULL,
+    title                 VARCHAR(255) NOT NULL,
+    description           TEXT      NOT NULL,
+    professional_name     VARCHAR(255) NOT NULL,
     created_at            TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS measurement_types (
     id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL UNIQUE,
+    type        VARCHAR(100) NOT NULL,
     unit        VARCHAR(50)  NOT NULL,
-    min_value   NUMERIC(10,2),
-    max_value   NUMERIC(10,2),
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+    is_system   BOOLEAN,
+    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS measurement_values (
     id                  BIGSERIAL    PRIMARY KEY,
     user_id             BIGINT       NOT NULL,
     measurement_type_id BIGINT       NOT NULL REFERENCES measurement_types(id),
-    value               NUMERIC(10,2) NOT NULL,
+    value               DOUBLE PRECISION NOT NULL,
+    measurement_date    DATE         NOT NULL,
     notes               TEXT,
-    recorded_at         TIMESTAMP    NOT NULL,
     created_at          TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
@@ -217,7 +227,7 @@ CREATE TABLE IF NOT EXISTS diet_logs (
     log_date          DATE         NOT NULL,
     meal              VARCHAR(100) NOT NULL,
     food_items        TEXT         NOT NULL,
-    calories          NUMERIC(8,2) NOT NULL,
+    calories          DOUBLE PRECISION NOT NULL,
     macros            TEXT,
     notes             TEXT,
     created_at        TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -231,7 +241,7 @@ CREATE INDEX IF NOT EXISTS idx_training_comp_plan     ON training_components(pla
 CREATE INDEX IF NOT EXISTS idx_diet_comp_plan         ON diet_components(plan_id);
 CREATE INDEX IF NOT EXISTS idx_recommendations_user   ON recommendations(user_id);
 CREATE INDEX IF NOT EXISTS idx_measurements_user      ON measurement_values(user_id);
-CREATE INDEX IF NOT EXISTS idx_measurements_date      ON measurement_values(user_id, recorded_at);
+CREATE INDEX IF NOT EXISTS idx_measurements_date      ON measurement_values(user_id, measurement_date);
 CREATE INDEX IF NOT EXISTS idx_diet_logs_user         ON diet_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_diet_logs_date         ON diet_logs(user_id, log_date);
 

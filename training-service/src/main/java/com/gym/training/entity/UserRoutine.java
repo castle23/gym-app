@@ -22,10 +22,10 @@ public class UserRoutine {
     @JoinColumn(name = "template_id")
     private RoutineTemplate routineTemplate;
 
-    @Column(nullable = false)
+    @Column
     private String name;
 
-    @Column(nullable = false, length = 1000)
+    @Column(length = 1000)
     private String description;
 
     @Column(nullable = false)

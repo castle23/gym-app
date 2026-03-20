@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.Nullable;
 
+import javax.annotation.PostConstruct;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -21,7 +22,7 @@ public class FirebaseConfig {
      * Initializes Firebase Admin SDK for Cloud Messaging.
      * Handles graceful degradation if credentials are not found (useful for development/testing).
      */
-    @Bean
+    @PostConstruct
     public void initializeFirebase() {
         try {
             // Check if Firebase app is already initialized

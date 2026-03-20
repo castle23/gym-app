@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,7 +46,9 @@ public class ExerciseSessionService {
      */
     public PageResponse<ExerciseSessionDTO> getSessionsByUserIdAndDate(Long userId, LocalDate date, Pageable pageable) {
         log.info("Fetching sessions for user: {} on date: {} with pagination", userId, date);
-        Page<ExerciseSession> page = exerciseSessionRepository.findByUserIdAndDate(userId, date, pageable);
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+        Page<ExerciseSession> page = exerciseSessionRepository.findByUserIdAndDate(userId, startOfDay, endOfDay, pageable);
         return PageResponse.of(page.map(this::toDTO));
     }
     
@@ -85,7 +88,7 @@ public class ExerciseSessionService {
                 .exercise(exercise)
                 .setsCompleted(request.getSets() != null ? request.getSets() : 0)
                 .repsCompleted(request.getReps() != null ? request.getReps() : 0)
-                .weightUsed(request.getWeight())
+                .weightUsed(request.getWeight() != null ? BigDecimal.valueOf(request.getWeight()) : null)
                 .durationSeconds(request.getDuration() != null ? (long) request.getDuration() : null)
                 .notes(request.getNotes())
                 .sessionDate(sessionDate)
@@ -113,7 +116,7 @@ public class ExerciseSessionService {
             session.setRepsCompleted(request.getReps());
         }
         if (request.getWeight() != null) {
-            session.setWeightUsed(request.getWeight());
+            session.setWeightUsed(BigDecimal.valueOf(request.getWeight()));
         }
         if (request.getDuration() != null) {
             session.setDurationSeconds((long) request.getDuration());
@@ -152,7 +155,7 @@ public class ExerciseSessionService {
                 .exerciseName(session.getExercise().getName())
                 .sets(session.getSetsCompleted())
                 .reps(session.getRepsCompleted())
-                .weight(session.getWeightUsed())
+                .weight(session.getWeightUsed() != null ? session.getWeightUsed().doubleValue() : null)
                 .duration(session.getDurationSeconds() != null ? session.getDurationSeconds().intValue() : null)
                 .notes(session.getNotes())
                 .sessionDate(session.getSessionDate())

@@ -102,7 +102,7 @@ class PlanControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value("Plan not found or unauthorized"))
+                .andExpect(jsonPath("$.message").value("Plan not found: 999"))
                 .andDo(print());
     }
     

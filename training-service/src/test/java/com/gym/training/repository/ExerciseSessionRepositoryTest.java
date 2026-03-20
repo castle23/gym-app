@@ -1,15 +1,14 @@
 package com.gym.training.repository;
 
-import com.gym.training.config.TestContainerConfig;
 import com.gym.training.entity.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,7 +20,6 @@ import org.springframework.data.domain.Pageable;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import(TestContainerConfig.class)
 @ActiveProfiles("test")
 class ExerciseSessionRepositoryTest {
     
@@ -96,7 +94,7 @@ class ExerciseSessionRepositoryTest {
                 .exercise(exercise)
                 .setsCompleted(3)
                 .repsCompleted(10)
-                .weightUsed(100.0)
+                .weightUsed(new BigDecimal("100.00"))
                 .durationSeconds(600L)
                 .notes("Good form")
                 .sessionDate(LocalDateTime.now())
@@ -127,8 +125,9 @@ class ExerciseSessionRepositoryTest {
     
     @Test
     void testFindByUserIdAndDate() {
-        LocalDate today = LocalDate.now();
-        List<ExerciseSession> result = exerciseSessionRepository.findByUserIdAndDate(1L, today, pageable).getContent();
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().plusDays(1).atStartOfDay();
+        List<ExerciseSession> result = exerciseSessionRepository.findByUserIdAndDate(1L, startOfDay, endOfDay, pageable).getContent();
         
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -137,8 +136,9 @@ class ExerciseSessionRepositoryTest {
     
     @Test
     void testFindByUserIdAndDateDifferentDate() {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        List<ExerciseSession> result = exerciseSessionRepository.findByUserIdAndDate(1L, tomorrow, pageable).getContent();
+        LocalDateTime startOfDay = LocalDate.now().plusDays(1).atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().plusDays(2).atStartOfDay();
+        List<ExerciseSession> result = exerciseSessionRepository.findByUserIdAndDate(1L, startOfDay, endOfDay, pageable).getContent();
         
         assertNotNull(result);
         assertTrue(result.isEmpty());

@@ -2,6 +2,7 @@ package com.gym.training.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,8 +33,8 @@ public class ExerciseSession {
     @Column(nullable = false)
     private Integer repsCompleted;
 
-    @Column
-    private Double weightUsed;
+    @Column(precision = 7, scale = 2)
+    private BigDecimal weightUsed;
 
     @Column
     private Long durationSeconds;
@@ -47,8 +48,17 @@ public class ExerciseSession {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

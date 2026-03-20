@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -87,7 +88,7 @@ class ExerciseSessionServiceTest {
                 .exercise(exercise)
                 .setsCompleted(3)
                 .repsCompleted(10)
-                .weightUsed(100.0)
+                .weightUsed(new BigDecimal("100.00"))
                 .durationSeconds(600L)
                 .notes("Good form")
                 .sessionDate(LocalDateTime.now())
@@ -123,7 +124,7 @@ class ExerciseSessionServiceTest {
     @Test
     void testGetSessionsByUserIdAndDate() {
         LocalDate date = LocalDate.now();
-        when(exerciseSessionRepository.findByUserIdAndDate(1L, date, pageable))
+        when(exerciseSessionRepository.findByUserIdAndDate(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(session)));
         
         List<ExerciseSessionDTO> result = exerciseSessionService.getSessionsByUserIdAndDate(1L, date, pageable).getData();
@@ -240,7 +241,7 @@ class ExerciseSessionServiceTest {
                 .exercise(exercise)
                 .setsCompleted(4)
                 .repsCompleted(12)
-                .weightUsed(110.0)
+                .weightUsed(new BigDecimal("110.00"))
                 .notes("Improved form")
                 .sessionDate(session.getSessionDate())
                 .createdAt(session.getCreatedAt())

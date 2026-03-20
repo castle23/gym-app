@@ -29,7 +29,7 @@ public class Exercise {
     @Column(nullable = false)
     private ExerciseType type;
 
-    @Column(nullable = false)
+    @Column
     private Long createdBy;
 
     @Column(nullable = false)

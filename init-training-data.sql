@@ -192,39 +192,39 @@ ON CONFLICT (name) DO NOTHING;
 -- =============================================================================
 -- 3. ROUTINE TEMPLATES - Pre-designed training routines for users
 -- =============================================================================
-INSERT INTO routine_templates (name, description, type, created_at, updated_at)
+INSERT INTO routine_templates (name, description, created_by, type, created_at, updated_at)
 VALUES 
     ('Beginner Full Body', 
      'Full body routine 3 days per week. Ideal for beginners learning proper form. Focuses on compound movements.',
-     'SYSTEM', NOW(), NOW()),
+     1, 'SYSTEM', NOW(), NOW()),
     
     ('Upper/Lower Split', 
      '4-day split routine alternating upper body and lower body workouts. Intermediate level.',
-     'SYSTEM', NOW(), NOW()),
+     1, 'SYSTEM', NOW(), NOW()),
     
     ('Push/Pull/Legs (PPL)', 
      '6-day split routine. Push day (chest, shoulders, triceps), Pull day (back, biceps), Legs day.',
-     'SYSTEM', NOW(), NOW()),
+     1, 'SYSTEM', NOW(), NOW()),
     
     ('Strength Focus', 
      'Heavy compound focus with 4 days per week. Emphasis on progressive overload and strength gains.',
-     'SYSTEM', NOW(), NOW()),
+     1, 'SYSTEM', NOW(), NOW()),
     
     ('Hypertrophy Focus', 
      '5-day high-volume routine designed for muscle growth. Includes compound and isolation exercises.',
-     'SYSTEM', NOW(), NOW()),
+     1, 'SYSTEM', NOW(), NOW()),
     
     ('Cardio & Core', 
      '3-day routine focusing on cardiovascular fitness and core strength. Low intensity for beginners.',
-     'SYSTEM', NOW(), NOW()),
+     1, 'SYSTEM', NOW(), NOW()),
     
     ('CrossFit Inspired', 
      'High-intensity functional fitness routine combining strength, power, and conditioning.',
-     'SYSTEM', NOW(), NOW()),
+     1, 'SYSTEM', NOW(), NOW()),
     
     ('Endurance Training', 
      'Marathon and distance running preparation routine with varied intensities.',
-     'SYSTEM', NOW(), NOW())
+     1, 'SYSTEM', NOW(), NOW())
 ON CONFLICT (name) DO NOTHING;
 
 -- =============================================================================
