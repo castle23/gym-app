@@ -5,6 +5,11 @@ import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.ExerciseSessionDTO;
 import com.gym.training.dto.ExerciseSessionRequestDTO;
 import com.gym.training.service.ExerciseSessionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +38,9 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/exercise-sessions")
+@RequestMapping("/api/v1/sessions")
 @RequiredArgsConstructor
+@Tag(name = "Exercise Sessions", description = "Workout logging and exercise session management")
 public class ExerciseSessionController {
     
     private final ExerciseSessionService exerciseSessionService;

@@ -5,6 +5,11 @@ import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.ExerciseDTO;
 import com.gym.training.dto.ExerciseRequestDTO;
 import com.gym.training.service.ExerciseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +37,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/v1/exercises")
 @RequiredArgsConstructor
+@Tag(name = "Exercises", description = "Exercise CRUD operations and system exercise management")
 public class ExerciseController {
     
     private final ExerciseService exerciseService;
@@ -43,6 +49,11 @@ public class ExerciseController {
      * Example: GET /api/v1/exercises/system?page=0&size=20&sort=name,asc
      */
     @GetMapping("/system")
+    @Operation(summary = "List all system exercises", description = "Retrieves all pre-defined system exercises with pagination support")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "System exercises retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid pagination parameters")
+    })
     public ResponseEntity<PageResponse<ExerciseDTO>> getAllSystemExercises(
             @PageableDefault(size = 20, page = 0, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
@@ -59,6 +70,11 @@ public class ExerciseController {
      * Example: GET /api/v1/exercises/discipline/1?page=0&size=20
      */
     @GetMapping("/discipline/{disciplineId}")
+    @Operation(summary = "Get exercises by discipline", description = "Retrieves exercises filtered by discipline ID with pagination")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercises retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Discipline not found")
+    })
     public ResponseEntity<?> getExercisesByDiscipline(
             @PathVariable Long disciplineId,
             @PageableDefault(size = 20, page = 0, sort = "name", direction = Sort.Direction.ASC)
@@ -86,6 +102,12 @@ public class ExerciseController {
      * Example: GET /api/v1/exercises/my-exercises?page=0&size=20
      */
     @GetMapping("/my-exercises")
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(summary = "Get user's custom exercises", description = "Retrieves exercises created by the authenticated user with pagination (requires authentication)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User exercises retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+    })
     public ResponseEntity<PageResponse<ExerciseDTO>> getUserExercises(
             @RequestHeader("X-User-Id") Long userId,
             @PageableDefault(size = 20, page = 0, sort = "createdAt", direction = Sort.Direction.DESC)
@@ -102,6 +124,11 @@ public class ExerciseController {
      * Example: GET /api/v1/exercises/1
      */
     @GetMapping("/{id}")
+    @Operation(summary = "Get exercise by ID", description = "Retrieves a single exercise by its unique ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Exercise not found")
+    })
     public ResponseEntity<?> getExerciseById(@PathVariable Long id) {
         log.info("GET /api/v1/exercises/{} - Fetch exercise by ID", id);
         
@@ -134,6 +161,13 @@ public class ExerciseController {
      * }
      */
     @PostMapping
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(summary = "Create a new custom exercise", description = "Creates a new user-specific exercise (requires authentication)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Exercise created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid exercise data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+    })
     public ResponseEntity<?> createExercise(
             @Valid @RequestBody ExerciseRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -160,6 +194,15 @@ public class ExerciseController {
      * Only the creator of an exercise can update it
      */
     @PutMapping("/{id}")
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(summary = "Update an exercise", description = "Updates an existing exercise (requires authentication and owner permissions)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid exercise data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - not the exercise owner"),
+            @ApiResponse(responseCode = "404", description = "Exercise not found")
+    })
     public ResponseEntity<?> updateExercise(
             @PathVariable Long id,
             @Valid @RequestBody ExerciseRequestDTO request,
@@ -197,6 +240,14 @@ public class ExerciseController {
      * Only the creator of an exercise can delete it
      */
     @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(summary = "Delete an exercise", description = "Deletes an existing exercise (requires authentication and owner permissions)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Exercise deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - not the exercise owner"),
+            @ApiResponse(responseCode = "404", description = "Exercise not found")
+    })
     public ResponseEntity<?> deleteExercise(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
