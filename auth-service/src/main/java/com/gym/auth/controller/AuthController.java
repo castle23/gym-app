@@ -7,6 +7,11 @@ import com.gym.auth.dto.RefreshTokenRequest;
 import com.gym.auth.dto.TokenRefreshResponse;
 import com.gym.auth.dto.VerifyEmailRequest;
 import com.gym.auth.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -20,11 +25,20 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "User authentication, registration, and JWT token management")
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping("/register")
+    @Operation(
+            summary = "Register a new user",
+            description = "Creates a new user account with the provided credentials and sends verification email"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "User registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data or duplicate email")
+    })
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
         log.info("Registration attempt for email: {}", request.getEmail());
         AuthResponse response = authService.register(request);
@@ -32,6 +46,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(
+            summary = "User login",
+            description = "Authenticates user with email and password, returns JWT access and refresh tokens"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful, tokens returned"),
+            @ApiResponse(responseCode = "400", description = "Invalid credentials or account not verified")
+    })
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         log.info("Login attempt for email: {}", request.getEmail());
         AuthResponse response = authService.login(request);
@@ -39,6 +61,14 @@ public class AuthController {
     }
 
     @PostMapping("/verify")
+    @Operation(
+            summary = "Verify email address",
+            description = "Verifies user email using the verification code sent to their email address"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Email verified successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid or expired verification code")
+    })
     public ResponseEntity<AuthResponse> verify(@RequestBody VerifyEmailRequest request) {
         log.info("Verification attempt for email: {}", request.getEmail());
         AuthResponse response = authService.verifyEmail(request);
@@ -47,6 +77,15 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @PreAuthorize("hasAnyRole('USER', 'PROFESSIONAL', 'ADMIN')")
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(
+            summary = "Refresh access token",
+            description = "Uses refresh token to obtain a new access token (requires authentication)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
+    })
     public ResponseEntity<TokenRefreshResponse> refresh(@RequestBody RefreshTokenRequest request) {
         log.info("Token refresh attempt");
         TokenRefreshResponse response = authService.refreshToken(request);
@@ -59,6 +98,15 @@ public class AuthController {
 
     @GetMapping("/profile")
     @PreAuthorize("hasAnyRole('USER', 'PROFESSIONAL', 'ADMIN')")
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(
+            summary = "Get user profile",
+            description = "Retrieves the authenticated user's profile information (requires authentication)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Profile retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - token missing or invalid")
+    })
     public ResponseEntity<AuthResponse> getProfile() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String userId = auth != null ? auth.getName() : "unknown";
@@ -72,6 +120,8 @@ public class AuthController {
     }
 
     @GetMapping("/health")
+    @Operation(summary = "Health check", description = "Verifies that the Auth Service is running and healthy")
+    @ApiResponse(responseCode = "200", description = "Service is healthy")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("Auth Service is running");
     }
