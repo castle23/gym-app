@@ -10,5 +10,5 @@ import java.util.Optional;
 @Repository
 public interface MeasurementTypeRepository extends JpaRepository<MeasurementType, Long> {
     List<MeasurementType> findByType(String type);
-    Optional<MeasurementType> findByTypeAndSystemType(String type, Boolean isSystem);
+    Optional<MeasurementType> findByTypeAndIsSystem(String type, Boolean isSystem);
 }

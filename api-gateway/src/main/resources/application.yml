@@ -1,36 +1,41 @@
 spring:
   application:
     name: api-gateway
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
   cloud:
     gateway:
       routes:
         - id: auth-service
           uri: http://auth-service:8081
           predicates:
-            - Path=/api/v1/auth/**
+            - Path=/auth/**
           filters:
-            - RewritePath=/api/v1/auth(?<segment>/?.*), /auth$\{segment}
+            - RewritePath=/auth(?<segment>/?.*), /auth$\{segment}
 
         - id: training-service
           uri: http://training-service:8082
           predicates:
-            - Path=/api/v1/training/**
+            - Path=/training/**
           filters:
-            - RewritePath=/api/v1/training(?<segment>/?.*), /training$\{segment}
+            - RewritePath=/training(?<segment>/?.*), /training$\{segment}
 
         - id: tracking-service
           uri: http://tracking-service:8083
           predicates:
-            - Path=/api/v1/tracking/**
+            - Path=/tracking/**
           filters:
-            - RewritePath=/api/v1/tracking(?<segment>/?.*), /tracking$\{segment}
+            - RewritePath=/tracking(?<segment>/?.*), /tracking$\{segment}
 
         - id: notification-service
           uri: http://notification-service:8084
           predicates:
-            - Path=/api/v1/notifications/**
+            - Path=/notifications/**
           filters:
-            - RewritePath=/api/v1/notifications(?<segment>/?.*), /notifications$\{segment}
+            - RewritePath=/notifications(?<segment>/?.*), /notifications$\{segment}
 
       global-filters:
         - name: TraceIdFilter

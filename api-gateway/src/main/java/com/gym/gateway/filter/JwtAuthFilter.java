@@ -27,9 +27,16 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     private static final String USER_ROLES_HEADER = "X-User-Roles";
 
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/v1/auth/register",
-            "/api/v1/auth/login",
-            "/api/v1/auth/verify",
+            "/auth/register",
+            "/auth/login",
+            "/auth/verify",
+            "/training/api/v1/exercises/system",
+            "/training/api/v1/disciplines",
+            "/tracking/api/v1/objectives",
+            "/tracking/api/v1/plans",
+            "/tracking/api/v1/measurements",
+            "/tracking/api/v1/diet-logs",
+            "/notifications/api/v1/notifications",
             "/health",
             "/actuator"
     );
