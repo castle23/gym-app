@@ -5,6 +5,11 @@ import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.UserRoutineDTO;
 import com.gym.training.dto.UserRoutineRequestDTO;
 import com.gym.training.service.UserRoutineService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +39,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/v1/user-routines")
 @RequiredArgsConstructor
+@Tag(name = "User Routines", description = "User routine assignment and management")
 public class UserRoutineController {
     
     private final UserRoutineService userRoutineService;

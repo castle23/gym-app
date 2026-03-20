@@ -5,6 +5,11 @@ import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.RoutineTemplateDTO;
 import com.gym.training.dto.RoutineTemplateRequestDTO;
 import com.gym.training.service.RoutineTemplateService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +35,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/v1/routine-templates")
 @RequiredArgsConstructor
+@Tag(name = "Routine Templates", description = "Routine template CRUD operations and template management")
 public class RoutineTemplateController {
     
     private final RoutineTemplateService routineTemplateService;

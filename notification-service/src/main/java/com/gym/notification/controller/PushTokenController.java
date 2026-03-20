@@ -8,6 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -16,6 +21,7 @@ import java.util.List;
 @RequestMapping("/api/v1/push-tokens")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Push Tokens", description = "Push notification device token management")
 public class PushTokenController {
 
     private final PushTokenService pushTokenService;

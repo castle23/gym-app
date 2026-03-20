@@ -10,6 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +33,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/objectives")
 @RequiredArgsConstructor
+@Tag(name = "Objectives", description = "User fitness goal and objective management")
 public class ObjectiveController {
     
     private final ObjectiveService objectiveService;
