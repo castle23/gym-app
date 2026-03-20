@@ -2,6 +2,7 @@ package com.gym.auth.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -11,6 +12,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Bean
@@ -27,7 +29,8 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
             .authorizeHttpRequests()
-                .anyRequest().permitAll()
+                .requestMatchers("/auth/register", "/auth/login", "/auth/verify", "/auth/health").permitAll()
+                .anyRequest().authenticated()
                 .and()
             .httpBasic();
         

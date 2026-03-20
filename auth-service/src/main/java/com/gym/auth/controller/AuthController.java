@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -43,6 +46,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @PreAuthorize("hasAnyRole('USER', 'PROFESSIONAL', 'ADMIN')")
     public ResponseEntity<TokenRefreshResponse> refresh(@RequestBody RefreshTokenRequest request) {
         log.info("Token refresh attempt");
         TokenRefreshResponse response = authService.refreshToken(request);
@@ -51,6 +55,20 @@ public class AuthController {
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
+    }
+
+    @GetMapping("/profile")
+    @PreAuthorize("hasAnyRole('USER', 'PROFESSIONAL', 'ADMIN')")
+    public ResponseEntity<AuthResponse> getProfile() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = auth != null ? auth.getName() : "unknown";
+        
+        log.info("Profile request for user: {}", userId);
+        return ResponseEntity.ok(AuthResponse.builder()
+                .userId(userId)
+                .message("Profile retrieved")
+                .success(true)
+                .build());
     }
 
     @GetMapping("/health")
