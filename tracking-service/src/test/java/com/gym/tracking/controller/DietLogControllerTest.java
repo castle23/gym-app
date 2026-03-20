@@ -1,6 +1,7 @@
 package com.gym.tracking.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gym.tracking.config.TestSecurityConfig;
 import com.gym.tracking.dto.DietLogDTO;
 import com.gym.tracking.dto.DietLogRequestDTO;
 import com.gym.tracking.service.DietLogService;
@@ -9,7 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -23,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(DietLogController.class)
+@Import(TestSecurityConfig.class)
+@ActiveProfiles("test")
 class DietLogControllerTest {
     
     @Autowired

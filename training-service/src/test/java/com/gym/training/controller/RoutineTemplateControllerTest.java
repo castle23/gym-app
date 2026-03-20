@@ -2,6 +2,7 @@ package com.gym.training.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gym.common.dto.PageResponse;
+import com.gym.training.config.TestSecurityConfig;
 import com.gym.training.dto.RoutineTemplateDTO;
 import com.gym.training.dto.RoutineTemplateRequestDTO;
 import com.gym.training.entity.RoutineTemplate;
@@ -12,11 +13,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -29,6 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RoutineTemplateController.class)
+@Import(TestSecurityConfig.class)
+@ActiveProfiles("test")
 class RoutineTemplateControllerTest {
     
     @Autowired

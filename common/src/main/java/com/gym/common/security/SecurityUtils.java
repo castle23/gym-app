@@ -1,6 +1,5 @@
 package com.gym.common.security;
 
-import org.springframework.security.access.AccessDeniedException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,13 +33,13 @@ public class SecurityUtils {
 
     public static void requireRole(String role) {
         if (!hasRole(role)) {
-            throw new AccessDeniedException("User does not have required role: " + role);
+            throw new RuntimeException("User does not have required role: " + role);
         }
     }
 
     public static void requireAnyRole(String... roles) {
         if (!hasAnyRole(roles)) {
-            throw new AccessDeniedException("User does not have any of required roles");
+            throw new RuntimeException("User does not have any of required roles");
         }
     }
 }
