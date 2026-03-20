@@ -44,8 +44,16 @@ public class DietLogController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getDietLogById(
+     @GetMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get diet log by ID", description = "Retrieves a diet log by ID (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Diet log retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the log owner"),
+             @ApiResponse(responseCode = "404", description = "Diet log not found")
+     })
+     public ResponseEntity<?> getDietLogById(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/diet-logs/{} - Fetch diet log for user: {}", id, userId);
@@ -79,8 +87,14 @@ public class DietLogController {
      * 
      * Requires: X-User-Id header
      */
-    @GetMapping
-    public ResponseEntity<List<DietLogDTO>> getUserDietLogs(
+     @GetMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get all user diet logs", description = "Retrieves all diet logs for the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Diet logs retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<List<DietLogDTO>> getUserDietLogs(
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/diet-logs - Fetch all diet logs for user: {}", userId);
         
@@ -93,8 +107,15 @@ public class DietLogController {
      * 
      * Requires: X-User-Id header
      */
-    @GetMapping("/date/{date}")
-    public ResponseEntity<?> getDietLogsByDate(
+     @GetMapping("/date/{date}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get diet logs by date", description = "Retrieves diet logs for a specific date (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Diet logs retrieved successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid date format (use YYYY-MM-DD)"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> getDietLogsByDate(
             @PathVariable String date,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/diet-logs/date/{} - Fetch diet logs for user: {} on date: {}", date, userId, date);
@@ -118,8 +139,15 @@ public class DietLogController {
      * 
      * Requires: X-User-Id header
      */
-    @PostMapping
-    public ResponseEntity<?> createDietLog(
+     @PostMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Create a new diet log", description = "Creates a new diet log entry (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Diet log created successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid diet log data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> createDietLog(
             @Valid @RequestBody DietLogRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("POST /api/v1/diet-logs - Create diet log for user: {}", userId);
@@ -143,8 +171,17 @@ public class DietLogController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateDietLog(
+     @PutMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Update a diet log", description = "Updates an existing diet log (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Diet log updated successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid diet log data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the log owner"),
+             @ApiResponse(responseCode = "404", description = "Diet log not found")
+     })
+     public ResponseEntity<?> updateDietLog(
             @PathVariable Long id,
             @Valid @RequestBody DietLogRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -179,8 +216,16 @@ public class DietLogController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteDietLog(
+     @DeleteMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Delete a diet log", description = "Deletes an existing diet log (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "204", description = "Diet log deleted successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the log owner"),
+             @ApiResponse(responseCode = "404", description = "Diet log not found")
+     })
+     public ResponseEntity<?> deleteDietLog(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("DELETE /api/v1/diet-logs/{} - Delete diet log for user: {}", id, userId);
