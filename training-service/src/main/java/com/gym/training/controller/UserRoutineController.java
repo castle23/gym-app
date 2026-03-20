@@ -51,8 +51,14 @@ public class UserRoutineController {
      * Default pagination: page=0, size=20
      * Example: GET /api/v1/user-routines/active?page=0&size=20&sort=startDate,desc
      */
-    @GetMapping("/active")
-    public ResponseEntity<PageResponse<UserRoutineDTO>> getActiveRoutines(
+     @GetMapping("/active")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get user's active routines", description = "Retrieves all active routines for the authenticated user with pagination (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Active routines retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<PageResponse<UserRoutineDTO>> getActiveRoutines(
             @RequestHeader("X-User-Id") Long userId,
             @PageableDefault(size = 20, page = 0, sort = "startDate", direction = Sort.Direction.DESC)
             Pageable pageable) {
@@ -69,8 +75,14 @@ public class UserRoutineController {
      * Default pagination: page=0, size=20
      * Example: GET /api/v1/user-routines?page=0&size=20&sort=createdAt,desc
      */
-    @GetMapping
-    public ResponseEntity<PageResponse<UserRoutineDTO>> getAllRoutines(
+     @GetMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get all user routines", description = "Retrieves all routines (active and inactive) for the authenticated user with pagination (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Routines retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<PageResponse<UserRoutineDTO>> getAllRoutines(
             @RequestHeader("X-User-Id") Long userId,
             @PageableDefault(size = 20, page = 0, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
@@ -86,8 +98,15 @@ public class UserRoutineController {
      * Requires: X-User-Id header
      * Example: GET /api/v1/user-routines/1
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getRoutineById(
+     @GetMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get user routine by ID", description = "Retrieves a single routine by ID (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Routine retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "404", description = "Routine not found")
+     })
+     public ResponseEntity<?> getRoutineById(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/user-routines/{} - Fetch routine for user: {}", id, userId);
@@ -118,8 +137,15 @@ public class UserRoutineController {
      *   "isActive": true
      * }
      */
-    @PostMapping("/assign")
-    public ResponseEntity<?> assignRoutine(
+     @PostMapping("/assign")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Assign a routine template to user", description = "Assigns a routine template to the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Routine assigned successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid routine data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> assignRoutine(
             @Valid @RequestBody UserRoutineRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("POST /api/v1/user-routines/assign - Assign routine for user: {}", userId);
@@ -144,8 +170,16 @@ public class UserRoutineController {
      * Requires: X-User-Id header (must be the routine owner)
      * Update isActive status or endDate
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateRoutine(
+     @PutMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Update a routine assignment", description = "Updates an existing routine assignment (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Routine updated successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid routine data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "404", description = "Routine not found")
+     })
+     public ResponseEntity<?> updateRoutine(
             @PathVariable Long id,
             @Valid @RequestBody UserRoutineRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -171,8 +205,15 @@ public class UserRoutineController {
      * Requires: X-User-Id header (must be the routine owner)
      * Sets isActive to false and endDate to current time
      */
-    @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<?> deactivateRoutine(
+     @PatchMapping("/{id}/deactivate")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Deactivate a routine", description = "Deactivates a user routine (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Routine deactivated successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "404", description = "Routine not found")
+     })
+     public ResponseEntity<?> deactivateRoutine(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("PATCH /api/v1/user-routines/{}/deactivate - Deactivate routine for user: {}", id, userId);
@@ -196,8 +237,15 @@ public class UserRoutineController {
      * 
      * Requires: X-User-Id header (must be the routine owner)
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteRoutine(
+     @DeleteMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Delete a routine", description = "Deletes a user routine (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "204", description = "Routine deleted successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "404", description = "Routine not found")
+     })
+     public ResponseEntity<?> deleteRoutine(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("DELETE /api/v1/user-routines/{} - Delete routine for user: {}", id, userId);

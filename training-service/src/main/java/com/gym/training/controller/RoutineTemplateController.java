@@ -46,8 +46,13 @@ public class RoutineTemplateController {
      * Default pagination: page=0, size=20
      * Example: GET /api/v1/routine-templates/system?page=0&size=20&sort=name,asc
      */
-    @GetMapping("/system")
-    public ResponseEntity<PageResponse<RoutineTemplateDTO>> getAllSystemTemplates(
+     @GetMapping("/system")
+     @Operation(summary = "List all system routine templates", description = "Retrieves all pre-defined system routine templates with pagination support")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "System templates retrieved successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid pagination parameters")
+     })
+     public ResponseEntity<PageResponse<RoutineTemplateDTO>> getAllSystemTemplates(
             @PageableDefault(size = 20, page = 0, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
         log.info("GET /api/v1/routine-templates/system - Fetch system templates: page={}, size={}", 
@@ -63,8 +68,14 @@ public class RoutineTemplateController {
      * Requires: X-User-Id header
      * Example: GET /api/v1/routine-templates/my-templates?page=0&size=20
      */
-    @GetMapping("/my-templates")
-    public ResponseEntity<PageResponse<RoutineTemplateDTO>> getUserTemplates(
+     @GetMapping("/my-templates")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get user's custom routine templates", description = "Retrieves routine templates created by the authenticated user with pagination (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "User templates retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<PageResponse<RoutineTemplateDTO>> getUserTemplates(
             @RequestHeader("X-User-Id") Long userId,
             @PageableDefault(size = 20, page = 0, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
@@ -79,8 +90,13 @@ public class RoutineTemplateController {
      * 
      * Example: GET /api/v1/routine-templates/1
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getTemplateById(@PathVariable Long id) {
+     @GetMapping("/{id}")
+     @Operation(summary = "Get routine template by ID", description = "Retrieves a single routine template by its unique ID")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Template retrieved successfully"),
+             @ApiResponse(responseCode = "404", description = "Template not found")
+     })
+     public ResponseEntity<?> getTemplateById(@PathVariable Long id) {
         log.info("GET /api/v1/routine-templates/{} - Fetch template by ID", id);
         
         try {
@@ -111,8 +127,15 @@ public class RoutineTemplateController {
      *   "exerciseIds": [1, 2, 3, 4, 5]
      * }
      */
-    @PostMapping
-    public ResponseEntity<?> createTemplate(
+     @PostMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Create a new custom routine template", description = "Creates a new user-specific routine template (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Template created successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid template data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> createTemplate(
             @Valid @RequestBody RoutineTemplateRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("POST /api/v1/routine-templates - Create routine template for user: {}", userId);
@@ -137,8 +160,17 @@ public class RoutineTemplateController {
      * Requires: X-User-Id header (must be the creator)
      * Only the creator of a template can update it
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateTemplate(
+     @PutMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Update a routine template", description = "Updates an existing routine template (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Template updated successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid template data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the template owner"),
+             @ApiResponse(responseCode = "404", description = "Template not found")
+     })
+     public ResponseEntity<?> updateTemplate(
             @PathVariable Long id,
             @Valid @RequestBody RoutineTemplateRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -174,8 +206,16 @@ public class RoutineTemplateController {
      * Requires: X-User-Id header (must be the creator)
      * Only the creator of a template can delete it
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteTemplate(
+     @DeleteMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Delete a routine template", description = "Deletes an existing routine template (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "204", description = "Template deleted successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the template owner"),
+             @ApiResponse(responseCode = "404", description = "Template not found")
+     })
+     public ResponseEntity<?> deleteTemplate(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("DELETE /api/v1/routine-templates/{} - Delete routine template for user: {}", id, userId);

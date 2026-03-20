@@ -52,8 +52,14 @@ public class ExerciseSessionController {
      * Default pagination: page=0, size=20
      * Example: GET /api/v1/exercise-sessions/routine/1?page=0&size=20&sort=sessionDate,desc
      */
-    @GetMapping("/routine/{routineId}")
-    public ResponseEntity<PageResponse<ExerciseSessionDTO>> getSessionsByRoutine(
+     @GetMapping("/routine/{routineId}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get exercise sessions by routine", description = "Retrieves all exercise sessions for a specific routine with pagination (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Sessions retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<PageResponse<ExerciseSessionDTO>> getSessionsByRoutine(
             @PathVariable Long routineId,
             @RequestHeader("X-User-Id") Long userId,
             @PageableDefault(size = 20, page = 0, sort = "sessionDate", direction = Sort.Direction.DESC)
@@ -72,8 +78,15 @@ public class ExerciseSessionController {
      * Default pagination: page=0, size=20
      * Example: GET /api/v1/exercise-sessions/date/2024-03-18?page=0&size=20&sort=sessionDate,desc
      */
-    @GetMapping("/date/{date}")
-    public ResponseEntity<?> getSessionsByDate(
+     @GetMapping("/date/{date}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get exercise sessions by date", description = "Retrieves all exercise sessions for a user on a specific date with pagination (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Sessions retrieved successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid date format (use YYYY-MM-DD)"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> getSessionsByDate(
             @PathVariable String date,
             @RequestHeader("X-User-Id") Long userId,
             @PageableDefault(size = 20, page = 0, sort = "sessionDate", direction = Sort.Direction.DESC)
@@ -101,8 +114,15 @@ public class ExerciseSessionController {
      * Requires: X-User-Id header
      * Example: GET /api/v1/exercise-sessions/1
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getSessionById(
+     @GetMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get exercise session by ID", description = "Retrieves a single exercise session by ID (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Session retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "404", description = "Session not found")
+     })
+     public ResponseEntity<?> getSessionById(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/exercise-sessions/{} - Fetch session for user: {}", id, userId);
@@ -140,8 +160,15 @@ public class ExerciseSessionController {
      *   "sessionDate": "2024-03-18T14:30:00"
      * }
      */
-    @PostMapping
-    public ResponseEntity<?> createSession(
+     @PostMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Create a new exercise session", description = "Logs a new exercise session with sets, reps, weight and duration (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Session created successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid session data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> createSession(
             @Valid @RequestBody ExerciseSessionRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("POST /api/v1/exercise-sessions - Create session for user: {}", userId);
@@ -166,8 +193,16 @@ public class ExerciseSessionController {
      * Requires: X-User-Id header (must be the session owner)
      * Partial update: can update sets, reps, weight, duration, notes
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateSession(
+     @PutMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Update an exercise session", description = "Updates an existing exercise session (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Session updated successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid session data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "404", description = "Session not found")
+     })
+     public ResponseEntity<?> updateSession(
             @PathVariable Long id,
             @Valid @RequestBody ExerciseSessionRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -192,8 +227,15 @@ public class ExerciseSessionController {
      * 
      * Requires: X-User-Id header (must be the session owner)
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteSession(
+     @DeleteMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Delete an exercise session", description = "Deletes an existing exercise session (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "204", description = "Session deleted successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "404", description = "Session not found")
+     })
+     public ResponseEntity<?> deleteSession(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("DELETE /api/v1/exercise-sessions/{} - Delete session for user: {}", id, userId);

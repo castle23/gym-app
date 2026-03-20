@@ -42,8 +42,16 @@ public class DietComponentController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @GetMapping("/api/v1/diet-components/{id}")
-    public ResponseEntity<?> getDietComponentById(
+     @GetMapping("/api/v1/diet-components/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get diet component by ID", description = "Retrieves a diet component by its ID (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Diet component retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the component owner"),
+             @ApiResponse(responseCode = "404", description = "Diet component not found")
+     })
+     public ResponseEntity<?> getDietComponentById(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/diet-components/{} - Fetch diet component for user: {}", id, userId);
@@ -77,8 +85,16 @@ public class DietComponentController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @GetMapping("/api/v1/plans/{planId}/diet-component")
-    public ResponseEntity<?> getDietComponentByPlanId(
+     @GetMapping("/api/v1/plans/{planId}/diet-component")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get diet component by plan ID", description = "Retrieves a diet component associated with a plan (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Diet component retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the plan owner"),
+             @ApiResponse(responseCode = "404", description = "Diet component or plan not found")
+     })
+     public ResponseEntity<?> getDietComponentByPlanId(
             @PathVariable Long planId,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/plans/{}/diet-component - Fetch diet component for user: {}", planId, userId);
@@ -112,8 +128,15 @@ public class DietComponentController {
      * 
      * Requires: X-User-Id header
      */
-    @PostMapping("/api/v1/diet-components")
-    public ResponseEntity<?> createDietComponent(
+     @PostMapping("/api/v1/diet-components")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Create a new diet component", description = "Creates a new diet component for the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Diet component created successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid diet component data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> createDietComponent(
             @Valid @RequestBody DietComponentRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("POST /api/v1/diet-components - Create diet component for user: {}", userId);
@@ -137,8 +160,17 @@ public class DietComponentController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @PutMapping("/api/v1/diet-components/{id}")
-    public ResponseEntity<?> updateDietComponent(
+     @PutMapping("/api/v1/diet-components/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Update a diet component", description = "Updates an existing diet component (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Diet component updated successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid diet component data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the component owner"),
+             @ApiResponse(responseCode = "404", description = "Diet component not found")
+     })
+     public ResponseEntity<?> updateDietComponent(
             @PathVariable Long id,
             @Valid @RequestBody DietComponentRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -173,8 +205,16 @@ public class DietComponentController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @DeleteMapping("/api/v1/diet-components/{id}")
-    public ResponseEntity<?> deleteDietComponent(
+     @DeleteMapping("/api/v1/diet-components/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Delete a diet component", description = "Deletes an existing diet component (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "204", description = "Diet component deleted successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the component owner"),
+             @ApiResponse(responseCode = "404", description = "Diet component not found")
+     })
+     public ResponseEntity<?> deleteDietComponent(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("DELETE /api/v1/diet-components/{} - Delete diet component for user: {}", id, userId);
