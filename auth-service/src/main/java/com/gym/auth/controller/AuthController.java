@@ -3,6 +3,8 @@ package com.gym.auth.controller;
 import com.gym.auth.dto.AuthResponse;
 import com.gym.auth.dto.LoginRequest;
 import com.gym.auth.dto.RegisterRequest;
+import com.gym.auth.dto.RefreshTokenRequest;
+import com.gym.auth.dto.TokenRefreshResponse;
 import com.gym.auth.dto.VerifyEmailRequest;
 import com.gym.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -38,6 +40,17 @@ public class AuthController {
         log.info("Verification attempt for email: {}", request.getEmail());
         AuthResponse response = authService.verifyEmail(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenRefreshResponse> refresh(@RequestBody RefreshTokenRequest request) {
+        log.info("Token refresh attempt");
+        TokenRefreshResponse response = authService.refreshToken(request);
+        if (response.getSuccess()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
     }
 
     @GetMapping("/health")

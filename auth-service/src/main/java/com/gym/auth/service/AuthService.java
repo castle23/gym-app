@@ -3,6 +3,8 @@ package com.gym.auth.service;
 import com.gym.auth.dto.AuthResponse;
 import com.gym.auth.dto.LoginRequest;
 import com.gym.auth.dto.RegisterRequest;
+import com.gym.auth.dto.RefreshTokenRequest;
+import com.gym.auth.dto.TokenRefreshResponse;
 import com.gym.auth.dto.VerifyEmailRequest;
 import com.gym.auth.entity.User;
 import com.gym.auth.entity.Verification;
@@ -106,14 +108,58 @@ public class AuthService {
 
         String roles = String.join(",", user.getRoles());
         String token = jwtService.generateToken(user.getId().toString(), roles);
+        String refreshToken = jwtService.generateRefreshToken(user.getId().toString());
 
         log.info("User logged in successfully: {}", user.getEmail());
         return AuthResponse.builder()
                 .success(true)
                 .token(token)
+                .refreshToken(refreshToken)
                 .userId(user.getId().toString())
                 .email(user.getEmail())
                 .message("Login successful")
+                .build();
+    }
+
+    /**
+     * Refresh access token using a valid refresh token
+     */
+    @Transactional(readOnly = true)
+    public TokenRefreshResponse refreshToken(RefreshTokenRequest request) {
+        String refreshToken = request.getToken();
+
+        if (refreshToken == null || !jwtService.isRefreshTokenValid(refreshToken)) {
+            log.warn("Token refresh failed: invalid or expired refresh token");
+            return TokenRefreshResponse.builder()
+                    .success(false)
+                    .message("Invalid or expired refresh token")
+                    .build();
+        }
+
+        String userId = jwtService.extractSubject(refreshToken);
+        User user = userRepository.findById(Long.parseLong(userId))
+                .orElse(null);
+
+        if (user == null || user.getAccountStatus() != User.AccountStatus.ACTIVE) {
+            log.warn("Token refresh failed: user not found or account inactive");
+            return TokenRefreshResponse.builder()
+                    .success(false)
+                    .message("User not found or account inactive")
+                    .build();
+        }
+
+        String roles = String.join(",", user.getRoles());
+        String newAccessToken = jwtService.generateToken(userId, roles);
+        String newRefreshToken = jwtService.generateRefreshToken(userId);
+        Long expiresIn = jwtService.getTokenExpiration(newAccessToken);
+
+        log.info("Token refreshed successfully for user: {}", userId);
+        return TokenRefreshResponse.builder()
+                .success(true)
+                .token(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .expiresIn(expiresIn)
+                .message("Token refreshed successfully")
                 .build();
     }
 
