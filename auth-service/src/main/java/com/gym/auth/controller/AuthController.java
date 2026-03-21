@@ -8,6 +8,10 @@ import com.gym.auth.dto.TokenRefreshResponse;
 import com.gym.auth.dto.VerifyEmailRequest;
 import com.gym.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,10 +40,23 @@ public class AuthController {
             description = "Creates a new user account with the provided credentials and sends verification email"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User registered successfully"),
+            @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input data or duplicate email")
     })
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<AuthResponse> register(
+        @RequestBody(
+            description = "User registration details",
+            required = true,
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = RegisterRequest.class),
+                examples = @ExampleObject(
+                    name = "Register User",
+                    value = "{\"firstName\": \"Jane\", \"lastName\": \"Smith\", \"email\": \"jane.smith@example.com\", \"password\": \"SecurePassword123!\"}"
+                )
+            )
+        )
+        @org.springframework.web.bind.annotation.RequestBody RegisterRequest request) {
         log.info("Registration attempt for email: {}", request.getEmail());
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -51,10 +68,23 @@ public class AuthController {
             description = "Authenticates user with email and password, returns JWT access and refresh tokens"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login successful, tokens returned"),
+            @ApiResponse(responseCode = "200", description = "Login successful, tokens returned", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid credentials or account not verified")
     })
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(
+        @RequestBody(
+            description = "User login credentials",
+            required = true,
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = LoginRequest.class),
+                examples = @ExampleObject(
+                    name = "Login User",
+                    value = "{\"email\": \"john.doe@example.com\", \"password\": \"SecurePassword123!\"}"
+                )
+            )
+        )
+        @org.springframework.web.bind.annotation.RequestBody LoginRequest request) {
         log.info("Login attempt for email: {}", request.getEmail());
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
