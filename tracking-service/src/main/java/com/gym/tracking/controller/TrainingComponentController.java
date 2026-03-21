@@ -37,13 +37,21 @@ public class TrainingComponentController {
     
     private final TrainingComponentService trainingComponentService;
     
-    /**
-     * GET /api/v1/training-components/{id} - Get training component by ID
-     * 
-     * Requires: X-User-Id header (must be the owner)
-     */
-    @GetMapping("/api/v1/training-components/{id}")
-    public ResponseEntity<?> getTrainingComponentById(
+     /**
+      * GET /api/v1/training-components/{id} - Get training component by ID
+      * 
+      * Requires: X-User-Id header (must be the owner)
+      */
+     @GetMapping("/api/v1/training-components/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get training component by ID", description = "Retrieves a specific training component by ID (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Training component retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the component owner"),
+             @ApiResponse(responseCode = "404", description = "Training component not found")
+     })
+     public ResponseEntity<?> getTrainingComponentById(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/training-components/{} - Fetch training component for user: {}", id, userId);
@@ -72,13 +80,21 @@ public class TrainingComponentController {
         }
     }
     
-    /**
-     * GET /api/v1/plans/{planId}/training-component - Get training component by plan ID
-     * 
-     * Requires: X-User-Id header (must be the owner)
-     */
-    @GetMapping("/api/v1/plans/{planId}/training-component")
-    public ResponseEntity<?> getTrainingComponentByPlanId(
+     /**
+      * GET /api/v1/plans/{planId}/training-component - Get training component by plan ID
+      * 
+      * Requires: X-User-Id header (must be the owner)
+      */
+     @GetMapping("/api/v1/plans/{planId}/training-component")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get training component by plan ID", description = "Retrieves the training component associated with a specific plan (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Training component retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the plan owner"),
+             @ApiResponse(responseCode = "404", description = "Training component not found")
+     })
+     public ResponseEntity<?> getTrainingComponentByPlanId(
             @PathVariable Long planId,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/plans/{}/training-component - Fetch training component for user: {}", planId, userId);
@@ -107,13 +123,20 @@ public class TrainingComponentController {
         }
     }
     
-    /**
-     * POST /api/v1/training-components - Create a new training component
-     * 
-     * Requires: X-User-Id header
-     */
-    @PostMapping("/api/v1/training-components")
-    public ResponseEntity<?> createTrainingComponent(
+     /**
+      * POST /api/v1/training-components - Create a new training component
+      * 
+      * Requires: X-User-Id header
+      */
+     @PostMapping("/api/v1/training-components")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Create a new training component", description = "Creates a new training component for the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Training component created successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid training component data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> createTrainingComponent(
             @Valid @RequestBody TrainingComponentRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("POST /api/v1/training-components - Create training component for user: {}", userId);
@@ -132,13 +155,22 @@ public class TrainingComponentController {
         }
     }
     
-    /**
-     * PUT /api/v1/training-components/{id} - Update training component
-     * 
-     * Requires: X-User-Id header (must be the owner)
-     */
-    @PutMapping("/api/v1/training-components/{id}")
-    public ResponseEntity<?> updateTrainingComponent(
+     /**
+      * PUT /api/v1/training-components/{id} - Update training component
+      * 
+      * Requires: X-User-Id header (must be the owner)
+      */
+     @PutMapping("/api/v1/training-components/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Update a training component", description = "Updates an existing training component (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Training component updated successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid training component data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the component owner"),
+             @ApiResponse(responseCode = "404", description = "Training component not found")
+     })
+     public ResponseEntity<?> updateTrainingComponent(
             @PathVariable Long id,
             @Valid @RequestBody TrainingComponentRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -168,13 +200,21 @@ public class TrainingComponentController {
         }
     }
     
-    /**
-     * DELETE /api/v1/training-components/{id} - Delete training component
-     * 
-     * Requires: X-User-Id header (must be the owner)
-     */
-    @DeleteMapping("/api/v1/training-components/{id}")
-    public ResponseEntity<?> deleteTrainingComponent(
+     /**
+      * DELETE /api/v1/training-components/{id} - Delete training component
+      * 
+      * Requires: X-User-Id header (must be the owner)
+      */
+     @DeleteMapping("/api/v1/training-components/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Delete a training component", description = "Deletes an existing training component (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "204", description = "Training component deleted successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the component owner"),
+             @ApiResponse(responseCode = "404", description = "Training component not found")
+     })
+     public ResponseEntity<?> deleteTrainingComponent(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("DELETE /api/v1/training-components/{} - Delete training component for user: {}", id, userId);

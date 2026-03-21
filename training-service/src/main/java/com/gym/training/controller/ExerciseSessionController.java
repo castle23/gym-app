@@ -38,7 +38,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/sessions")
+@RequestMapping("/api/v1/exercise-sessions")
 @RequiredArgsConstructor
 @Tag(name = "Exercise Sessions", description = "Workout logging and exercise session management")
 public class ExerciseSessionController {

@@ -29,6 +29,11 @@ public class RecommendationController {
     private final RecommendationService recommendationService;
     
     @GetMapping("/{id}")
+    @Operation(summary = "Get recommendation by ID", description = "Retrieves a specific recommendation by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recommendation retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Recommendation not found")
+    })
     public ResponseEntity<?> getRecommendationById(@PathVariable Long id) {
         log.info("GET /api/v1/recommendations/{} - Fetch recommendation", id);
         try {
@@ -41,6 +46,11 @@ public class RecommendationController {
     }
     
     @GetMapping("/training-component/{trainingComponentId}")
+    @Operation(summary = "Get recommendations by training component", description = "Retrieves all recommendations for a specific training component")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recommendations retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid training component ID")
+    })
     public ResponseEntity<?> getByTrainingComponentId(@PathVariable Long trainingComponentId) {
         log.info("GET /api/v1/recommendations/training-component/{}", trainingComponentId);
         try {
@@ -53,6 +63,11 @@ public class RecommendationController {
     }
     
     @GetMapping("/diet-component/{dietComponentId}")
+    @Operation(summary = "Get recommendations by diet component", description = "Retrieves all recommendations for a specific diet component")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recommendations retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid diet component ID")
+    })
     public ResponseEntity<?> getByDietComponentId(@PathVariable Long dietComponentId) {
         log.info("GET /api/v1/recommendations/diet-component/{}", dietComponentId);
         try {
@@ -65,6 +80,13 @@ public class RecommendationController {
     }
     
     @PostMapping
+    @SecurityRequirement(name = "bearer-jwt")
+    @Operation(summary = "Create a new recommendation", description = "Creates a new fitness or diet recommendation for the authenticated user (requires authentication)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Recommendation created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid recommendation data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+    })
     public ResponseEntity<?> createRecommendation(
             @Valid @RequestBody RecommendationRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -79,6 +101,12 @@ public class RecommendationController {
     }
     
     @PutMapping("/{id}")
+    @Operation(summary = "Update a recommendation", description = "Updates an existing recommendation")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recommendation updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid recommendation data"),
+            @ApiResponse(responseCode = "404", description = "Recommendation not found")
+    })
     public ResponseEntity<?> updateRecommendation(
             @PathVariable Long id,
             @Valid @RequestBody RecommendationRequestDTO request) {
@@ -93,6 +121,11 @@ public class RecommendationController {
     }
     
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a recommendation", description = "Deletes an existing recommendation")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Recommendation deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Recommendation not found")
+    })
     public ResponseEntity<?> deleteRecommendation(@PathVariable Long id) {
         log.info("DELETE /api/v1/recommendations/{} - Delete recommendation", id);
         try {

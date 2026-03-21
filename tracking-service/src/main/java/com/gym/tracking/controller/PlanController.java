@@ -41,8 +41,14 @@ public class PlanController {
      * 
      * Requires: X-User-Id header
      */
-    @GetMapping
-    public ResponseEntity<List<PlanDTO>> getUserPlans(
+     @GetMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get all user plans", description = "Retrieves all fitness and diet plans for the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Plans retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<List<PlanDTO>> getUserPlans(
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/plans - Fetch plans for user: {}", userId);
         
@@ -50,13 +56,21 @@ public class PlanController {
         return ResponseEntity.ok(plans);
     }
     
-    /**
-     * GET /api/v1/plans/{id} - Get plan by ID
-     * 
-     * Requires: X-User-Id header (must be the owner)
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getPlanById(
+     /**
+      * GET /api/v1/plans/{id} - Get plan by ID
+      * 
+      * Requires: X-User-Id header (must be the owner)
+      */
+     @GetMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get plan by ID", description = "Retrieves a specific plan by ID (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Plan retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the plan owner"),
+             @ApiResponse(responseCode = "404", description = "Plan not found")
+     })
+     public ResponseEntity<?> getPlanById(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/plans/{} - Fetch plan for user: {}", id, userId);
@@ -85,13 +99,20 @@ public class PlanController {
         }
     }
     
-    /**
-     * POST /api/v1/plans - Create a new plan
-     * 
-     * Requires: X-User-Id header
-     */
-    @PostMapping
-    public ResponseEntity<?> createPlan(
+     /**
+      * POST /api/v1/plans - Create a new plan
+      * 
+      * Requires: X-User-Id header
+      */
+     @PostMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Create a new plan", description = "Creates a new fitness or diet plan for the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Plan created successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid plan data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> createPlan(
             @Valid @RequestBody PlanRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("POST /api/v1/plans - Create plan for user: {}", userId);
@@ -110,13 +131,22 @@ public class PlanController {
         }
     }
     
-    /**
-     * PUT /api/v1/plans/{id} - Update plan
-     * 
-     * Requires: X-User-Id header (must be the owner)
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updatePlan(
+     /**
+      * PUT /api/v1/plans/{id} - Update plan
+      * 
+      * Requires: X-User-Id header (must be the owner)
+      */
+     @PutMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Update a plan", description = "Updates an existing plan (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Plan updated successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid plan data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the plan owner"),
+             @ApiResponse(responseCode = "404", description = "Plan not found")
+     })
+     public ResponseEntity<?> updatePlan(
             @PathVariable Long id,
             @Valid @RequestBody PlanRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -146,13 +176,21 @@ public class PlanController {
         }
     }
     
-    /**
-     * DELETE /api/v1/plans/{id} - Delete plan
-     * 
-     * Requires: X-User-Id header (must be the owner)
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deletePlan(
+     /**
+      * DELETE /api/v1/plans/{id} - Delete plan
+      * 
+      * Requires: X-User-Id header (must be the owner)
+      */
+     @DeleteMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Delete a plan", description = "Deletes an existing plan (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "204", description = "Plan deleted successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the plan owner"),
+             @ApiResponse(responseCode = "404", description = "Plan not found")
+     })
+     public ResponseEntity<?> deletePlan(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("DELETE /api/v1/plans/{} - Delete plan for user: {}", id, userId);

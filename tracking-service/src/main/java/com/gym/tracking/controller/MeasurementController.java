@@ -44,8 +44,14 @@ public class MeasurementController {
      * 
      * Requires: X-User-Id header
      */
-    @GetMapping
-    public ResponseEntity<List<MeasurementValueDTO>> getUserMeasurements(
+     @GetMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get all user measurements", description = "Retrieves all body measurements for the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Measurements retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<List<MeasurementValueDTO>> getUserMeasurements(
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/measurements - Fetch measurements for user: {}", userId);
         
@@ -58,8 +64,16 @@ public class MeasurementController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getMeasurementById(
+     @GetMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get measurement by ID", description = "Retrieves a specific measurement by ID (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Measurement retrieved successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the measurement owner"),
+             @ApiResponse(responseCode = "404", description = "Measurement not found")
+     })
+     public ResponseEntity<?> getMeasurementById(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/measurements/{} - Fetch measurement for user: {}", id, userId);
@@ -91,8 +105,13 @@ public class MeasurementController {
     /**
      * GET /api/v1/measurement-types/{typeId} - Get measurement type by ID
      */
-    @GetMapping("/types/{typeId}")
-    public ResponseEntity<?> getMeasurementType(@PathVariable Long typeId) {
+     @GetMapping("/types/{typeId}")
+     @Operation(summary = "Get measurement type by ID", description = "Retrieves a measurement type by its ID")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Measurement type retrieved successfully"),
+             @ApiResponse(responseCode = "404", description = "Measurement type not found")
+     })
+     public ResponseEntity<?> getMeasurementType(@PathVariable Long typeId) {
         log.info("GET /api/v1/measurement-types/{} - Fetch measurement type", typeId);
         
         try {
@@ -112,8 +131,13 @@ public class MeasurementController {
     /**
      * POST /api/v1/measurement-types - Create a new measurement type
      */
-    @PostMapping("/types")
-    public ResponseEntity<?> createMeasurementType(
+     @PostMapping("/types")
+     @Operation(summary = "Create a new measurement type", description = "Creates a new measurement type that can be used to track measurements")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Measurement type created successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid measurement type data")
+     })
+     public ResponseEntity<?> createMeasurementType(
             @Valid @RequestBody MeasurementTypeRequestDTO request) {
         log.info("POST /api/v1/measurement-types - Create measurement type");
         
@@ -136,8 +160,15 @@ public class MeasurementController {
      * 
      * Requires: X-User-Id header
      */
-    @GetMapping("/by-type/{typeId}")
-    public ResponseEntity<?> getMeasurementsByType(
+     @GetMapping("/by-type/{typeId}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Get measurements by type", description = "Retrieves all measurements of a specific type for the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Measurements retrieved successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid measurement type"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> getMeasurementsByType(
             @PathVariable Long typeId,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("GET /api/v1/measurements/by-type/{} - Fetch measurements by type for user: {}", typeId, userId);
@@ -161,8 +192,15 @@ public class MeasurementController {
      * 
      * Requires: X-User-Id header
      */
-    @PostMapping
-    public ResponseEntity<?> recordMeasurement(
+     @PostMapping
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Record a new measurement", description = "Records a new body measurement for the authenticated user (requires authentication)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "201", description = "Measurement recorded successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid measurement data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required")
+     })
+     public ResponseEntity<?> recordMeasurement(
             @Valid @RequestBody MeasurementValueRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("POST /api/v1/measurements - Record measurement for user: {}", userId);
@@ -186,8 +224,17 @@ public class MeasurementController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateMeasurement(
+     @PutMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Update a measurement", description = "Updates an existing measurement (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "200", description = "Measurement updated successfully"),
+             @ApiResponse(responseCode = "400", description = "Invalid measurement data"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the measurement owner"),
+             @ApiResponse(responseCode = "404", description = "Measurement not found")
+     })
+     public ResponseEntity<?> updateMeasurement(
             @PathVariable Long id,
             @Valid @RequestBody MeasurementValueRequestDTO request,
             @RequestHeader("X-User-Id") Long userId) {
@@ -222,8 +269,16 @@ public class MeasurementController {
      * 
      * Requires: X-User-Id header (must be the owner)
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMeasurement(
+     @DeleteMapping("/{id}")
+     @SecurityRequirement(name = "bearer-jwt")
+     @Operation(summary = "Delete a measurement", description = "Deletes an existing measurement (requires authentication and owner permissions)")
+     @ApiResponses(value = {
+             @ApiResponse(responseCode = "204", description = "Measurement deleted successfully"),
+             @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+             @ApiResponse(responseCode = "403", description = "Forbidden - not the measurement owner"),
+             @ApiResponse(responseCode = "404", description = "Measurement not found")
+     })
+     public ResponseEntity<?> deleteMeasurement(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
         log.info("DELETE /api/v1/measurements/{} - Delete measurement for user: {}", id, userId);
