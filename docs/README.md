@@ -5,7 +5,10 @@ Welcome to the comprehensive documentation for the Gym Platform API. This docume
 ## Quick Navigation
 
 ### For Developers
-- **[Development Guide](development/)** - Setup, coding standards, debugging
+- **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute code and follow Git Flow
+- **[Code Standards Guide](development/02-code-standards-style-guide.md)** - Coding standards for Java, Bash, Python, IaC
+- **[Development Guide](development/)** - Setup, debugging, best practices
+- **[Architecture Decisions (ADRs)](adr/)** - Why we made key technical choices
 - **[Architecture Overview](arquitectura/)** - System design and microservices
 - **[API Documentation](api/)** - Endpoints, examples, integration guides
 - **[Stack Documentation](stack/)** - Technology choices and configurations
@@ -36,17 +39,18 @@ Welcome to the comprehensive documentation for the Gym Platform API. This docume
 
 ```
 docs/
-├── arquitectura/          # System architecture and design
-├── project/              # Project information and completion reports
-├── stack/                # Technology stack documentation
-├── development/          # Developer guides and standards
-├── deployment/           # DevOps and deployment procedures
-├── operations/           # Operational runbooks and SOPs
-├── troubleshooting/      # Debugging and issue resolution
-├── api/                  # API documentation and examples
-├── security/             # Security guidelines and procedures
-├── database/             # Database documentation
-└── resources/            # General resources and references
+├── adr/                    # Architecture Decision Records (12 ADRs)
+├── arquitectura/           # System architecture and design
+├── project/                # Project information and completion reports
+├── stack/                  # Technology stack documentation
+├── development/            # Developer guides and standards
+├── deployment/             # DevOps and deployment procedures
+├── operations/             # Operational runbooks and SOPs
+├── troubleshooting/        # Debugging and issue resolution
+├── api/                    # API documentation and examples
+├── security/               # Security guidelines and procedures
+├── database/               # Database documentation
+└── resources/              # General resources and references
 
 ai/                        # AI/Automation contexts
 dba/                       # DBA-specific tools and procedures
@@ -83,10 +87,12 @@ The `scripts/` directory contains executable utilities organized by purpose:
 
 ## Recent Documentation Changes
 
-- **Phase 1**: 80 API endpoints with @Schema annotations ✅
-- **Phase 2**: Testing infrastructure deployed ✅
-- **Phase 3**: Production documentation complete (31,000+ words) ✅
-- **Current**: Documentation reorganization for scalability ✅
+- **Phase 1 (Complete)**: Consolidated Postman collections (101 endpoints) ✅
+- **Phase 1 (Complete)**: Comprehensive API Testing Guide (1,311 lines) ✅
+- **Phase 2 (Complete)**: Contributing Guide (1,050 lines) ✅
+- **Phase 2 (Complete)**: Architecture Decision Records - 12 ADRs ✅
+- **Phase 2 (Complete)**: Code Standards Guide (1,500+ lines) ✅
+- **Next**: Data Dictionary, Integration Testing, Deployment Runbooks
 
 ---
 
