@@ -1,313 +1,675 @@
-# Contributing to Gym Platform API Documentation
+# Contributing to Gym Platform API
 
-Thank you for contributing to the Gym Platform API documentation. This guide will help you maintain consistency and quality.
+Thank you for contributing code to the Gym Platform API! This guide will help you make meaningful contributions to our codebase.
 
-## Documentation Structure
+## Quick Start (5 Minutes)
 
-The documentation is organized into several main areas:
+Before reading the full guide, here's what you need to do to make your first contribution:
 
-- **docs/** - Main documentation hub (role-specific and topic-based)
-- **ai/** - AI/automation contexts and prompts
-- **dba/** - DBA-specific tools and procedures
-- **tests/** - Testing resources and guides
-- **scripts/** - Operational and development scripts
+1. **Clone and setup:**
+   ```bash
+   git clone https://github.com/yourusername/gym-platform.git
+   cd gym-platform
+   git checkout develop
+   git pull origin develop
+   ```
 
-See [docs/README.md](docs/README.md) for detailed structure.
+2. **Create a feature branch:**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
 
-## Before You Start
+3. **Make changes and test:**
+   ```bash
+   npm test
+   npm run lint
+   ```
 
-1. Review the existing documentation structure
-2. Check if similar documentation already exists
-3. Read [docs/resources/05-best-practices.md](docs/resources/05-best-practices.md)
-4. Follow the coding and documentation standards
+4. **Commit with proper format:**
+   ```bash
+   git commit -m "feat: add new feature"
+   ```
 
-## Guidelines
+5. **Push and create PR:**
+   ```bash
+   git push origin feature/your-feature-name
+   # Open PR on GitHub
+   ```
 
-### File Naming
-
-- Use lowercase with hyphens: `01-file-name.md`
-- Sequential numbering for related files: `01-`, `02-`, `03-`
-- Descriptive names that indicate content
-- No spaces in filenames
-
-### File Organization
-
-**New documentation should go in:**
-- **Architecture/Design** → `docs/arquitectura/`
-- **Development Guides** → `docs/development/`
-- **API Documentation** → `docs/api/`
-- **Deployment Procedures** → `docs/deployment/`
-- **Operations/Runbooks** → `docs/operations/`
-- **Troubleshooting** → `docs/troubleshooting/`
-- **Database Info** → `docs/database/` or `dba/`
-- **Security** → `docs/security/`
-- **Testing** → `tests/`
-- **AI Context** → `ai/`
-
-### Markdown Style
-
-Use these standards for consistency:
-
-```markdown
-# Main Title (H1)
-
-Introduction paragraph with context.
-
-## Section Heading (H2)
-
-Content for this section.
-
-### Subsection (H3)
-
-More specific content.
-
-- Bullet point
-- Another point
-
-1. Numbered item
-2. Another item
-
-**Bold** for emphasis
-_Italic_ for additional emphasis
-`code` for inline code
-```
-
-### Code Examples
-
-Include complete, working examples:
-
-```bash
-# Good: Clear, complete example
-./scripts/operational/health-check.sh
-
-# Good: With explanation
-# Check service health
-curl http://localhost:8081/swagger-ui.html
-```
-
-### Links and References
-
-Cross-reference related documents:
-
-```markdown
-See [Development Guide](../development/) for setup instructions.
-See [API Documentation](../api/04-endpoints-reference.md) for endpoints.
-```
-
-Use relative paths for internal links.
-
-### Metadata
-
-Add metadata at the top of longer documents:
-
-```markdown
-# Document Title
-
-**Last Updated**: 2024-03-21
-**Author**: Your Name
-**Status**: Active / Draft / Deprecated
-**Tags**: api, deployment, security
+That's it! Details below.
 
 ---
-
-Document content here...
-```
-
-### Table of Contents
-
-For documents over 500 lines, add a TOC:
-
-```markdown
-# Document Title
 
 ## Table of Contents
 
-1. [Section One](#section-one)
-2. [Section Two](#section-two)
+1. [Git Flow Workflow](#git-flow-workflow)
+2. [Development Setup](#development-setup)
+3. [Development Process](#development-process)
+4. [Code Review](#code-review)
+5. [Commit Message Format](#commit-message-format)
+6. [Testing](#testing)
+7. [Common Tasks](#common-tasks)
+8. [Getting Help](#getting-help)
 
 ---
 
-## Section One
+## Git Flow Workflow
 
-Content...
+We use **Git Flow** branching strategy. Here's how it works:
 
-## Section Two
+### Main Branches
 
-Content...
+- **main** - Production releases only. Always stable.
+- **develop** - Integration branch for features. Should be stable but may have unreleased features.
+
+### Supporting Branches
+
+- **feature/*** - New features or significant changes
+  - Branch from: `develop`
+  - Merge back to: `develop` via Pull Request
+  - Example: `feature/add-diet-logging`, `feature/improve-performance`
+
+- **bugfix/*** - Bug fixes for develop branch
+  - Branch from: `develop`
+  - Merge back to: `develop` via Pull Request
+  - Example: `bugfix/fix-auth-timeout`, `bugfix/handle-null-exercises`
+
+- **hotfix/*** - Critical production fixes
+  - Branch from: `main`
+  - Merge back to: `main` AND `develop`
+  - Example: `hotfix/security-patch`, `hotfix/database-connection-issue`
+
+- **release/*** - Release preparation
+  - Branch from: `develop`
+  - Merge back to: `main` and `develop`
+  - Example: `release/v1.2.0`
+
+### Branch Naming Conventions
+
+Use descriptive names in lowercase with hyphens:
+
+```
+✅ Good:
+  feature/add-diet-logging
+  feature/improve-exercise-search
+  bugfix/fix-token-expiration
+  hotfix/security-patch-jwt
+
+❌ Bad:
+  feature/new-feature
+  bugfix/bug
+  fix/stuff
+  feature_add_diet
 ```
 
-## Adding New Documentation
+### Creating a Feature Branch
 
-### Step 1: Choose Location
-Determine which directory best fits your documentation using the structure above.
-
-### Step 2: Check Existing Docs
-Ensure you're not duplicating existing documentation.
-
-### Step 3: Create the File
-- Use appropriate naming convention
-- Add content following markdown style guidelines
-- Include relevant links and references
-
-### Step 4: Update README
-Update the section's README.md with a reference to your new documentation.
-
-### Step 5: Add Cross-References
-Link to your new document from related documents.
-
-### Step 6: Git Workflow
 ```bash
-git add docs/section/your-document.md
-git commit -m "docs: add documentation for [topic]"
-git push
+# 1. Make sure develop is up-to-date
+git checkout develop
+git pull origin develop
+
+# 2. Create your feature branch
+git checkout -b feature/your-feature-name
+
+# 3. You're ready to make changes
 ```
 
-## Updating Existing Documentation
+### Workflow Example
 
-### For Minor Changes
-- Fix typos, clarify wording
-- Update code examples
-- Fix broken links
+```
+develop: ---o---o---o
+           /       \
+feature:  o---o---o (feature/add-diet-logging)
+           \     \
+            \     PR created → reviewed → approved
+             \
+              Merge back to develop
+```
 
-### For Significant Updates
-1. Review existing content carefully
-2. Ensure changes don't break references
-3. Update "Last Updated" date
-4. Add context about what changed
-5. Consider if cross-references need updating
+---
 
-### Deprecating Documents
-If a document is no longer relevant:
-1. Update the STATUS to "Deprecated"
-2. Add a note about what replaces it
-3. Keep the document for historical reference
-4. Update cross-references
+## Development Setup
 
-## Quality Checklist
+### Prerequisites
 
-Before submitting your changes:
+- Node.js 16+
+- npm 8+
+- Docker & Docker Compose (for services)
+- PostgreSQL 13+ (if running locally)
+- Git 2.30+
 
-- [ ] File is in correct directory
-- [ ] Filename follows naming convention
-- [ ] Content is accurate and complete
-- [ ] Markdown formatting is clean
-- [ ] Code examples work correctly
-- [ ] Links are functional and use relative paths
-- [ ] Related documents are cross-referenced
-- [ ] README.md is updated if needed
-- [ ] No spelling or grammar errors
-- [ ] Document follows style guidelines
-- [ ] Metadata is current (if included)
+### Local Environment Setup
 
-## Documentation Standards
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/gym-platform/gym-platform.git
+   cd gym-platform
+   ```
 
-### Clarity
-- Write for your audience (developers, DBAs, ops)
-- Use clear, concise language
-- Explain technical terms
-- Include examples
+2. **Install dependencies:**
+   ```bash
+   # Root dependencies
+   npm install
 
-### Completeness
-- Cover the full topic
-- Include prerequisites
-- Provide step-by-step instructions for procedures
-- Include troubleshooting tips
+   # Microservice dependencies
+   cd auth-service && npm install && cd ..
+   cd training-service && npm install && cd ..
+   cd tracking-service && npm install && cd ..
+   cd notification-service && npm install && cd ..
+   ```
 
-### Currency
-- Keep examples up-to-date
-- Update version numbers
-- Note deprecated features
-- Add recent lessons learned
+3. **Start services with Docker Compose:**
+   ```bash
+   docker-compose up -d
+   ```
 
-### Consistency
-- Match the style of related documents
-- Use consistent terminology
-- Follow naming conventions
-- Maintain organizational structure
+   Or start services individually:
+   ```bash
+   # Terminal 1: Auth Service
+   cd auth-service && npm start
 
-## Role-Specific Documentation
+   # Terminal 2: Training Service
+   cd training-service && npm start
 
-### For Developers
-Include:
-- Setup instructions
-- Code examples
-- Best practices
-- Testing guidance
-- Links to relevant APIs
+   # Terminal 3: Tracking Service
+   cd tracking-service && npm start
 
-### For DevOps/Operations
-Include:
-- Step-by-step procedures
-- Prerequisites and requirements
-- Verification steps
-- Troubleshooting
-- Monitoring guidance
+   # Terminal 4: Notification Service
+   cd notification-service && npm start
+   ```
 
-### For DBAs
-Include:
-- Database specifics
-- Query examples
-- Backup procedures
-- Performance tuning
-- Maintenance tasks
+4. **Verify services are running:**
+   ```bash
+   curl http://localhost:8081/health
+   curl http://localhost:8082/training/health
+   curl http://localhost:8083/tracking/health
+   curl http://localhost:8084/notifications/health
+   ```
 
-### For Project Managers
-Include:
-- Project status
-- Completion metrics
-- Timeline information
-- Risk/issue tracking
-- Resource allocation
+5. **Run tests:**
+   ```bash
+   npm test
+   ```
 
-## Collaboration
+### Database Setup
 
-### Asking for Review
-Tag documentation experts:
-- @architects - for architecture/design docs
-- @devops - for deployment/operations docs
-- @dba-team - for database documentation
-- @leads - for general review
+The database is initialized in Docker. If you need to reset:
 
-### Providing Feedback
-When reviewing documentation:
-1. Check for accuracy
-2. Verify completeness
-3. Ensure clarity for the target audience
-4. Look for broken links
-5. Verify code examples work
+```bash
+# Reset database
+docker-compose exec postgres psql -U gym_user -d gym_platform -f scripts/db/reset.sql
 
-### Resolving Conflicts
-If multiple docs cover similar topics:
-1. Consolidate into one authoritative document
-2. Add "See also" references in related docs
-3. Remove duplicate information
-4. Update all cross-references
+# Or use the reset script
+./scripts/database/reset-local.sh
+```
+
+See [Database Documentation](docs/database/README.md) for more details.
+
+---
+
+## Development Process
+
+### Step-by-Step: Making a Change
+
+#### 1. Create Your Feature Branch
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/your-feature-name
+```
+
+#### 2. Make Your Changes
+
+- Make small, focused commits
+- Don't mix features in one branch
+- Follow code standards (see [Code Standards Guide](docs/development/02-code-standards-style-guide.md))
+- Update tests as you go
+
+#### 3. Write or Update Tests
+
+Before committing, ensure your code has tests:
+
+```bash
+# Run tests for your service
+cd training-service
+npm test
+
+# Run specific test file
+npm test -- src/__tests__/exercises.test.js
+
+# Run with coverage
+npm test -- --coverage
+```
+
+#### 4. Lint and Format Your Code
+
+```bash
+# Run linter
+npm run lint
+
+# Auto-fix issues
+npm run lint:fix
+
+# Format code
+npm run format
+```
+
+#### 5. Commit with Conventional Format
+
+Use **Conventional Commits** format:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Type:** One of:
+- `feat` - New feature
+- `fix` - Bug fix
+- `refactor` - Code change without behavior change
+- `perf` - Performance improvement
+- `test` - Test changes
+- `docs` - Documentation only
+- `chore` - Dependencies, build tools, etc.
+
+**Scope:** The component affected (optional but recommended):
+- `auth` - Auth Service
+- `training` - Training Service
+- `tracking` - Tracking Service
+- `notification` - Notification Service
+- `api-gateway` - API Gateway
+- `database` - Database layer
+- `ci` - CI/CD
+
+**Subject:** Concise description (50 chars max):
+- Use imperative mood: "add" not "added" or "adds"
+- Don't capitalize first letter
+- No period at end
+
+**Examples:**
+```
+✅ Good:
+  feat(training): add exercise search by discipline
+  fix(auth): handle token expiration gracefully
+  refactor(tracking): simplify diet log calculations
+  docs: update API reference
+  chore(deps): upgrade spring-boot to 2.6.0
+
+❌ Bad:
+  Updated training service
+  fixed bug
+  Changes to API
+  feat: implement new stuff
+```
+
+#### 6. Push Your Branch
+
+```bash
+git push origin feature/your-feature-name
+```
+
+#### 7. Create a Pull Request
+
+On GitHub:
+
+1. Go to the repository
+2. Click "New Pull Request"
+3. Base: `develop` | Compare: `feature/your-feature-name`
+4. Fill in the PR template (see below)
+5. Request reviewers
+6. Address feedback
+
+### Pull Request Template
+
+```markdown
+## Description
+Brief description of what this PR does and why.
+
+## Type of Change
+- [ ] New feature
+- [ ] Bug fix
+- [ ] Breaking change
+- [ ] Documentation
+
+## Related Issue
+Closes #123
+
+## Testing
+How to test this change?
+
+- [ ] Unit tests added
+- [ ] Integration tests added
+- [ ] Manual test procedure: [steps]
+
+## Checklist
+- [ ] Code follows style guide
+- [ ] Tests pass locally
+- [ ] Linting passes
+- [ ] No console errors/warnings
+- [ ] Documentation updated
+- [ ] Database migrations tested (if applicable)
+
+## Screenshots/Logs (if applicable)
+```
+
+---
+
+## Code Review
+
+### What Reviewers Look For
+
+- ✅ **Correctness** - Does the code work as intended?
+- ✅ **Clarity** - Is the code understandable?
+- ✅ **Consistency** - Does it follow project standards?
+- ✅ **Testing** - Is it properly tested?
+- ✅ **Performance** - Any inefficiencies?
+- ✅ **Security** - Any vulnerabilities?
+
+### Addressing Feedback
+
+1. Read all comments carefully
+2. Ask for clarification if needed (in the comment)
+3. Make changes in new commits (don't force-push)
+4. Re-request review when changes are done
+5. Continue until approved
+
+### Approval & Merge
+
+- Minimum 2 approvals required
+- All CI/CD checks must pass
+- Squash commits before merging (optional, depends on project preference)
+- Delete feature branch after merge
+
+See [Code Review Best Practices](docs/development/code-review-guide.md) for detailed guidance.
+
+---
+
+## Commit Message Format
+
+### Format Specification
+
+We follow **Conventional Commits** for all commits. This enables:
+- Automatic changelog generation
+- Semantic versioning
+- Scanning commits for specific changes
+
+### Full Format Example
+
+```
+feat(training): add bulk exercise import from CSV
+
+Add ability to import multiple exercises from a CSV file. Includes
+validation for required fields and conflict resolution for duplicates.
+
+- Supports batch operations
+- Validates discipline exists
+- Logs warnings for skipped rows
+
+Closes #456
+```
+
+### Format Breakdown
+
+**Line 1 - Subject (required):**
+- Max 50 characters
+- Format: `type(scope): description`
+- Use imperative mood
+
+**Line 2 - Blank line (required for multi-line)**
+
+**Lines 3+ - Body (optional):**
+- Wrapped at 72 characters
+- Explain WHAT and WHY, not HOW
+- One blank line between paragraphs
+
+**Footer:**
+- Reference issues: `Closes #123`
+- Note breaking changes: `BREAKING CHANGE: description`
+- Co-author: `Co-authored-by: Name <email>`
+
+### Examples
+
+**Simple fix:**
+```
+fix(auth): return 401 instead of 500 for invalid tokens
+```
+
+**Feature with details:**
+```
+feat(tracking): add weight loss progress tracking
+
+Users can now track weight loss goals and see progress charts.
+Implemented with weekly averages to smooth data noise.
+
+Closes #234
+```
+
+**Breaking change:**
+```
+refactor(api): rename exercise endpoint from /exercises to /v2/exercises
+
+BREAKING CHANGE: Old /exercises endpoint removed. Use /v2/exercises
+```
+
+---
+
+## Testing
+
+### Requirements Before Creating PR
+
+Every pull request MUST have:
+
+- ✅ Unit tests for new functions/methods
+- ✅ Integration tests for new endpoints
+- ✅ All existing tests passing
+- ✅ Test coverage >= 80% for new code
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests for specific service
+cd auth-service && npm test
+
+# Run specific test file
+npm test -- auth.test.js
+
+# Run with coverage
+npm test -- --coverage
+
+# Watch mode (re-run on changes)
+npm test -- --watch
+```
+
+### Writing Tests
+
+See [Testing Guide](tests/TESTING.md) for comprehensive testing documentation.
+
+Quick example for Java/Spring Boot:
+
+```java
+@Test
+public void testCreateExercise_WithValidData_ReturnsCreatedExercise() {
+    // Arrange
+    CreateExerciseRequest request = new CreateExerciseRequest();
+    request.setName("Bench Press");
+    request.setDiscipline("Chest");
+    
+    // Act
+    ExerciseResponse response = exerciseService.createExercise(request);
+    
+    // Assert
+    assertNotNull(response.getId());
+    assertEquals("Bench Press", response.getName());
+    assertEquals("Chest", response.getDiscipline());
+}
+```
+
+### Test Naming Convention
+
+Use clear, descriptive names:
+
+```
+✅ testCreateExercise_WithValidData_ReturnsCreatedExercise
+✅ testLoginWithInvalidPassword_Returns401Unauthorized
+✅ testGetUserProfile_WhenAuthTokenExpired_Returns401
+
+❌ testExercise
+❌ test1
+❌ testCreateExerciseMethod
+```
+
+### API Testing
+
+Use the Postman collection for API testing:
+
+```bash
+cd tests
+npm install
+npm run test:local
+```
+
+See [API Testing Guide](tests/TESTING.md) for details.
+
+---
+
+## Common Tasks
+
+### Adding a New API Endpoint
+
+1. Define the route and handler
+2. Add request/response schemas
+3. Write tests (before implementation)
+4. Implement endpoint
+5. Test manually with Postman
+6. Update API documentation
+7. Create PR
+
+Example PR: `feat(training): add GET /exercises/by-discipline endpoint`
+
+### Updating Dependencies
+
+```bash
+# Check for updates
+npm outdated
+
+# Update specific package
+npm update package-name
+
+# Update all packages
+npm update
+
+# Update major versions (more risky)
+npm install package-name@latest
+```
+
+Always test after updating dependencies.
+
+### Working with Database Migrations
+
+1. Create migration file:
+   ```bash
+   npm run db:migrate:create -- migration_name
+   ```
+
+2. Add migration logic in created file
+
+3. Test migration:
+   ```bash
+   npm run db:migrate
+   npm run db:migrate:rollback  # Test rollback too
+   ```
+
+4. Commit migration file with your changes
+
+See [Database Migrations Guide](docs/database/migrations.md) for details.
+
+### Debugging Across Microservices
+
+```bash
+# Check service logs
+docker logs training-service
+
+# Increase logging level
+DEBUG=* npm start
+
+# Use debugger (Chrome DevTools)
+node --inspect=0.0.0.0:9229 start.js
+
+# Then visit: chrome://inspect
+```
+
+---
 
 ## Getting Help
 
-Questions about contributing?
-1. Check [docs/resources/](docs/resources/) for guidelines
-2. Review similar documentation for examples
-3. Ask in team communications
-4. Consult with documentation maintainers
+### Common Questions
 
-## Documentation Philosophy
+**Q: How long should a feature branch be?**
+A: Keep it focused. If you're working on something for > 3 days, consider breaking into smaller PRs.
 
-Our documentation aims to:
-- **Enable** - Help users accomplish their goals
-- **Clarify** - Explain complex concepts simply
-- **Guide** - Provide step-by-step procedures
-- **Reassure** - Show best practices and examples
-- **Scale** - Support users at all experience levels
+**Q: Can I commit directly to develop?**
+A: No. All code goes through feature branches and PR review.
 
-## Contact & Questions
+**Q: What if my PR gets rejected?**
+A: That's normal! Ask clarifying questions, make improvements, and re-submit.
 
-For documentation questions:
-- Check [docs/resources/](docs/resources/) first
-- Review existing documentation for patterns
-- Ask team leads or documentation maintainers
-- Submit suggestions through issue tracking
+**Q: How do I update my branch if develop has changed?**
+A:
+```bash
+git fetch origin
+git rebase origin/develop
+# If conflicts: resolve them, then `git rebase --continue`
+```
+
+### Getting Support
+
+- **Questions about code?** Ask in PR comments
+- **Need help debugging?** Check logs: `docker logs service-name`
+- **Stuck on git?** See our [Git Troubleshooting Guide](docs/development/git-troubleshooting.md)
+- **Architecture decisions?** See [ADRs](docs/adr/)
+- **Code standards?** See [Code Standards Guide](docs/development/02-code-standards-style-guide.md)
+
+### Escalation
+
+If you're blocked or need urgent help:
+
+1. Reach out to your team lead
+2. Post in #engineering Slack channel
+3. Check existing issues/PRs for solutions
 
 ---
 
-**Thank you for improving our documentation!**
+## Code of Conduct
+
+We expect all contributors to:
+
+- Be respectful and professional
+- Assume good intentions
+- Provide constructive feedback
+- Help others learn and grow
+- Report problems constructively
+
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
+
+---
+
+## Additional Resources
+
+- **Testing Guide**: [tests/TESTING.md](tests/TESTING.md) - Comprehensive API testing guide
+- **API Reference**: [docs/api/](docs/api/) - Endpoint documentation
+- **Architecture Decisions**: [docs/adr/](docs/adr/) - Why we made key technical choices
+- **Code Standards**: [docs/development/02-code-standards-style-guide.md](docs/development/02-code-standards-style-guide.md) - Coding standards
+
+---
+
+**Last Updated**: March 21, 2026  
+**Status**: Active  
+**Maintainers**: Gym Platform Core Team
