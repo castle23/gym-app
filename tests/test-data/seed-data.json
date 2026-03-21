@@ -1,0 +1,228 @@
+{
+  "description": "Test data and fixtures for Gym Platform API testing",
+  "generated_at": "2026-03-21T17:15:00Z",
+  "auth_service": {
+    "valid_user": {
+      "email": "john.doe@example.com",
+      "password": "SecurePass123!",
+      "first_name": "John",
+      "last_name": "Doe",
+      "user_type": "regular"
+    },
+    "valid_professional": {
+      "email": "jane.smith@example.com",
+      "password": "ProPass456!",
+      "first_name": "Jane",
+      "last_name": "Smith",
+      "user_type": "professional",
+      "professional_license": "PT-123456"
+    },
+    "test_users": [
+      {
+        "email": "user1@example.com",
+        "password": "Pass1234!",
+        "first_name": "User",
+        "last_name": "One",
+        "id": "user-001"
+      },
+      {
+        "email": "user2@example.com",
+        "password": "Pass1234!",
+        "first_name": "User",
+        "last_name": "Two",
+        "id": "user-002"
+      }
+    ]
+  },
+  "training_service": {
+    "exercises": [
+      {
+        "id": "ex-001",
+        "name": "Bench Press",
+        "discipline": "Chest",
+        "description": "Barbell bench press",
+        "difficulty": "intermediate",
+        "muscle_groups": ["chest", "triceps", "shoulders"],
+        "instructions": "Lie on bench, grip bar at shoulder width, press upward"
+      },
+      {
+        "id": "ex-002",
+        "name": "Squats",
+        "discipline": "Legs",
+        "description": "Barbell back squats",
+        "difficulty": "intermediate",
+        "muscle_groups": ["quadriceps", "hamstrings", "glutes"],
+        "instructions": "Place bar on shoulders, squat down until thighs parallel"
+      },
+      {
+        "id": "ex-003",
+        "name": "Deadlift",
+        "discipline": "Back",
+        "description": "Conventional deadlift",
+        "difficulty": "advanced",
+        "muscle_groups": ["back", "glutes", "hamstrings"],
+        "instructions": "Keep back straight, lift from floor to standing"
+      },
+      {
+        "id": "ex-004",
+        "name": "Pull-ups",
+        "discipline": "Back",
+        "description": "Bodyweight pull-ups",
+        "difficulty": "intermediate",
+        "muscle_groups": ["back", "biceps"],
+        "instructions": "Grip bar, pull body up until chin above bar"
+      }
+    ],
+    "routine_templates": [
+      {
+        "id": "rt-001",
+        "name": "Full Body A",
+        "description": "Complete full body workout A",
+        "difficulty": "intermediate",
+        "exercises": ["ex-001", "ex-002", "ex-004"],
+        "duration_minutes": 60,
+        "rest_between_sets": 90
+      },
+      {
+        "id": "rt-002",
+        "name": "Full Body B",
+        "description": "Complete full body workout B",
+        "difficulty": "intermediate",
+        "exercises": ["ex-003", "ex-002", "ex-001"],
+        "duration_minutes": 60,
+        "rest_between_sets": 90
+      }
+    ],
+    "exercise_sessions": [
+      {
+        "id": "session-001",
+        "user_id": "user-001",
+        "routine_id": "rt-001",
+        "date": "2026-03-20T10:00:00Z",
+        "status": "completed",
+        "exercises_completed": 3,
+        "total_exercises": 3
+      },
+      {
+        "id": "session-002",
+        "user_id": "user-002",
+        "routine_id": "rt-002",
+        "date": "2026-03-21T09:00:00Z",
+        "status": "in_progress",
+        "exercises_completed": 1,
+        "total_exercises": 3
+      }
+    ]
+  },
+  "tracking_service": {
+    "diet_logs": [
+      {
+        "id": "diet-001",
+        "user_id": "user-001",
+        "date": "2026-03-20T00:00:00Z",
+        "meals": [
+          {
+            "type": "breakfast",
+            "food": "Oatmeal with berries",
+            "calories": 350,
+            "protein": 10,
+            "carbs": 60,
+            "fat": 5,
+            "time": "08:00"
+          },
+          {
+            "type": "lunch",
+            "food": "Grilled chicken and rice",
+            "calories": 650,
+            "protein": 45,
+            "carbs": 70,
+            "fat": 10,
+            "time": "12:30"
+          }
+        ],
+        "daily_total": {
+          "calories": 1850,
+          "protein": 120,
+          "carbs": 200,
+          "fat": 45
+        }
+      }
+    ],
+    "weight_logs": [
+      {
+        "id": "weight-001",
+        "user_id": "user-001",
+        "date": "2026-03-20T08:00:00Z",
+        "weight_kg": 82.5,
+        "fat_percentage": 18.5,
+        "muscle_percentage": 35.2
+      }
+    ],
+    "workout_logs": [
+      {
+        "id": "workout-001",
+        "user_id": "user-001",
+        "session_id": "session-001",
+        "total_duration": 65,
+        "calories_burned": 450,
+        "sets_completed": 12
+      }
+    ]
+  },
+  "notification_service": {
+    "notifications": [
+      {
+        "id": "notif-001",
+        "user_id": "user-001",
+        "type": "workout_reminder",
+        "title": "Time for your workout!",
+        "message": "Your scheduled workout is starting in 30 minutes",
+        "timestamp": "2026-03-21T17:00:00Z"
+      },
+      {
+        "id": "notif-002",
+        "user_id": "user-002",
+        "type": "achievement",
+        "title": "Achievement Unlocked!",
+        "message": "You completed 10 workouts this month",
+        "timestamp": "2026-03-21T17:15:00Z"
+      }
+    ],
+    "push_tokens": [
+      {
+        "id": "token-001",
+        "user_id": "user-001",
+        "token": "ExponentPushToken[abc123def456]",
+        "device_type": "ios",
+        "enabled": true
+      },
+      {
+        "id": "token-002",
+        "user_id": "user-002",
+        "token": "ExponentPushToken[xyz789uvw012]",
+        "device_type": "android",
+        "enabled": true
+      }
+    ]
+  },
+  "test_scenarios": {
+    "complete_flow": [
+      "1. Register a new user",
+      "2. Login with credentials",
+      "3. Create a routine template",
+      "4. Start an exercise session",
+      "5. Complete exercises",
+      "6. Log diet entry",
+      "7. Record weight",
+      "8. Receive notifications"
+    ],
+    "error_cases": [
+      "Invalid email format",
+      "Weak password",
+      "Duplicate email registration",
+      "Invalid exercise ID",
+      "Expired auth token",
+      "Malformed request body"
+    ]
+  }
+}

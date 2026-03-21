@@ -1,0 +1,3352 @@
+{
+  "info": {
+    "_postman_id": "gym-platform-complete-api-2026",
+    "name": "Gym Platform - Complete API",
+    "description": "Complete API collection for the Gym Management Platform.\n\nMICROSERVICES:\n  Auth Service        → {{auth_url}}         port 8081\n  Training Service    → {{training_url}}     port 8082\n  Tracking Service    → {{tracking_url}}     port 8083\n  Notification Svc    → {{notification_url}} port 8084\n  API Gateway         → {{gateway_url}}      port 8080\n\nSETUP:\n  1. Run docker-compose up\n  2. Call Login to get a JWT token\n  3. Set {{user_id}} and {{auth_token}} variables\n  4. All requests use X-User-Id: {{user_id}}",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "3.0.0"
+  },
+  "item": [
+    {
+      "name": "🔐 Auth Service",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_url}}/auth/register",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new USER account",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"userType\": \"USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Register Professional",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_url}}/auth/register",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a PROFESSIONAL account",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newpro@example.com\",\n  \"password\": \"password123\",\n  \"userType\": \"PROFESSIONAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_url}}/auth/login",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticate and receive JWT token. Save the returned token as {{auth_token}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_url}}/auth/verify",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify"
+              ]
+            },
+            "description": "Verify email address with the code sent by email",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"code\": \"123456\",\n  \"type\": \"EMAIL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Auth Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_url}}/auth/health",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "auth",
+                "health"
+              ]
+            },
+            "description": "Check auth service health"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/auth/refresh",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/auth/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏃 Training Service",
+      "item": [
+        {
+          "name": "🔧 Setup",
+          "item": [
+            {
+              "name": "Health Check",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/actuator/health",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "actuator",
+                    "health"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "📋 Exercise Management",
+          "item": [
+            {
+              "name": "Get All System Exercises (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/system",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "system"
+                  ]
+                },
+                "description": "Retrieves all system-wide exercises (page 0, size 20, sorted by createdAt desc)"
+              }
+            },
+            {
+              "name": "Get All System Exercises (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/system?page=0&size=50&sort=name,asc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "system"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "50"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "name,asc"
+                    }
+                  ]
+                },
+                "description": "Get system exercises with custom pagination (page 0, size 50, sorted by name)"
+              }
+            },
+            {
+              "name": "Get Exercises by Discipline (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/discipline/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "discipline",
+                    "1"
+                  ]
+                },
+                "description": "Get exercises for a discipline (default pagination)"
+              }
+            },
+            {
+              "name": "Get Exercises by Discipline (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/discipline/1?page=0&size=20&sort=name,asc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "discipline",
+                    "1"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "name,asc"
+                    }
+                  ]
+                },
+                "description": "Get exercises for a discipline with pagination"
+              }
+            },
+            {
+              "name": "Get User's Custom Exercises (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/my-exercises",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "my-exercises"
+                  ]
+                },
+                "description": "Get user's custom exercises (default pagination)"
+              }
+            },
+            {
+              "name": "Get User's Custom Exercises (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/my-exercises?page=0&size=30&sort=createdAt,desc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "my-exercises"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "30"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "createdAt,desc"
+                    }
+                  ]
+                },
+                "description": "Get user's custom exercises with custom pagination"
+              }
+            },
+            {
+              "name": "Get Exercise by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "1"
+                  ]
+                },
+                "description": "Get a specific exercise by ID (no pagination)"
+              }
+            },
+            {
+              "name": "Create Custom Exercise",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"My Custom Push-up Variation\",\n  \"description\": \"Diamond push-ups for tricep focus\",\n  \"type\": \"USER\",\n  \"disciplineId\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises"
+                  ]
+                },
+                "description": "Create a new custom exercise"
+              }
+            },
+            {
+              "name": "Update Exercise",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Exercise Name\",\n  \"description\": \"Updated description\",\n  \"type\": \"USER\",\n  \"disciplineId\": 2\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "1"
+                  ]
+                },
+                "description": "Update an exercise (only creator can update)"
+              }
+            },
+            {
+              "name": "Delete Exercise",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercises/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercises",
+                    "1"
+                  ]
+                },
+                "description": "Delete an exercise (only creator can delete)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "🎯 Routine Template Management",
+          "item": [
+            {
+              "name": "Get All System Routine Templates (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/routine-templates/system",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "routine-templates",
+                    "system"
+                  ]
+                },
+                "description": "Get all pre-designed routine templates (default pagination)"
+              }
+            },
+            {
+              "name": "Get All System Routine Templates (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/routine-templates/system?page=0&size=20&sort=name,asc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "routine-templates",
+                    "system"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "name,asc"
+                    }
+                  ]
+                },
+                "description": "Get system templates with custom pagination"
+              }
+            },
+            {
+              "name": "Get User's Custom Routine Templates (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/routine-templates/my-templates",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "routine-templates",
+                    "my-templates"
+                  ]
+                },
+                "description": "Get user's custom templates (default pagination)"
+              }
+            },
+            {
+              "name": "Get User's Custom Routine Templates (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/routine-templates/my-templates?page=0&size=25&sort=createdAt,desc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "routine-templates",
+                    "my-templates"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "25"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "createdAt,desc"
+                    }
+                  ]
+                },
+                "description": "Get user's templates with custom pagination"
+              }
+            },
+            {
+              "name": "Get Routine Template by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/routine-templates/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "routine-templates",
+                    "1"
+                  ]
+                },
+                "description": "Get a specific routine template by ID (no pagination)"
+              }
+            },
+            {
+              "name": "Create Custom Routine Template",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"My Custom Routine\",\n  \"description\": \"5-day custom training routine focused on strength\",\n  \"type\": \"USER\",\n  \"exerciseIds\": [1, 2, 3]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/routine-templates",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "routine-templates"
+                  ]
+                },
+                "description": "Create a new custom routine template"
+              }
+            },
+            {
+              "name": "Update Routine Template",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Routine Name\",\n  \"description\": \"Updated description with new focus\",\n  \"type\": \"USER\",\n  \"exerciseIds\": [1, 2, 3, 4]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/routine-templates/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "routine-templates",
+                    "1"
+                  ]
+                },
+                "description": "Update a routine template (only creator can update)"
+              }
+            },
+            {
+              "name": "Delete Routine Template",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/routine-templates/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "routine-templates",
+                    "1"
+                  ]
+                },
+                "description": "Delete a routine template (only creator can delete)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "👤 User Routine Management",
+          "item": [
+            {
+              "name": "Get User's Active Routines (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines/active",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines",
+                    "active"
+                  ]
+                },
+                "description": "Get all currently active routines for the user (default pagination)"
+              }
+            },
+            {
+              "name": "Get User's Active Routines (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines/active?page=0&size=10&sort=startDate,desc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines",
+                    "active"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "10"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "startDate,desc"
+                    }
+                  ]
+                },
+                "description": "Get active routines with custom pagination"
+              }
+            },
+            {
+              "name": "Get All User's Routines (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines"
+                  ]
+                },
+                "description": "Get all routines (active and inactive) for the user (default pagination)"
+              }
+            },
+            {
+              "name": "Get All User's Routines (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines?page=0&size=15&sort=createdAt,desc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "15"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "createdAt,desc"
+                    }
+                  ]
+                },
+                "description": "Get all routines with custom pagination"
+              }
+            },
+            {
+              "name": "Get User Routine by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines",
+                    "1"
+                  ]
+                },
+                "description": "Get a specific user routine by ID (no pagination)"
+              }
+            },
+            {
+              "name": "Assign Routine Template to User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"routineTemplateId\": 1,\n  \"isActive\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines/assign",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines",
+                    "assign"
+                  ]
+                },
+                "description": "Assign a routine template to the current user"
+              }
+            },
+            {
+              "name": "Update User Routine",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": true,\n  \"endDate\": \"2025-12-31T23:59:59\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines",
+                    "1"
+                  ]
+                },
+                "description": "Update a user routine"
+              }
+            },
+            {
+              "name": "Deactivate User Routine",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines/1/deactivate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines",
+                    "1",
+                    "deactivate"
+                  ]
+                },
+                "description": "Deactivate a user routine (soft delete)"
+              }
+            },
+            {
+              "name": "Delete User Routine",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/user-routines/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "user-routines",
+                    "1"
+                  ]
+                },
+                "description": "Delete a user routine (hard delete)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "💪 Exercise Session Management",
+          "item": [
+            {
+              "name": "Get Sessions by Routine ID (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercise-sessions/routine/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercise-sessions",
+                    "routine",
+                    "1"
+                  ]
+                },
+                "description": "Get all exercise sessions for a specific routine (default pagination)"
+              }
+            },
+            {
+              "name": "Get Sessions by Routine ID (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercise-sessions/routine/1?page=0&size=30&sort=sessionDate,desc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercise-sessions",
+                    "routine",
+                    "1"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "30"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "sessionDate,desc"
+                    }
+                  ]
+                },
+                "description": "Get sessions by routine with custom pagination"
+              }
+            },
+            {
+              "name": "Get Sessions by Date (Default Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercise-sessions/date/2025-03-18",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercise-sessions",
+                    "date",
+                    "2025-03-18"
+                  ]
+                },
+                "description": "Get all exercise sessions for a specific date (default pagination). Use YYYY-MM-DD format"
+              }
+            },
+            {
+              "name": "Get Sessions by Date (Custom Pagination)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercise-sessions/date/2025-03-18?page=0&size=20&sort=sessionDate,desc",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercise-sessions",
+                    "date",
+                    "2025-03-18"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "sessionDate,desc"
+                    }
+                  ]
+                },
+                "description": "Get sessions by date with custom pagination"
+              }
+            },
+            {
+              "name": "Get Session by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercise-sessions/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercise-sessions",
+                    "1"
+                  ]
+                },
+                "description": "Get a specific exercise session by ID (no pagination)"
+              }
+            },
+            {
+              "name": "Log Exercise Session",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userRoutineId\": 1,\n  \"exerciseId\": 1,\n  \"sets\": 3,\n  \"reps\": 12,\n  \"weight\": 100.0,\n  \"duration\": 600,\n  \"notes\": \"Good form, felt strong\",\n  \"sessionDate\": \"2025-03-18T10:30:00\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercise-sessions",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercise-sessions"
+                  ]
+                },
+                "description": "Log a new exercise session. Track workout performance and metrics"
+              }
+            },
+            {
+              "name": "Update Exercise Session",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sets\": 4,\n  \"reps\": 15,\n  \"weight\": 110.0,\n  \"duration\": 720,\n  \"notes\": \"Increased weight, still good form\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercise-sessions/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercise-sessions",
+                    "1"
+                  ]
+                },
+                "description": "Update an exercise session"
+              }
+            },
+            {
+              "name": "Delete Exercise Session",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "1",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/exercise-sessions/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "exercise-sessions",
+                    "1"
+                  ]
+                },
+                "description": "Delete an exercise session"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Exercise Sessions",
+          "item": [
+            {
+              "name": "Get Sessions by Routine",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "1"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8082/api/v1/sessions/routine/1?page=0&size=20",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8082",
+                  "path": [
+                    "api",
+                    "v1",
+                    "sessions",
+                    "routine",
+                    "1"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Sessions by Date",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "1"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8082/api/v1/sessions/date/2024-03-20?page=0&size=20",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8082",
+                  "path": [
+                    "api",
+                    "v1",
+                    "sessions",
+                    "date",
+                    "2024-03-20"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Session by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "1"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8082/api/v1/sessions/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8082",
+                  "path": [
+                    "api",
+                    "v1",
+                    "sessions",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Exercise Session",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "1"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userRoutineId\": 1,\n  \"exerciseId\": 5,\n  \"sets\": 3,\n  \"reps\": 10,\n  \"weight\": 50.5,\n  \"duration\": 900,\n  \"notes\": \"Felt strong today\",\n  \"sessionDate\": \"2024-03-20T14:30:00\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:8082/api/v1/sessions",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8082",
+                  "path": [
+                    "api",
+                    "v1",
+                    "sessions"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Exercise Session",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "1"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userRoutineId\": 1,\n  \"exerciseId\": 5,\n  \"sets\": 4,\n  \"reps\": 12,\n  \"weight\": 55.0,\n  \"duration\": 1000\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:8082/api/v1/sessions/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8082",
+                  "path": [
+                    "api",
+                    "v1",
+                    "sessions",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Exercise Session",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "1"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8082/api/v1/sessions/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8082",
+                  "path": [
+                    "api",
+                    "v1",
+                    "sessions",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📊 Tracking Service",
+      "item": [
+        {
+          "name": "🎯 Objectives",
+          "item": [
+            {
+              "name": "Get My Objectives",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/objectives",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "objectives"
+                  ]
+                },
+                "description": "Get all objectives for the current user"
+              }
+            },
+            {
+              "name": "Get Objective by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/objectives/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "objectives",
+                    "1"
+                  ]
+                },
+                "description": "Get a specific objective by ID"
+              }
+            },
+            {
+              "name": "Create Objective",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/objectives",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "objectives"
+                  ]
+                },
+                "description": "Create a new fitness objective",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"WEIGHT_LOSS\",\n  \"description\": \"Lose 10kg in 3 months\",\n  \"targetDate\": \"2026-06-01T00:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Update Objective",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/objectives/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "objectives",
+                    "1"
+                  ]
+                },
+                "description": "Update an existing objective",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"WEIGHT_LOSS\",\n  \"description\": \"Lose 8kg in 3 months\",\n  \"targetDate\": \"2026-07-01T00:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete Objective",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/objectives/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "objectives",
+                    "1"
+                  ]
+                },
+                "description": "Delete an objective"
+              }
+            }
+          ]
+        },
+        {
+          "name": "📋 Plans",
+          "item": [
+            {
+              "name": "Get My Plans",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/plans",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "plans"
+                  ]
+                },
+                "description": "Get all plans for the current user"
+              }
+            },
+            {
+              "name": "Get Plan by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/plans/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "plans",
+                    "1"
+                  ]
+                },
+                "description": "Get a specific plan"
+              }
+            },
+            {
+              "name": "Create Plan",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/plans",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "plans"
+                  ]
+                },
+                "description": "Create a new training+diet plan",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"My 12-Week Plan\",\n  \"description\": \"Comprehensive plan\",\n  \"objectiveId\": 1,\n  \"status\": \"ACTIVE\",\n  \"startDate\": \"2026-03-01T00:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Update Plan",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/plans/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "plans",
+                    "1"
+                  ]
+                },
+                "description": "Update plan details",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Plan\",\n  \"description\": \"Updated description\",\n  \"objectiveId\": 1,\n  \"status\": \"ACTIVE\",\n  \"startDate\": \"2026-03-01T00:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete Plan",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/plans/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "plans",
+                    "1"
+                  ]
+                },
+                "description": "Delete a plan"
+              }
+            }
+          ]
+        },
+        {
+          "name": "🏋️ Training Components",
+          "item": [
+            {
+              "name": "Get Training Component",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/training-components/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "training-components",
+                    "1"
+                  ]
+                },
+                "description": "Get a training component by ID"
+              }
+            },
+            {
+              "name": "Get Training Comp by Plan",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/plans/1/training-component",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "plans",
+                    "1",
+                    "training-component"
+                  ]
+                },
+                "description": "Get the training component for a plan"
+              }
+            },
+            {
+              "name": "Create Training Component",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/training-components",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "training-components"
+                  ]
+                },
+                "description": "Add a training component to a plan",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"planId\": 1,\n  \"trainingTemplateId\": 1,\n  \"professionalId\": 4,\n  \"isCustom\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Update Training Component",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/training-components/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "training-components",
+                    "1"
+                  ]
+                },
+                "description": "Update a training component",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"trainingTemplateId\": 2,\n  \"professionalId\": 4,\n  \"isCustom\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete Training Component",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/training-components/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "training-components",
+                    "1"
+                  ]
+                },
+                "description": "Delete a training component"
+              }
+            }
+          ]
+        },
+        {
+          "name": "🥗 Diet Components",
+          "item": [
+            {
+              "name": "Get Diet Component",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-components/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-components",
+                    "1"
+                  ]
+                },
+                "description": "Get a diet component by ID"
+              }
+            },
+            {
+              "name": "Get Diet Comp by Plan",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/plans/1/diet-component",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "plans",
+                    "1",
+                    "diet-component"
+                  ]
+                },
+                "description": "Get the diet component for a plan"
+              }
+            },
+            {
+              "name": "Create Diet Component",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-components",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-components"
+                  ]
+                },
+                "description": "Add a diet component to a plan",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"planId\": 1,\n  \"dietTemplateId\": 1,\n  \"professionalId\": 5,\n  \"isCustom\": false,\n  \"calorieGoal\": 2000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Update Diet Component",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-components/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-components",
+                    "1"
+                  ]
+                },
+                "description": "Update a diet component",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"dietTemplateId\": 2,\n  \"professionalId\": 5,\n  \"isCustom\": true,\n  \"calorieGoal\": 1800\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete Diet Component",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-components/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-components",
+                    "1"
+                  ]
+                },
+                "description": "Delete a diet component"
+              }
+            }
+          ]
+        },
+        {
+          "name": "💡 Recommendations",
+          "item": [
+            {
+              "name": "Get Recommendation",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/recommendations/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "recommendations",
+                    "1"
+                  ]
+                },
+                "description": "Get a recommendation by ID"
+              }
+            },
+            {
+              "name": "Get by Training Component",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/recommendations/training-component/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "recommendations",
+                    "training-component",
+                    "1"
+                  ]
+                },
+                "description": "Get recommendations for a training component"
+              }
+            },
+            {
+              "name": "Get by Diet Component",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/recommendations/diet-component/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "recommendations",
+                    "diet-component",
+                    "1"
+                  ]
+                },
+                "description": "Get recommendations for a diet component"
+              }
+            },
+            {
+              "name": "Create Recommendation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/recommendations",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "recommendations"
+                  ]
+                },
+                "description": "Create a recommendation (professional only)",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": 1,\n  \"trainingComponentId\": 1,\n  \"content\": \"Increase progressive overload by 5% each week\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Update Recommendation",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/recommendations/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "recommendations",
+                    "1"
+                  ]
+                },
+                "description": "Update a recommendation",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Updated recommendation content\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete Recommendation",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/recommendations/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "recommendations",
+                    "1"
+                  ]
+                },
+                "description": "Delete a recommendation"
+              }
+            }
+          ]
+        },
+        {
+          "name": "📏 Measurements",
+          "item": [
+            {
+              "name": "Get My Measurements",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/measurements",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "measurements"
+                  ]
+                },
+                "description": "Get all measurements for current user"
+              }
+            },
+            {
+              "name": "Get Measurement by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/measurements/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "measurements",
+                    "1"
+                  ]
+                },
+                "description": "Get a specific measurement by ID"
+              }
+            },
+            {
+              "name": "Get Measurements by Type",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/measurements/types/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "measurements",
+                    "types",
+                    "1"
+                  ]
+                },
+                "description": "Get measurements filtered by type"
+              }
+            },
+            {
+              "name": "Get Values by Type ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/measurements/by-type/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "measurements",
+                    "by-type",
+                    "1"
+                  ]
+                },
+                "description": "Get measurement values for a type"
+              }
+            },
+            {
+              "name": "Create Measurement Type",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/measurements/types",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "measurements",
+                    "types"
+                  ]
+                },
+                "description": "Create a custom measurement type",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Grip Strength\",\n  \"unit\": \"kg\",\n  \"minValue\": 0,\n  \"maxValue\": 200\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Log Measurement",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/measurements",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "measurements"
+                  ]
+                },
+                "description": "Log a body measurement value",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"measurementTypeId\": 1,\n  \"value\": 85.5,\n  \"notes\": \"Morning weigh-in\",\n  \"recordedAt\": \"2026-03-19T08:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Update Measurement",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/measurements/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "measurements",
+                    "1"
+                  ]
+                },
+                "description": "Update a measurement entry",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"measurementTypeId\": 1,\n  \"value\": 85,\n  \"notes\": \"Corrected value\",\n  \"recordedAt\": \"2026-03-19T08:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete Measurement",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/measurements/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "measurements",
+                    "1"
+                  ]
+                },
+                "description": "Delete a measurement"
+              }
+            }
+          ]
+        },
+        {
+          "name": "🍽️ Diet Logs",
+          "item": [
+            {
+              "name": "Get Diet Log by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-logs/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-logs",
+                    "1"
+                  ]
+                },
+                "description": "Get a diet log by ID"
+              }
+            },
+            {
+              "name": "Get My Diet Logs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-logs",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-logs"
+                  ]
+                },
+                "description": "Get all diet logs for current user"
+              }
+            },
+            {
+              "name": "Get Logs by Date",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-logs/date/2026-03-19",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-logs",
+                    "date",
+                    "2026-03-19"
+                  ]
+                },
+                "description": "Get diet logs for a specific date (YYYY-MM-DD)"
+              }
+            },
+            {
+              "name": "Log a Meal",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-logs",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-logs"
+                  ]
+                },
+                "description": "Create a new diet log entry",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"logDate\": \"2026-03-19\",\n  \"meal\": \"BREAKFAST\",\n  \"foodItems\": \"Oats, banana, protein shake\",\n  \"calories\": 450,\n  \"macros\": \"55g carbs, 35g protein, 10g fat\",\n  \"notes\": \"Post-workout meal\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Update Diet Log",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-logs/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-logs",
+                    "1"
+                  ]
+                },
+                "description": "Update a diet log entry",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"logDate\": \"2026-03-19\",\n  \"meal\": \"BREAKFAST\",\n  \"foodItems\": \"Oats, berries, protein shake\",\n  \"calories\": 420,\n  \"macros\": \"50g carbs, 35g protein, 8g fat\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete Diet Log",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{tracking_url}}/api/v1/diet-logs/1",
+                  "host": [
+                    "{{tracking_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-logs",
+                    "1"
+                  ]
+                },
+                "description": "Delete a diet log entry"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Diet Logs",
+          "item": [
+            {
+              "name": "Get Diet Logs by Date",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "1"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8083/api/v1/diet-logs/date/2024-03-20",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8083",
+                  "path": [
+                    "api",
+                    "v1",
+                    "diet-logs",
+                    "date",
+                    "2024-03-20"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔔 Notification Service",
+      "item": [
+        {
+          "name": "🔔 Notifications",
+          "item": [
+            {
+              "name": "Get My Notifications",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/notifications",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notifications"
+                  ]
+                },
+                "description": "Get all notifications for current user"
+              }
+            },
+            {
+              "name": "Get Unread Notifications",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/notifications/unread",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notifications",
+                    "unread"
+                  ]
+                },
+                "description": "Get only unread notifications"
+              }
+            },
+            {
+              "name": "Get Unread Count",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/notifications/unread/count",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notifications",
+                    "unread",
+                    "count"
+                  ]
+                },
+                "description": "Get count of unread notifications"
+              }
+            },
+            {
+              "name": "Send Notification",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/notifications",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notifications"
+                  ]
+                },
+                "description": "Send a push notification to a user",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": 1,\n  \"title\": \"Workout Reminder\",\n  \"body\": \"Time for your 7PM workout!\",\n  \"type\": \"WORKOUT_REMINDER\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Mark as Read",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/notifications/1/read",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notifications",
+                    "1",
+                    "read"
+                  ]
+                },
+                "description": "Mark a specific notification as read"
+              }
+            },
+            {
+              "name": "Delete Notification",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/notifications/1",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notifications",
+                    "1"
+                  ]
+                },
+                "description": "Delete a notification"
+              }
+            }
+          ]
+        },
+        {
+          "name": "📱 Push Tokens",
+          "item": [
+            {
+              "name": "Register Push Token",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/push-tokens",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "push-tokens"
+                  ]
+                },
+                "description": "Register a device push token for the current user",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]\",\n  \"deviceType\": \"android\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Get My Tokens",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/push-tokens",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "push-tokens"
+                  ]
+                },
+                "description": "Get all push tokens for current user"
+              }
+            },
+            {
+              "name": "Get Active Tokens",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/push-tokens/active",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "push-tokens",
+                    "active"
+                  ]
+                },
+                "description": "Get only active push tokens"
+              }
+            },
+            {
+              "name": "Deactivate Token",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{user_id}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{notification_url}}/api/v1/push-tokens",
+                  "host": [
+                    "{{notification_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "push-tokens"
+                  ]
+                },
+                "description": "Deactivate a push token",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Push Tokens",
+          "item": [
+            {
+              "name": "Remove Push Token",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "1"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8084/api/v1/push-tokens/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8084",
+                  "path": [
+                    "api",
+                    "v1",
+                    "push-tokens",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "auth_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "training_url",
+      "value": "http://localhost:8082",
+      "type": "string"
+    },
+    {
+      "key": "tracking_url",
+      "value": "http://localhost:8083",
+      "type": "string"
+    },
+    {
+      "key": "notification_url",
+      "value": "http://localhost:8084",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "name": "Gym Platform - Complete API",
+  "description": "Consolidated master collection for all Gym Platform microservices (Auth, Training, Tracking, Notifications)"
+}

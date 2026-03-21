@@ -1,103 +1,157 @@
-# Testing Documentation & Resources
+# Gym Platform API - Testing Guide
 
-This section contains testing guides, test collections, and testing resources.
+Complete testing suite for Gym Platform microservices with 101 API endpoints across 4 services.
 
-## Contents
+## 📋 Contents
 
-- **01-testing-guide.md** - Comprehensive testing guide
+### Documentation
+- **TESTING.md** - ⭐ **START HERE** - Comprehensive 800+ line testing guide with all procedures
+- **01-testing-guide.md** - Unit/integration testing guide
 - **02-testing-resources.md** - Testing tools and resources
-- **03-postman-testing-guide.md** - API testing with Postman
+- **03-postman-testing-guide.md** - Additional Postman resources
 
-## Test Collections
+### Collections & Environments
+- **collections/** - Postman collections
+  - `Gym-Platform-API-Master.postman_collection.json` - Consolidated master collection (101 requests)
+- **environments/** - Environment configurations
+  - `local.postman_environment.json` - Local development (localhost:8081-8084)
+  - `staging.postman_environment.json` - Staging environment
+  - `production.postman_environment.json` - Production environment (read-only)
 
-Postman collections for API testing:
-- `Gym-Platform-Complete-API.postman_collection.json` - Full API test suite
-- `Gym-Training-Service.postman_collection.json` - Training service tests
-- `Gym_Platform_API.postman_collection.json` - Platform API tests
-- `Gym_Platform_API_Testing_Environment.postman_environment.json` - Test environment configuration
+### Test Data & Configuration
+- **test-data/** - Test fixtures and seed data
+  - `seed-data.json` - Realistic test data for all 4 microservices
+  - `fixtures/` - Organized test fixtures by entity
+- **package.json** - npm scripts for automation
+- **newman-config.json** - Newman CLI configuration
 
-## Subdirectories
+### Subdirectories
+- **pre-request-scripts/** - Shared pre-request scripts
+- **post-request-scripts/** - Shared post-request scripts
+- **results/** - Test execution reports and results
+- **_archive/** - Old collections (consolidated into master)
 
-- **fixtures/** - Test data and fixtures
-- **results/** - Test execution results and reports
-- **scenarios/** - Test scenarios and test cases
+## 🚀 Quick Start
 
-## Quick Start: Running Tests
+### Prerequisites
+- Postman ([Download](https://www.postman.com/downloads/))
+- Node.js 16+ ([Download](https://nodejs.org/))
+- npm (comes with Node.js)
+- Gym Platform services running locally
 
-### Using Postman
-1. Import the collection: `Gym-Platform-Complete-API.postman_collection.json`
-2. Import the environment: `Gym_Platform_API_Testing_Environment.postman_environment.json`
-3. Run the collection from the Postman UI
+### 5-Minute Setup
 
-### Using Command Line
 ```bash
-./scripts/operational/run_postman_tests.sh
+# Navigate to tests directory
+cd tests
+
+# Install dependencies (for Newman CLI automation)
+npm install
+
+# Run tests against local services
+npm run test:local
+
+# Generate reports
+npm run test:ci
 ```
 
-### Java/Unit Tests
-See **01-testing-guide.md** for running unit and integration tests with Maven.
+### Manual Postman Testing
 
-## Test Coverage
+1. **Import collection**: File → Import → `collections/Gym-Platform-API-Master.postman_collection.json`
+2. **Import environment**: File → Import → `environments/local.postman_environment.json`
+3. **Select environment**: Top-right dropdown → "Gym Platform API - Local Environment"
+4. **Run requests**: Click any request → Send
 
-The project includes:
-- **Unit Tests**: Individual component testing
-- **Integration Tests**: Service interaction testing
-- **API Tests**: Endpoint verification (via Postman)
-- **RBAC Tests**: Permission and authorization testing
-- **E2E Tests**: End-to-end workflow validation
+### Starting Local Services
 
-## Testing Strategy
+```bash
+# Terminal 1: Auth Service
+cd auth-service && npm start
 
-See **01-testing-guide.md** for:
-- Test organization
-- Test naming conventions
-- Coverage requirements
-- Mocking strategies
-- CI/CD integration
+# Terminal 2: Training Service
+cd training-service && npm start
 
-## Postman Resources
+# Terminal 3: Tracking Service
+cd tracking-service && npm start
 
-For detailed Postman testing:
-1. See **03-postman-testing-guide.md** for setup
-2. Review test scenarios in **scenarios/**
-3. Check previous test results in **results/**
+# Terminal 4: Notification Service
+cd notification-service && npm start
+```
 
-## Environment Setup for Testing
+Verify: `curl http://localhost:8081/health`
 
-The test environment includes:
-- All 4 microservices running
-- PostgreSQL database
-- Test data seeded (see **fixtures/**)
-- Health checks passing
+---
 
-## Continuous Integration
+## 📚 Documentation Guide
 
-Tests run automatically on:
-- Pull request creation
-- Pre-commit (if hooks configured)
-- Deployment pipeline
+### For Manual Testing
+→ See **TESTING.md** Section: "Running Tests Locally"
 
-See CI configuration in the project root.
+### For CLI Automation
+→ See **TESTING.md** Section: "Running Tests with Newman"
 
-## Results & Reports
+### For CI/CD Integration
+→ See **TESTING.md** Section: "Running Tests in CI/CD"
 
-Previous test execution results are stored in **results/**.
-Check these for:
-- Test pass/fail status
-- Coverage reports
-- Performance metrics
-- Issue discovery
+### For Writing New Tests
+→ See **TESTING.md** Section: "Writing New Tests"
 
-## Troubleshooting Tests
+### For Troubleshooting
+→ See **TESTING.md** Section: "Troubleshooting"
 
-If tests fail:
-1. Check [Test Troubleshooting Guide](../troubleshooting/01-troubleshooting-guide.md)
-2. Verify environment setup
-3. Review test logs in **results/**
-4. See **01-testing-guide.md** for debugging tips
+---
 
-## For More Information
+## 📊 Collection Structure
 
-- **API Documentation**: See [API Documentation](../docs/api/)
-- **Development Guide**: See [Development Documentation](../development/)
-- **Deployment Verification**: See [Deployment Guide](../deployment/)
+The master collection includes 101 requests organized by service:
+
+- **🔐 Auth Service** (7 requests) - Authentication, registration, token management
+- **🏃 Training Service** (48 requests) - Exercises, routines, sessions, metrics
+- **📊 Tracking Service** (26 requests) - Diet logs, weight, workouts, progress
+- **🔔 Notification Service** (16 requests) - Notifications, push tokens, settings
+
+All organized in clear, navigable folders. ⭐ See **TESTING.md** for full structure.
+
+---
+
+## 🛠️ Available Commands
+
+```bash
+# Run tests
+npm run test:local              # Local services
+npm run test:staging            # Staging environment
+npm run test:production         # Production (read-only)
+npm run test:ci                 # With all reports (JSON + HTML)
+
+# Development
+npm run test:watch              # Watch mode - auto-run on changes
+npm run lint:collection         # Validate collection syntax
+```
+
+---
+
+## 📈 Test Coverage
+
+- **101 API Endpoints** - All 4 microservices fully covered
+- **4 Microservices** - Auth, Training, Tracking, Notifications
+- **Multi-environment** - Local, staging, production support
+- **Realistic Fixtures** - Complete test data in `test-data/seed-data.json`
+- **Comprehensive Reports** - CLI, JSON, and HTML output formats
+
+---
+
+## 🔄 Test Execution Workflow
+
+```
+1. Select Environment (local/staging/production)
+   ↓
+2. Set Auth Token (via Login request or environment)
+   ↓
+3. Run Collection or Individual Requests
+   ↓
+4. View Results (Status, response time, assertions)
+   ↓
+5. Review Reports (results/ directory)
+```
+
+---

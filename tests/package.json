@@ -1,0 +1,23 @@
+{
+  "name": "gym-platform-api-tests",
+  "version": "1.0.0",
+  "description": "Postman API tests for Gym Platform microservices",
+  "scripts": {
+    "test:local": "newman run collections/Gym-Platform-API-Master.postman_collection.json -e environments/local.postman_environment.json -c newman-config.json",
+    "test:staging": "newman run collections/Gym-Platform-API-Master.postman_collection.json -e environments/staging.postman_environment.json -c newman-config.json",
+    "test:production": "newman run collections/Gym-Platform-API-Master.postman_collection.json -e environments/production.postman_environment.json -c newman-config.json",
+    "test:ci": "newman run collections/Gym-Platform-API-Master.postman_collection.json -e environments/local.postman_environment.json --reporters cli,json,html --reporter-json-export results/newman-results.json --reporter-html-export results/newman-report.html",
+    "test:watch": "nodemon --exec 'npm run test:local'",
+    "lint:collection": "node scripts/validate-collection.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "newman": "^6.1.0",
+    "newman-reporter-html": "^1.0.5",
+    "newman-reporter-json": "^1.0.4",
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

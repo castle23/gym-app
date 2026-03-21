@@ -1,0 +1,24 @@
+{
+  "collection": "collections/Gym-Platform-API-Master.postman_collection.json",
+  "reporters": ["cli"],
+  "timeout": 10000,
+  "timeoutRequest": 5000,
+  "delayRequest": 100,
+  "avoidBlackListedHeaders": true,
+  "strictSSL": false,
+  "global": {
+    "enableGlobalScripts": true,
+    "globalSetup": null,
+    "globalTeardown": null
+  },
+  "requestTimeout": 5000,
+  "connectionTimeout": 10000,
+  "assertionFormat": "json",
+  "verbose": false,
+  "color": "auto",
+  "bail": false,
+  "outputFormat": "cli",
+  "retryOnConnectionFailure": true,
+  "maxIterations": 1,
+  "stopOnError": false
+}
