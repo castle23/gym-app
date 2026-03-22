@@ -21,8 +21,8 @@ Before reading the full guide, here's what you need to do to make your first con
 
 3. **Make changes and test:**
    ```bash
-   npm test
-   npm run lint
+   mvn clean test
+   mvn spotbugs:check
    ```
 
 4. **Commit with proper format:**
@@ -133,11 +133,11 @@ feature:  o---o---o (feature/add-diet-logging)
 
 ### Prerequisites
 
-- Node.js 16+
-- npm 8+
-- Docker & Docker Compose (for services)
-- PostgreSQL 13+ (if running locally)
-- Git 2.30+
+- **Java 17+** (OpenJDK or Oracle JDK)
+- **Maven 3.8+** (for building)
+- **Docker & Docker Compose** (for services and database)
+- **PostgreSQL 13+** (if running without Docker)
+- **Git 2.30+**
 
 ### Local Environment Setup
 
@@ -147,54 +147,52 @@ feature:  o---o---o (feature/add-diet-logging)
    cd gym-platform
    ```
 
-2. **Install dependencies:**
+2. **Verify Java and Maven:**
    ```bash
-   # Root dependencies
-   npm install
-
-   # Microservice dependencies
-   cd auth-service && npm install && cd ..
-   cd training-service && npm install && cd ..
-   cd tracking-service && npm install && cd ..
-   cd notification-service && npm install && cd ..
+   java -version
+   mvn -version
    ```
 
 3. **Start services with Docker Compose:**
    ```bash
+   # From root directory
    docker-compose up -d
    ```
 
-   Or start services individually:
+   Or build and run services individually:
    ```bash
+   # Build all services
+   mvn clean install
+
    # Terminal 1: Auth Service
-   cd auth-service && npm start
+   cd auth-service && mvn spring-boot:run
 
    # Terminal 2: Training Service
-   cd training-service && npm start
+   cd training-service && mvn spring-boot:run
 
    # Terminal 3: Tracking Service
-   cd tracking-service && npm start
+   cd tracking-service && mvn spring-boot:run
 
    # Terminal 4: Notification Service
-   cd notification-service && npm start
+   cd notification-service && mvn spring-boot:run
    ```
 
 4. **Verify services are running:**
    ```bash
-   curl http://localhost:8081/health
-   curl http://localhost:8082/training/health
-   curl http://localhost:8083/tracking/health
-   curl http://localhost:8084/notifications/health
+   curl http://localhost:8081/actuator/health
+   curl http://localhost:8082/actuator/health
+   curl http://localhost:8083/actuator/health
+   curl http://localhost:8084/actuator/health
    ```
 
 5. **Run tests:**
    ```bash
-   npm test
+   mvn clean test
    ```
 
 ### Database Setup
 
-The database is initialized in Docker. If you need to reset:
+The database is initialized automatically through Docker Compose. If you need to reset:
 
 ```bash
 # Reset database
@@ -232,28 +230,32 @@ git checkout -b feature/your-feature-name
 Before committing, ensure your code has tests:
 
 ```bash
-# Run tests for your service
+# Run tests for specific service
 cd training-service
-npm test
+mvn clean test
 
-# Run specific test file
-npm test -- src/__tests__/exercises.test.js
+# Run specific test class
+mvn test -Dtest=ExerciseServiceTest
 
-# Run with coverage
-npm test -- --coverage
+# Run with coverage report
+mvn clean test jacoco:report
+# View report at: target/site/jacoco/index.html
+
+# Run integration tests
+mvn verify
 ```
 
-#### 4. Lint and Format Your Code
+#### 4. Check Code Quality
 
 ```bash
-# Run linter
-npm run lint
+# Run SpotBugs for potential bugs
+mvn spotbugs:check
 
-# Auto-fix issues
-npm run lint:fix
+# Run Checkstyle for code style
+mvn checkstyle:check
 
-# Format code
-npm run format
+# Format code (if using Spotless)
+mvn spotless:apply
 ```
 
 #### 5. Commit with Conventional Format
@@ -298,7 +300,7 @@ Use **Conventional Commits** format:
   fix(auth): handle token expiration gracefully
   refactor(tracking): simplify diet log calculations
   docs: update API reference
-  chore(deps): upgrade spring-boot to 2.6.0
+  chore(deps): upgrade spring-boot to 3.2.0
 
 ❌ Bad:
   Updated training service
@@ -348,9 +350,9 @@ How to test this change?
 
 ## Checklist
 - [ ] Code follows style guide
-- [ ] Tests pass locally
-- [ ] Linting passes
-- [ ] No console errors/warnings
+- [ ] Tests pass locally (`mvn clean test`)
+- [ ] Code quality checks pass (`mvn spotbugs:check`, `mvn checkstyle:check`)
+- [ ] No new warnings/errors in logs
 - [ ] Documentation updated
 - [ ] Database migrations tested (if applicable)
 
@@ -473,26 +475,32 @@ Every pull request MUST have:
 
 ```bash
 # Run all tests
-npm test
+mvn clean test
 
 # Run tests for specific service
-cd auth-service && npm test
+cd auth-service && mvn clean test
 
-# Run specific test file
-npm test -- auth.test.js
+# Run specific test class
+mvn test -Dtest=UserServiceTest
 
-# Run with coverage
-npm test -- --coverage
+# Run specific test method
+mvn test -Dtest=UserServiceTest#testCreateUser
 
-# Watch mode (re-run on changes)
-npm test -- --watch
+# Run with coverage report
+mvn clean test jacoco:report
+
+# Run integration tests
+mvn verify
+
+# Run with detailed output
+mvn test -X
 ```
 
 ### Writing Tests
 
 See [Testing Guide](tests/TESTING.md) for comprehensive testing documentation.
 
-Quick example for Java/Spring Boot:
+Example for Java/Spring Boot:
 
 ```java
 @Test
@@ -531,9 +539,13 @@ Use clear, descriptive names:
 Use the Postman collection for API testing:
 
 ```bash
-cd tests
-npm install
-npm run test:local
+# Import collection in Postman
+# Location: tests/collections/Gym-Platform-API-Master.postman_collection.json
+
+# Or use Newman (CLI) to run tests
+npm install -g newman
+newman run tests/collections/Gym-Platform-API-Master.postman_collection.json \
+  -e tests/environments/local.postman_environment.json
 ```
 
 See [API Testing Guide](tests/TESTING.md) for details.
@@ -544,47 +556,51 @@ See [API Testing Guide](tests/TESTING.md) for details.
 
 ### Adding a New API Endpoint
 
-1. Define the route and handler
-2. Add request/response schemas
-3. Write tests (before implementation)
-4. Implement endpoint
-5. Test manually with Postman
+1. Define the route and handler in controller
+2. Create DTO classes for request/response
+3. Write tests (before implementation - TDD)
+4. Implement endpoint logic in service
+5. Test manually with Postman collection
 6. Update API documentation
 7. Create PR
 
-Example PR: `feat(training): add GET /exercises/by-discipline endpoint`
+Example PR: `feat(training): add GET /api/training/exercises/search endpoint`
 
 ### Updating Dependencies
 
 ```bash
 # Check for updates
-npm outdated
+mvn dependency:tree
+mvn versions:display-dependency-updates
 
-# Update specific package
-npm update package-name
+# Update specific dependency
+mvn versions:use-dep-version -Dincludes=org.springframework.boot:spring-boot-starter:3.2.1
 
-# Update all packages
-npm update
+# Update all minor/patch versions (safe)
+mvn versions:update-properties -DincludedProperties=spring-boot.version
 
-# Update major versions (more risky)
-npm install package-name@latest
+# Always test after updating dependencies
+mvn clean test
 ```
-
-Always test after updating dependencies.
 
 ### Working with Database Migrations
 
-1. Create migration file:
-   ```bash
-   npm run db:migrate:create -- migration_name
+1. Create migration file in `src/main/resources/db/migration/`:
+   ```sql
+   -- V2__AddNewColumn.sql
+   ALTER TABLE exercises ADD COLUMN new_column VARCHAR(255);
    ```
 
-2. Add migration logic in created file
+2. Flyway automatically runs migrations on application startup
 
 3. Test migration:
    ```bash
-   npm run db:migrate
-   npm run db:migrate:rollback  # Test rollback too
+   # Reset database to test from scratch
+   docker-compose exec postgres psql -U gym_user -d gym_platform \
+     -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+   
+   # Run application to trigger migration
+   mvn spring-boot:run
    ```
 
 4. Commit migration file with your changes
@@ -596,14 +612,24 @@ See [Database Migrations Guide](docs/database/migrations.md) for details.
 ```bash
 # Check service logs
 docker logs training-service
+docker logs training-service -f  # Follow logs
 
-# Increase logging level
-DEBUG=* npm start
+# Check application logs with Spring Boot Actuator
+curl http://localhost:8082/actuator/health
+curl http://localhost:8082/actuator/env
 
-# Use debugger (Chrome DevTools)
-node --inspect=0.0.0.0:9229 start.js
+# Enable debug logging
+# Add to application.yml:
+# logging.level.com.gym: DEBUG
 
-# Then visit: chrome://inspect
+# Use IDE debugger
+# 1. Add breakpoint in code
+# 2. Run with debug flag: mvn spring-boot:run -Dspring-boot.run.fork=false
+# 3. Set IDE debugger to port 5005
+
+# Check database directly
+docker-compose exec postgres psql -U gym_user -d gym_platform
+# Then run SQL queries like: SELECT * FROM users;
 ```
 
 ---
@@ -667,6 +693,7 @@ See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
 - **API Reference**: [docs/api/](docs/api/) - Endpoint documentation
 - **Architecture Decisions**: [docs/adr/](docs/adr/) - Why we made key technical choices
 - **Code Standards**: [docs/development/02-code-standards-style-guide.md](docs/development/02-code-standards-style-guide.md) - Coding standards
+- **Integration Testing**: [docs/development/03-integration-testing-guide.md](docs/development/03-integration-testing-guide.md) - Cross-service testing
 
 ---
 
