@@ -17,12 +17,23 @@ http://{service-host}:{service-port}/actuator/health
 
 ### Service Health Endpoints
 
-| Service | Port | Health Endpoint | Status Endpoint |
-|---------|------|-----------------|-----------------|
-| Auth | 8081 | `http://localhost:8081/actuator/health` | `http://localhost:8081/actuator/health/liveness` |
-| Training | 8082 | `http://localhost:8082/actuator/health` | `http://localhost:8082/actuator/health/liveness` |
-| Tracking | 8083 | `http://localhost:8083/actuator/health` | `http://localhost:8083/actuator/health/liveness` |
-| Notification | 8084 | `http://localhost:8084/actuator/health` | `http://localhost:8084/actuator/health/liveness` |
+All services expose actuator via their context-path. Direct access (bypassing gateway):
+
+| Service | Port | Health Endpoint |
+|---------|------|-----------------|
+| Auth | 8081 | `http://localhost:8081/auth/actuator/health` |
+| Training | 8082 | `http://localhost:8082/training/actuator/health` |
+| Tracking | 8083 | `http://localhost:8083/tracking/actuator/health` |
+| Notification | 8084 | `http://localhost:8084/notifications/actuator/health` |
+
+Via API Gateway (port 8080):
+
+| Service | Gateway Health Endpoint |
+|---------|-------------------------|
+| Auth | `http://localhost:8080/auth/actuator/health` |
+| Training | `http://localhost:8080/training/actuator/health` |
+| Tracking | `http://localhost:8080/tracking/actuator/health` |
+| Notification | `http://localhost:8080/notifications/actuator/health` |
 
 ### Health Check Response
 
@@ -73,43 +84,26 @@ http://{service-host}:{service-port}/actuator/health
 
 ### application.yml Configuration
 
+Actuator is configured identically in all services via `gym-common`. Each service's `application.yml`:
+
 ```yaml
 management:
-  # Enable all health indicators
-  health:
-    enabled-by-default: true
-    circuitbreaker:
-      enabled: true
-    defaults:
-      enabled: true
-
-  # Health endpoint configuration
-  endpoint:
-    health:
-      enabled: true
-      show-details: when-authorized  # Show details only when authorized
-      show-components: when-authorized
-      probes:
-        enabled: true
-
-  # Endpoint exposure
   endpoints:
     web:
-      exposure:
-        include: health,info,metrics,prometheus
       base-path: /actuator
-      path-mapping:
-        health: health
-
-  # Metrics
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    tags:
-      service: auth-service
-      environment: production
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  health:
+    mail:
+      enabled: false  # auth-service only: disable mail health contributor
 ```
+
+Actuator endpoints are always public — no JWT required. Enforced at two levels:
+- **Gateway**: `/auth/actuator`, `/training/actuator`, etc. in `JwtAuthFilter.PUBLIC_PATHS`
+- **Service**: `EndpointRequest.toAnyEndpoint().permitAll()` as first security rule
 
 ### Custom Health Indicator
 
@@ -238,12 +232,45 @@ services:
     ports:
       - "8081:8081"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/auth/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
     restart: on-failure
+
+  training-service:
+    image: gym-training-service:latest
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/training/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  tracking-service:
+    image: gym-tracking-service:latest
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/tracking/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  notification-service:
+    image: gym-notification-service:latest
+    ports:
+      - "8084:8084"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/notifications/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   postgres:
     image: postgres:15-alpine
@@ -260,18 +287,21 @@ services:
 ### Manual Health Check
 
 ```bash
-# Check single service
-curl http://localhost:8081/actuator/health | jq
+# Check single service (direct)
+curl http://localhost:8081/auth/actuator/health | jq
 
-# Check all services
-for port in 8081 8082 8083 8084; do
-    echo "Checking port $port..."
-    curl -s http://localhost:$port/actuator/health | jq '.status'
+# Check all services directly
+for entry in "auth:8081:auth" "training:8082:training" "tracking:8083:tracking" "notification:8084:notifications"; do
+    IFS=':' read -r name port prefix <<< "$entry"
+    echo "Checking $name..."
+    curl -s http://localhost:$port/$prefix/actuator/health | jq '.status'
 done
 
-# Check with detailed output
-curl -s -H "Authorization: Bearer $TOKEN" \
-    http://localhost:8081/actuator/health | jq '.components'
+# Check all services via gateway
+for prefix in auth training tracking notifications; do
+    echo "Checking $prefix via gateway..."
+    curl -s http://localhost:8080/$prefix/actuator/health | jq '.status'
+done
 ```
 
 ### Continuous Monitoring Script
@@ -281,18 +311,18 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 # scripts/operational/health-check-monitor.sh
 
 SERVICES=(
-    "auth-service:8081"
-    "training-service:8082"
-    "tracking-service:8083"
-    "notification-service:8084"
+    "auth-service:8081:auth"
+    "training-service:8082:training"
+    "tracking-service:8083:tracking"
+    "notification-service:8084:notifications"
 )
 
 while true; do
     echo "=== Health Check Report ($(date)) ==="
 
     for service in "${SERVICES[@]}"; do
-        IFS=':' read -r name port <<< "$service"
-        response=$(curl -s -w "\n%{http_code}" http://localhost:$port/actuator/health)
+        IFS=':' read -r name port prefix <<< "$service"
+        response=$(curl -s -w "\n%{http_code}" http://localhost:$port/$prefix/actuator/health)
         status=$(echo "$response" | tail -1)
         body=$(echo "$response" | head -1)
 

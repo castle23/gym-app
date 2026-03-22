@@ -48,170 +48,83 @@ Comprehensive logging strategy for Gym Platform microservices including log aggr
 
 ### logback-spring.xml
 
+Shared configuration in `gym-common/src/main/resources/logback-spring.xml`, inherited by all services automatically via classpath.
+
+Log pattern includes MDC fields for distributed tracing:
+```
+%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%property{appName}] [traceId=%X{traceId:-}] [spanId=%X{spanId:-}] [userId=%X{userId:-}] %logger{36} - %msg%n
+```
+
+**Spring profiles:**
+- `!prod` (default/dev): console only, `DEBUG` for `com.gym`
+- `prod`: console + rolling file (`logs/{appName}.log`, 100MB/30 days), `INFO`
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="gym-service"/>
 
-  <!-- Define log directory -->
-  <property name="LOG_DIR" value="${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}}"/>
-  <property name="LOG_FILE" value="${LOG_FILE:-${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}}/${spring.application.name}.log}"/>
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [${appName}] [traceId=%X{traceId:-}] [spanId=%X{spanId:-}] [userId=%X{userId:-}] %logger{36} - %msg%n"/>
 
-  <!-- Console Appender (for Docker logs) -->
-  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
-      <charset>utf-8</charset>
-    </encoder>
-  </appender>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>${LOG_PATTERN}</pattern></encoder>
+    </appender>
 
-  <!-- JSON Console Appender (for log aggregation) -->
-  <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-      <customFields>{"service":"${spring.application.name}","environment":"${spring.profiles.active}"}}</customFields>
-    </encoder>
-  </appender>
+    <springProfile name="!prod">
+        <logger name="com.gym" level="DEBUG"/>
+        <root level="INFO"><appender-ref ref="CONSOLE"/></root>
+    </springProfile>
 
-  <!-- File Appender (for local storage) -->
-  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${LOG_FILE}</file>
-    <encoder>
-      <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
-      <charset>utf-8</charset>
-    </encoder>
-    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-      <fileNamePattern>${LOG_DIR}/${spring.application.name}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
-      <maxFileSize>100MB</maxFileSize>
-      <maxHistory>30</maxHistory>
-      <totalSizeCap>1GB</totalSizeCap>
-    </rollingPolicy>
-  </appender>
-
-  <!-- Async Appender (for performance) -->
-  <appender name="ASYNC_JSON" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>512</queueSize>
-    <discardingThreshold>0</discardingThreshold>
-    <appender-ref ref="JSON_CONSOLE"/>
-  </appender>
-
-  <!-- Logger configurations -->
-  <logger name="com.gym" level="DEBUG"/>
-  <logger name="org.springframework" level="INFO"/>
-  <logger name="org.hibernate" level="INFO"/>
-  <logger name="org.postgresql" level="DEBUG"/>
-
-  <!-- Root logger -->
-  <root level="INFO">
-    <appender-ref ref="CONSOLE"/>
-    <appender-ref ref="FILE"/>
-    <appender-ref ref="ASYNC_JSON"/>
-  </root>
-
-  <!-- Spring profiles -->
-  <springProfile name="dev">
-    <root level="DEBUG">
-      <appender-ref ref="CONSOLE"/>
-      <appender-ref ref="FILE"/>
-    </root>
-  </springProfile>
-
-  <springProfile name="prod">
-    <root level="INFO">
-      <appender-ref ref="CONSOLE"/>
-      <appender-ref ref="ASYNC_JSON"/>
-    </root>
-  </springProfile>
+    <springProfile name="prod">
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/${appName}.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/${appName}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+                <maxFileSize>100MB</maxFileSize>
+                <maxHistory>30</maxHistory>
+            </rollingPolicy>
+            <encoder><pattern>${LOG_PATTERN}</pattern></encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
 </configuration>
 ```
 
-## Structured Logging
+## MDC — Distributed Tracing
 
-### Using MDC (Mapped Diagnostic Context)
+MDC fields are populated automatically by `GymMdcFilter` and `GymRoleInterceptor` from `gym-common`, registered via `GymMdcAutoConfiguration`.
 
-```java
-@RestController
-@RequestMapping("/api/v1/users")
-@RequiredArgsConstructor
-@Slf4j
-public class UserController {
+| MDC Key | Source | Description |
+|---------|--------|-------------|
+| `traceId` | `X-Trace-Id` request header (or generated UUID) | Correlates a request across all services |
+| `spanId` | `X-Span-Id` request header (or generated UUID) | Identifies a single service hop |
+| `userId` | `X-User-Id` request header (injected by gateway) | Authenticated user ID |
 
-    private final UserService userService;
+`GymMdcFilter` runs at `HIGHEST_PRECEDENCE`, propagates `X-Trace-Id` and `X-Span-Id` back in response headers, and clears MDC in `finally`.
 
-    @PostMapping
-    public ResponseEntity<UserDTO> createUser(@Valid @RequestBody CreateUserRequest request) {
-        String requestId = UUID.randomUUID().toString();
-        
-        // Add to MDC for all logs in this request
-        MDC.put("requestId", requestId);
-        MDC.put("userId", requestId);
-        MDC.put("operation", "createUser");
-        MDC.put("timestamp", Instant.now().toString());
+`GymRoleInterceptor` adds `userId` to MDC and populates `UserContextHolder`. Both are excluded from `/actuator/**` paths.
 
-        try {
-            log.info("Creating new user");
-            
-            User user = userService.createUser(request);
-            
-            MDC.put("userId", user.getId().toString());
-            log.info("User created successfully");
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(new UserDTO(user));
+### Searching logs by trace
 
-        } catch (Exception e) {
-            log.error("Failed to create user", e);
-            throw e;
-        } finally {
-            MDC.clear();
-        }
-    }
-}
+```bash
+# Follow a request across services by traceId
+grep "traceId=abc-123" auth-service.log training-service.log
+
+# Docker: filter by traceId
+docker-compose logs | grep "traceId=abc-123"
 ```
 
-### Custom Log Annotation
+### Using MDC in application code
 
 ```java
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface LogActivity {
-    String value() default "";
-    boolean logArgs() default true;
-    boolean logResult() default true;
-}
-
-@Component
-@Aspect
-@Slf4j
-public class LoggingAspect {
-
-    @Around("@annotation(logActivity)")
-    public Object logActivity(ProceedingJoinPoint joinPoint, LogActivity logActivity) throws Throwable {
-        String methodName = joinPoint.getSignature().getName();
-        String operation = StringUtils.hasText(logActivity.value()) ? logActivity.value() : methodName;
-
-        MDC.put("operation", operation);
-        MDC.put("startTime", String.valueOf(System.currentTimeMillis()));
-
-        if (logActivity.logArgs()) {
-            log.debug("Method called with args: {}", Arrays.toString(joinPoint.getArgs()));
-        }
-
-        try {
-            Object result = joinPoint.proceed();
-
-            if (logActivity.logResult()) {
-                log.debug("Method returned: {}", result);
-            }
-
-            return result;
-
-        } catch (Exception e) {
-            log.error("Method failed with exception", e);
-            throw e;
-        } finally {
-            MDC.clear();
-        }
-    }
-}
+// MDC is already populated by the filter/interceptor.
+// Just use @Slf4j and log normally — traceId/spanId/userId appear automatically.
+log.info("Processing request");  
+// Output: ... [traceId=abc-123] [spanId=def-456] [userId=789] ... Processing request
 ```
 
 ## ELK Stack Setup

@@ -60,96 +60,57 @@ HMACSHA256(base64UrlEncode(header) + "." + base64UrlEncode(payload), secret)
 
 ## Spring Security Configuration
 
-### Security Config Class
+### gym-common Auto-configuration
+
+Security is centralized in `gym-common` via `GymSecurityAutoConfiguration`. Services do **not** define their own `SecurityConfig` — the auto-configuration is applied automatically.
+
+```java
+// GymSecurityAutoConfiguration (active on @Profile("!test"))
+http
+    .csrf(AbstractHttpConfigurer::disable)
+    .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
+    .authorizeHttpRequests(auth -> {
+        auth.requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll(); // actuator
+        auth.requestMatchers(publicPaths).permitAll();                    // from gym.security.public-paths
+        auth.requestMatchers(ALWAYS_PUBLIC_PATHS).permitAll();            // swagger
+        auth.anyRequest().authenticated();
+    });
+```
+
+Public paths per service configured in `application.yml`:
+
+```yaml
+gym:
+  security:
+    public-paths:
+      - /api/v1/exercises/system
+      - /api/v1/exercises/discipline/**
+```
+
+### Auth Service — Custom SecurityConfig
+
+Auth service overrides the common config (CSRF enabled for browser clients):
 
 ```java
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    private final JwtProvider jwtProvider;
-    private final CustomUserDetailsService userDetailsService;
-
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
+    public SecurityFilterChain filterChain(HttpSecurity http, GymSecurityProperties props) throws Exception {
         http
-            // Disable CSRF for stateless API
-            .csrf(csrf -> csrf.disable())
-
-            // Enable CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-            // Set session management to stateless
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-            // Exception handling
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
-                .accessDeniedHandler(new JwtAccessDeniedHandler()))
-
-            // Request filtering
-            .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers(
-                    "/api/v1/auth/login",
-                    "/api/v1/auth/register",
-                    "/api/v1/auth/refresh",
-                    "/swagger-ui.html",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/actuator/health"
-                ).permitAll()
-
-                // Admin endpoints
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-
-                // Supervisor endpoints
-                .requestMatchers("/api/v1/supervisor/**").hasAnyRole("ADMIN", "SUPERVISOR")
-
-                // All other requests require authentication
-                .anyRequest().authenticated()
-            )
-
-            // Add JWT filter
-            .addFilterBefore(
-                new JwtAuthenticationFilter(jwtProvider),
-                UsernamePasswordAuthenticationFilter.class
-            );
-
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .ignoringRequestMatchers("/", "/**"))
+            .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
+            .authorizeHttpRequests(auth -> {
+                auth.requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll();
+                auth.requestMatchers(props.getPublicPaths().toArray(new String[0])).permitAll();
+                auth.requestMatchers(ALWAYS_PUBLIC_PATHS).permitAll();
+                auth.anyRequest().authenticated();
+            });
         return http.build();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return userDetailsService;
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://app.gym.local"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Total-Count"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }
 ```

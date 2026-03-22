@@ -396,7 +396,7 @@ services:
     depends_on:
       - postgres
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/auth/actuator/health"]
 
   training-service:
     # Similar configuration
@@ -404,6 +404,8 @@ services:
     depends_on:
       - postgres
       - auth-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/training/actuator/health"]
 
   tracking-service:
     # Similar configuration
@@ -411,6 +413,8 @@ services:
     depends_on:
       - postgres
       - auth-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/tracking/actuator/health"]
 
   notification-service:
     # Similar configuration
@@ -418,6 +422,8 @@ services:
     depends_on:
       - postgres
       - auth-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/notifications/actuator/health"]
 
   postgres:
     image: postgres:15
