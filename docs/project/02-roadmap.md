@@ -100,6 +100,8 @@ All flows are documented with Mermaid diagrams in [`docs/arquitectura/diagrams/`
 - ✅ Token refresh
 - ✅ Authenticated request via API Gateway (JWT validation → X-User-Id / X-User-Roles injection)
 - ✅ RBAC enforcement via `@RequiresRole` (`ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`)
+- ✅ Password reset (forgot password → email → reset link)
+- ✅ Professional registration request & admin approval
 
 ### Training
 - ✅ Browse system exercise catalog (public, paginated)
