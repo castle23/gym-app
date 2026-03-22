@@ -43,7 +43,8 @@
 20. No hardcoded secrets or credentials in any file.
     > See also: `../rules/security-standards.md` rules 22-25 for secrets management.
 21. No `TODO` or `FIXME` comments without a linked ticket number.
-22. Code follows standards in `../rules/coding-standards.md`.
+22. All documentation (`docs/api/`, `docs/database/`, `ai/memory/`, `ai/plans/`) and test registries are up-to-date.
+23. Code follows standards in `../rules/coding-standards.md`.
 
 ## Code Review
 

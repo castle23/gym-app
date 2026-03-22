@@ -50,7 +50,12 @@ Review the provided code against these checklist categories:
 - Use `@WebMvcTest` for controller tests, `@DataJpaTest` for repositories.
 - Mock external service calls. Assert both success and failure paths.
 
-### 6. SOLID Principles
+### 6. Documentation & Test Registry Consistency (MANDATORY)
+- Verify `docs/api/`, `docs/database/`, `ai/memory/`, and `ai/plans/` reflect current code state.
+- Ensure all new public endpoints are listed in `docs/api/04-endpoints-reference.md`.
+- Ensure new test files are registered if needed.
+
+### 7. SOLID Principles
 - Single Responsibility: one reason to change per class.
 - Open/Closed: extend via interfaces, not modification.
 - Dependency Inversion: inject interfaces, not concrete implementations.

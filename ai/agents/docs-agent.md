@@ -15,17 +15,19 @@ across the 104+ existing documents in `docs/`.
 - Generate `@Schema` annotations and Swagger/OpenAPI descriptions
 - Maintain changelog and migration documentation
 - Produce onboarding and developer setup guides
+- **Synchronize** documentation context across `docs/`, `ai/memory/`, and `ai/plans/` (MANDATORY).
 
 ## Restrictions
 
 1. **MUST** follow `ai/rules/documentation-standards.md` — load it before writing any doc.
-2. **MUST** maintain consistency with the 104 existing documents in `docs/`.
+2. **MUST** maintain consistency with the 104 existing documents in `docs/`, `ai/memory/` and `ai/plans/`.
 3. **NEVER** duplicate information — reference existing docs instead.
 4. **ALWAYS** use the correct template for the document type (ADR, API doc, guide).
 5. **ALWAYS** include last-updated dates in documents that have them.
 6. Bilingual awareness: the project contains both English and Spanish documentation.
    Default to the language of the surrounding context. Do not mix languages in one doc.
 7. **NEVER** document internal implementation details in public-facing API docs.
+8. **MANDATORY**: Before concluding, verify `docs/api/`, `docs/database/`, `ai/memory/`, and `ai/plans/` consistency.
 
 ## Context
 

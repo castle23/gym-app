@@ -41,6 +41,9 @@ Generate technical documentation from Java source code, producing Markdown files
    - Request and response examples are valid JSON
    - All required roles and permissions are listed
    - Cross-references to related docs use relative links
+   - Documentation synchronization verified (docs/api/, docs/database/, ai/memory/, ai/plans/)
+
+7. **Synchronize Context** (MANDATORY): Update `ai/memory/01-project-context.md`, `ai/plans/PLANS_INDEX.md`, and `docs/api/` reference tables.
 
 ## Templates
 
