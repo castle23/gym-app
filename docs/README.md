@@ -7,6 +7,8 @@ Welcome to the comprehensive documentation for the Gym Platform API. This docume
 ### For Developers
 - **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute code and follow Git Flow
 - **[Code Standards Guide](development/02-code-standards-style-guide.md)** - Coding standards for Java, Bash, Python, IaC
+- **[Integration Testing Guide](development/03-integration-testing-guide.md)** - Cross-service testing strategies
+- **[Advanced Testing Guide](development/04-advanced-testing-guide.md)** - Load, performance, security, and chaos testing
 - **[Development Guide](development/)** - Setup, debugging, best practices
 - **[Architecture Decisions (ADRs)](adr/)** - Why we made key technical choices
 - **[Architecture Overview](arquitectura/)** - System design and microservices
@@ -14,11 +16,14 @@ Welcome to the comprehensive documentation for the Gym Platform API. This docume
 - **[Stack Documentation](stack/)** - Technology choices and configurations
 
 ### For DevOps / Infrastructure
+- **[Deployment Runbook](deployment/01-deployment-runbook.md)** - Complete deployment procedures for all environments
+- **[Changelog Procedures](deployment/02-changelog-procedures.md)** - Version management and release process
 - **[Deployment Guide](deployment/)** - Deployment procedures and checklists
 - **[Operations Runbook](operations/)** - Running and monitoring in production
 - **[Scripts](../scripts/)** - Operational, development, and monitoring scripts
 
 ### For Database Administrators
+- **[Data Dictionary](database/01-data-dictionary.md)** - Complete schema documentation for all 19 entities
 - **[DBA Guide](../dba/)** - Database architecture, queries, procedures
 - **[Database Documentation](database/)** - Schema, maintenance, troubleshooting
 
@@ -89,10 +94,15 @@ The `scripts/` directory contains executable utilities organized by purpose:
 
 - **Phase 1 (Complete)**: Consolidated Postman collections (101 endpoints) ✅
 - **Phase 1 (Complete)**: Comprehensive API Testing Guide (1,311 lines) ✅
-- **Phase 2 (Complete)**: Contributing Guide (1,050 lines) ✅
+- **Phase 2 (Complete)**: Contributing Guide (675 lines) ✅
 - **Phase 2 (Complete)**: Architecture Decision Records - 12 ADRs ✅
 - **Phase 2 (Complete)**: Code Standards Guide (1,500+ lines) ✅
-- **Next**: Data Dictionary, Integration Testing, Deployment Runbooks
+- **Phase 3 (Complete)**: Data Dictionary (2,000+ lines) ✅
+- **Phase 3 (Complete)**: Integration Testing Guide (1,200+ lines) ✅
+- **Phase 3 (Complete)**: Deployment Runbook (1,400+ lines) ✅
+- **Phase 4 (Complete)**: Advanced Testing Guide (850+ lines) ✅
+- **Phase 4 (Complete)**: Changelog Procedures (550+ lines) ✅
+- **Phase 4 (Complete)**: CHANGELOG.md template with v1.0.0 ✅
 
 ---
 
