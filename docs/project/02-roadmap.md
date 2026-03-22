@@ -90,6 +90,76 @@
 
 ---
 
+## Implemented Flows
+
+All flows are documented with Mermaid diagrams in [`docs/arquitectura/diagrams/`](../arquitectura/diagrams/).
+
+### Authentication & Authorization
+- ✅ User registration (email + password, BCrypt hashing)
+- ✅ Login → JWT access token (24h) + refresh token (7d)
+- ✅ Token refresh
+- ✅ Authenticated request via API Gateway (JWT validation → X-User-Id / X-User-Roles injection)
+- ✅ RBAC enforcement via `@RequiresRole` (`ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`)
+
+### Training
+- ✅ Browse system exercise catalog (public, paginated)
+- ✅ Browse exercises by discipline (public, paginated)
+- ✅ Create / update / delete custom exercises (owner-only)
+- ✅ Browse system routine templates (public, paginated)
+- ✅ Create custom routine templates
+- ✅ Assign routine template to user
+- ✅ Deactivate user routine
+- ✅ Log exercise sessions (sets, reps, weight, duration)
+- ✅ Query session history by routine or date
+
+### Tracking
+- ✅ Create custom measurement types
+- ✅ Record body measurements over time
+- ✅ Query measurement history by type
+- ✅ Create fitness objectives
+- ✅ Create diet & training plans with components
+- ✅ Log daily diet entries
+- ✅ Create and retrieve recommendations
+
+### Notifications
+- ✅ Create in-app notifications
+- ✅ Deliver push notifications via Firebase FCM
+- ✅ List / read / delete notifications
+- ✅ Mark notifications as read
+- ✅ Get unread count
+- ✅ Register / deactivate push tokens (Android & iOS)
+- ✅ Manage notification preferences per user
+
+---
+
+## Upcoming Flows
+
+Flows not yet implemented, ordered by priority.
+
+### High Priority
+- ⬜ Email verification on registration (token sent, link clicked)
+- ⬜ Password reset (forgot password → email → reset link)
+- ⬜ Professional registration request & admin approval
+- ⬜ Trainer assigns routine/plan to a client user
+- ⬜ Automatic notification triggered on session logged or goal achieved
+
+### Medium Priority
+- ⬜ Progress analytics — strength trends, personal bests, volume over time
+- ⬜ Recommendation engine — auto-generate recommendations based on tracking data
+- ⬜ Plan templates — reusable diet/training plan templates
+- ⬜ Scheduled push notifications (workout reminders, check-ins)
+- ⬜ Pagination cursor-based (replace offset for large datasets)
+
+### Future / Aspirational
+- ⬜ Flutter mobile client — full auth + training + tracking + notification flows
+- ⬜ Web dashboard — admin panel, analytics, user management
+- ⬜ Social features — challenges, leaderboards, community feed
+- ⬜ Payment & subscription flow (premium tiers)
+- ⬜ CI/CD pipeline — automated build, test, deploy on push
+- ⬜ Observability — Prometheus metrics, Grafana dashboards, ELK logs
+
+---
+
 ## Future Phases (Not Started)
 
 | Phase | Description |
