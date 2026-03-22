@@ -1,5 +1,7 @@
 # Monitoring
 
+> **Note**: The monitoring stack described in this document (Prometheus, Grafana, AlertManager, Node Exporter, cAdvisor, postgres-exporter) is **not currently configured** in the project. The current setup uses Docker Compose with Spring Boot Actuator health endpoints only. This document describes the target monitoring architecture for future implementation.
+
 ## Overview
 
 Comprehensive monitoring setup for Gym Platform microservices including metrics collection, performance dashboards, alerting, and observability strategies.
@@ -66,7 +68,7 @@ rule_files:
 scrape_configs:
   # Auth Service
   - job_name: 'auth-service'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/auth/actuator/prometheus'
     scrape_interval: 15s
     scrape_timeout: 10s
     static_configs:
@@ -77,23 +79,23 @@ scrape_configs:
 
   # Training Service
   - job_name: 'training-service'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/training/actuator/prometheus'
     static_configs:
       - targets: ['training-service:8082']
 
   # Tracking Service
   - job_name: 'tracking-service'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/tracking/actuator/prometheus'
     static_configs:
       - targets: ['tracking-service:8083']
 
   # Notification Service
   - job_name: 'notification-service'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/notifications/actuator/prometheus'
     static_configs:
       - targets: ['notification-service:8084']
 
-  # PostgreSQL
+  # PostgreSQL Exporter
   - job_name: 'postgres'
     static_configs:
       - targets: ['postgres-exporter:9187']
@@ -242,7 +244,7 @@ services:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: gym-postgres-exporter
     environment:
-      DATA_SOURCE_NAME: "postgresql://postgres:${DB_PASSWORD}@postgres:5432/postgres?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://gym_admin:${DB_PASSWORD}@postgres:5432/gym_db?sslmode=disable"
     ports:
       - "9187:9187"
     networks:

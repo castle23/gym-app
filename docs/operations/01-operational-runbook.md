@@ -50,14 +50,14 @@ docker-compose -f /opt/gym-platform/docker-compose.prod.yml ps
 
 # Check service health endpoints
 echo "Checking service health..."
-curl -s http://localhost:8081/actuator/health | jq .
-curl -s http://localhost:8082/actuator/health | jq .
-curl -s http://localhost:8083/actuator/health | jq .
-curl -s http://localhost:8084/actuator/health | jq .
+curl -s http://localhost:8081/auth/actuator/health | jq .
+curl -s http://localhost:8082/training/actuator/health | jq .
+curl -s http://localhost:8083/tracking/actuator/health | jq .
+curl -s http://localhost:8084/notifications/actuator/health | jq .
 
 # Check database connection
 echo "Checking database..."
-psql -h localhost -U gym_admin -d gym_db -c "SELECT version();"
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "SELECT version();"
 
 # Check disk space
 echo "Checking disk usage..."
@@ -69,10 +69,10 @@ free -h
 
 # Check logs for errors
 echo "Checking error logs from last hour..."
-docker logs --since 1h gym-auth-prod | grep ERROR
-docker logs --since 1h gym-training-prod | grep ERROR
-docker logs --since 1h gym-tracking-prod | grep ERROR
-docker logs --since 1h gym-notification-prod | grep ERROR
+docker logs --since 1h gym-auth-service | grep ERROR
+docker logs --since 1h gym-training-service | grep ERROR
+docker logs --since 1h gym-tracking-service | grep ERROR
+docker logs --since 1h gym-notification-service | grep ERROR
 
 echo "=== Health Check Complete ==="
 ```
@@ -275,17 +275,23 @@ pg_dump -h localhost -U gym_admin -Fc gym_db > /backups/gym_db_manual_$(date +%Y
 
 ### Prometheus Metrics Collection
 
-Metrics are exposed at service endpoints:
+Metrics are exposed at service endpoints (if `prometheus` actuator endpoint is enabled):
 
 ```bash
 # Auth Service metrics
-curl http://localhost:8081/actuator/prometheus
+curl http://localhost:8081/auth/actuator/prometheus
 
 # Training Service metrics
-curl http://localhost:8082/actuator/prometheus
+curl http://localhost:8082/training/actuator/prometheus
+
+# Tracking Service metrics
+curl http://localhost:8083/tracking/actuator/prometheus
+
+# Notification Service metrics
+curl http://localhost:8084/notifications/actuator/prometheus
 
 # Filter for specific metric
-curl http://localhost:8081/actuator/prometheus | grep http_server_requests
+curl http://localhost:8081/auth/actuator/prometheus | grep http_server_requests
 ```
 
 ### Critical Metrics to Monitor
@@ -501,13 +507,13 @@ docker-compose -f docker-compose.prod.yml restart
 
 ```bash
 # Check database status
-psql -h localhost -U gym_admin -d gym_db -c "SELECT 1;"
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "SELECT 1;"
 
 # Check connection pool
-docker logs gym-auth-prod | grep "HikariPool"
+docker logs gym-auth-service | grep "HikariPool"
 
 # Restart services if needed
-docker-compose -f docker-compose.prod.yml restart
+docker-compose restart
 ```
 
 ### High CPU or Memory Usage
@@ -517,10 +523,10 @@ docker-compose -f docker-compose.prod.yml restart
 docker stats --no-stream | sort -k3 -rn
 
 # Check container limits
-docker inspect gym-auth-prod | grep -A 10 HostConfig
+docker inspect gym-auth-service | grep -A 10 HostConfig
 
 # Restart service if needed
-docker-compose -f docker-compose.prod.yml restart auth-service
+docker-compose restart auth-service
 ```
 
 ### Disk Space Issues

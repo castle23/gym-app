@@ -366,9 +366,9 @@ done
 
 # 2. Functionality test
 echo "API functionality:"
-curl -X POST http://localhost:8081/api/v1/auth/login \
+curl -X POST http://localhost:8080/auth/login \
     -H "Content-Type: application/json" \
-    -d '{"username":"test","password":"test"}' | jq
+    -d '{"email":"test@example.com","password":"Test123!"}' | jq
 
 # 3. Performance check
 echo "Performance baseline:"

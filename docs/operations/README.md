@@ -26,6 +26,7 @@ This section contains operational runbooks and standard operating procedures for
 ```
 
 ### Running Services
+- API Gateway: `http://localhost:8080`
 - Auth Service: `http://localhost:8081`
 - Training Service: `http://localhost:8082`
 - Tracking Service: `http://localhost:8083`

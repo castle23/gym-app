@@ -92,7 +92,7 @@ Incident response procedures, escalation paths, communication protocols, and pos
 **Investigation (< 15 min):**
 ```bash
 # Check service health
-curl http://localhost:8081/actuator/health | jq
+curl http://localhost:8081/auth/actuator/health | jq
 
 # View recent logs
 docker-compose logs -f --tail=100 auth-service
@@ -101,10 +101,10 @@ docker-compose logs -f --tail=100 auth-service
 docker stats --no-stream
 
 # Query database
-psql -h localhost -U postgres -d gym_db -c "SELECT NOW();"
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "SELECT NOW();"
 
-# Check Prometheus metrics
-curl 'http://localhost:9090/api/v1/query?query=up{job="auth-service"}'
+# Check Prometheus metrics (if configured)
+# curl 'http://localhost:9090/api/v1/query?query=up{job="auth-service"}'
 ```
 
 ### Common Incidents & Resolutions
@@ -127,7 +127,6 @@ docker ps | grep "$SERVICE"
 # 2. Check if service is running
 echo "Service health:"
 curl -s -f "http://localhost:$PORT/actuator/health" && echo "OK" || echo "FAILED"
-
 # 3. Check recent logs for errors
 echo "Recent errors:"
 docker logs "$SERVICE" | grep ERROR | tail -20
@@ -138,7 +137,7 @@ docker stats --no-stream | grep "$SERVICE"
 
 # 5. Check database connectivity
 echo "Database connectivity:"
-docker exec gym-postgres psql -U postgres -d gym_db -c "SELECT 1;"
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "SELECT 1;"
 
 # 6. Restart service
 echo "Attempting restart..."
@@ -168,10 +167,8 @@ exit 1
 
 echo "=== Investigating high error rate ==="
 
-# Check error rate by endpoint
-echo "Error rate by endpoint:"
-curl -s 'http://localhost:9090/api/v1/query?query=rate(http_requests_total{status=~"5.."}[5m]) by (endpoint)' \
-    | jq '.data.result[] | {endpoint: .metric.endpoint, error_rate: .value[1]}'
+# Check error rate by endpoint (requires Prometheus)
+# curl -s 'http://localhost:9090/api/v1/query?query=rate(http_requests_total{status=~"5.."}[5m]) by (endpoint)'
 
 # Check recent errors
 echo "Recent errors in logs:"
@@ -179,8 +176,8 @@ docker-compose logs -f --tail=50 auth-service | grep ERROR
 
 # Check database performance
 echo "Database query performance:"
-docker exec gym-postgres psql -U postgres -d gym_db -c \
-    "SELECT query, mean_time FROM pg_stat_statements WHERE mean_time > 1000 ORDER BY mean_time DESC LIMIT 10;"
+docker exec gym-postgres psql -U gym_admin -d gym_db -c \
+    "SELECT query, mean_exec_time FROM pg_stat_statements WHERE mean_exec_time > 1000 ORDER BY mean_exec_time DESC LIMIT 10;"
 
 # Check service dependencies
 echo "Dependency health:"
@@ -205,17 +202,17 @@ echo "=== Investigating connection pool issues ==="
 
 # Check active connections
 echo "Active connections:"
-docker exec gym-postgres psql -U postgres -d gym_db -c \
+docker exec gym-postgres psql -U gym_admin -d gym_db -c \
     "SELECT datname, count(*) FROM pg_stat_activity GROUP BY datname;"
 
 # Check idle connections
 echo "Idle connections (potential leak):"
-docker exec gym-postgres psql -U postgres -d gym_db -c \
+docker exec gym-postgres psql -U gym_admin -d gym_db -c \
     "SELECT pid, usename, state, query FROM pg_stat_activity WHERE state = 'idle' AND query_start < NOW() - INTERVAL '5 minutes';"
 
 # Terminate idle connections
 echo "Terminating idle connections..."
-docker exec gym-postgres psql -U postgres -d gym_db -c \
+docker exec gym-postgres psql -U gym_admin -d gym_db -c \
     "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND query_start < NOW() - INTERVAL '30 minutes';"
 
 # Check connection pool settings
@@ -397,7 +394,7 @@ Level 4: Executive
 
 ## Tools & Resources
 
-**Monitoring & Alerting:**
+**Monitoring & Alerting** (if configured):
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000
 - AlertManager: http://localhost:9093

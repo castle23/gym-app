@@ -1,5 +1,7 @@
 # Logging
 
+> **Note**: The ELK stack described in this document (Elasticsearch, Logstash, Kibana, Filebeat) is **not currently configured** in the project. The current setup uses Docker Compose with logs written to STDOUT and mounted volume files under `logs/`. The `logback-spring.xml` configuration and MDC tracing sections reflect the actual implementation in `gym-common`.
+
 ## Overview
 
 Comprehensive logging strategy for Gym Platform microservices including log aggregation, centralized logging, log levels, and log analysis for debugging and monitoring.

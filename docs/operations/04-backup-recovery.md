@@ -1,5 +1,7 @@
 # Backup & Recovery
 
+> **Note**: The advanced backup architecture described in this document (WAL archiving, streaming replication standby, S3 cloud storage, PITR, failover) is **not currently configured**. The current setup is a single PostgreSQL 15 container with a named Docker volume (`postgres_data`). Manual backups can be taken with `pg_dump`. This document describes the target backup architecture for future implementation.
+
 ## Overview
 
 Comprehensive backup and recovery strategies for Gym Platform, including backup procedures, recovery strategies, RTO/RPO targets, and disaster recovery planning.
@@ -68,7 +70,7 @@ echo "[$(date)] Starting full PostgreSQL backup..." | tee "${LOG_FILE}"
 # Perform backup
 if pg_dump \
     -h ${DB_HOST:-localhost} \
-    -U ${DB_USER:-postgres} \
+    -U ${DB_USER:-gym_admin} \
     -Fc \
     -b \
     -v \
@@ -118,7 +120,7 @@ mkdir -p "${BACKUP_DIR}/logs"
 
 pg_dump \
     -h ${DB_HOST:-localhost} \
-    -U ${DB_USER:-postgres} \
+    -U ${DB_USER:-gym_admin} \
     -Fc \
     -b \
     gym_db > "${BACKUP_FILE}"

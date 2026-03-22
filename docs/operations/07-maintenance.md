@@ -40,17 +40,18 @@ DATE=$(date "+%Y-%m-%d %H:%M:%S")
 
 # 1. Service status
 echo "[$DATE] Service Status:"
-for port in 8081 8082 8083 8084; do
-    STATUS=$(curl -s -f http://localhost:$port/actuator/health | jq -r '.status' || echo "DOWN")
-    echo "  Port $port: $STATUS"
+for entry in "auth:8081:auth" "training:8082:training" "tracking:8083:tracking" "notification:8084:notifications"; do
+    IFS=':' read -r name port prefix <<< "$entry"
+    STATUS=$(curl -s -f http://localhost:$port/$prefix/actuator/health | jq -r '.status' 2>/dev/null || echo "DOWN")
+    echo "  $name ($port): $STATUS"
 done
 
 # 2. Database status
 echo "[$DATE] Database:"
-CONNECTIONS=$(docker exec gym-postgres psql -U postgres -t -c "SELECT count(*) FROM pg_stat_activity;")
+CONNECTIONS=$(docker exec gym-postgres psql -U gym_admin -t -c "SELECT count(*) FROM pg_stat_activity;")
 echo "  Active connections: $CONNECTIONS"
 
-SIZE=$(docker exec gym-postgres psql -U postgres -t -c "SELECT pg_size_pretty(pg_database_size('gym_db'));")
+SIZE=$(docker exec gym-postgres psql -U gym_admin -t -c "SELECT pg_size_pretty(pg_database_size('gym_db'));")
 echo "  Database size: $SIZE"
 
 # 3. Disk usage
@@ -91,15 +92,15 @@ echo "=== Weekly Database Maintenance ==="
 
 # 1. Update table statistics
 echo "Analyzing tables..."
-docker exec gym-postgres psql -U postgres -d gym_db -c "ANALYZE;"
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "ANALYZE;"
 
 # 2. Reclaim space
 echo "Vacuuming tables..."
-docker exec gym-postgres psql -U postgres -d gym_db -c "VACUUM;"
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "VACUUM;"
 
 # 3. Reindex
 echo "Reindexing tables..."
-docker exec gym-postgres psql -U postgres -d gym_db -c "REINDEX DATABASE gym_db;"
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "REINDEX DATABASE gym_db;"
 
 # 4. Check table bloat
 echo "Checking for bloat..."
@@ -292,18 +293,14 @@ fi
 # Stop all services
 docker-compose down
 
-# Clear potentially corrupted data
-# WARNING: Only if instructed
-# rm -rf /backups/redis/*
-
 # Start all services
 docker-compose up -d
 
 # Wait for services to be healthy
-sleep 30
+sleep 40
 
 # Verify
-curl http://localhost:8081/actuator/health | jq
+curl http://localhost:8081/auth/actuator/health | jq
 
 echo "Emergency restart completed"
 ```
