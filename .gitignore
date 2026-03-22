@@ -7,6 +7,12 @@ target/
 pom.xml.tag
 pom.xml.releaseBackup
 
+# Gradle
+.gradle/
+*/.gradle/
+build/
+*/build/
+
 # IDE
 .idea/
 */.idea/

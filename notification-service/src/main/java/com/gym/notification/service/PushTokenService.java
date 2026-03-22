@@ -2,9 +2,9 @@ package com.gym.notification.service;
 
 import com.gym.notification.dto.PushTokenResponseDTO;
 import com.gym.notification.entity.PushToken;
-import com.gym.notification.exception.InvalidDataException;
-import com.gym.notification.exception.ResourceNotFoundException;
-import com.gym.notification.exception.UnauthorizedException;
+import com.gym.common.exception.InvalidDataException;
+import com.gym.common.exception.ResourceNotFoundException;
+import com.gym.common.exception.UnauthorizedException;
 import com.gym.notification.repository.PushTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

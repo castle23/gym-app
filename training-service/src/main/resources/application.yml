@@ -24,5 +24,31 @@ server:
   servlet:
     context-path: /training
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/index.html
+  api-docs:
+    path: /v3/api-docs
+
+gym:
+  openapi:
+    title: Training Service API
+    description: Exercise, routine, and training program management service
+  security:
+    public-paths:
+      - /api/v1/exercises/system
+      - /api/v1/exercises/discipline/**
+      - /api/v1/routine-templates/system
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
 jwt:
   secret: ${JWT_SECRET:your-secret-key-change-in-production}

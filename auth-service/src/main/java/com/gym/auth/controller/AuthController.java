@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "User authentication, registration, and JWT token management")
 public class AuthController {
@@ -140,19 +140,12 @@ public class AuthController {
     public ResponseEntity<AuthResponse> getProfile() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String userId = auth != null ? auth.getName() : "unknown";
-        
+
         log.info("Profile request for user: {}", userId);
         return ResponseEntity.ok(AuthResponse.builder()
                 .userId(userId)
                 .message("Profile retrieved")
                 .success(true)
                 .build());
-    }
-
-    @GetMapping("/health")
-    @Operation(summary = "Health check", description = "Verifies that the Auth Service is running and healthy")
-    @ApiResponse(responseCode = "200", description = "Service is healthy")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Auth Service is running");
     }
 }

@@ -10,11 +10,11 @@ services:
       POSTGRES_DB: gym_db
     volumes:
       - gym_db_data_prod:/var/lib/postgresql/data
-      - ./init-schemas.sql:/docker-entrypoint-initdb.d/01-init-schemas.sql
-      - ./init-auth-data.sql:/docker-entrypoint-initdb.d/02-init-auth-data.sql
-      - ./init-training-data.sql:/docker-entrypoint-initdb.d/03-init-training-data.sql
-      - ./init-tracking-data.sql:/docker-entrypoint-initdb.d/04-init-tracking-data.sql
-      - ./init-notification-data.sql:/docker-entrypoint-initdb.d/05-init-notification-data.sql
+      - ./dba/initialization/schemas/01-init-schemas.sql:/docker-entrypoint-initdb.d/01-init-schemas.sql
+      - ./dba/initialization/data/01-init-auth-data.sql:/docker-entrypoint-initdb.d/02-init-auth-data.sql
+      - ./dba/initialization/data/02-init-training-data.sql:/docker-entrypoint-initdb.d/03-init-training-data.sql
+      - ./dba/initialization/data/03-init-tracking-data.sql:/docker-entrypoint-initdb.d/04-init-tracking-data.sql
+      - ./dba/initialization/data/04-init-notification-data.sql:/docker-entrypoint-initdb.d/05-init-notification-data.sql
     ports:
       - "5432:5432"
     healthcheck:

@@ -9,15 +9,15 @@ import com.gym.notification.dto.NotificationResponseDTO;
 import com.gym.notification.entity.Notification;
 import com.gym.notification.entity.NotificationPreference;
 import com.gym.notification.entity.PushToken;
-import com.gym.notification.exception.InvalidDataException;
-import com.gym.notification.exception.ResourceNotFoundException;
-import com.gym.notification.exception.UnauthorizedException;
+import com.gym.common.exception.InvalidDataException;
+import com.gym.common.exception.ResourceNotFoundException;
+import com.gym.common.exception.UnauthorizedException;
 import com.gym.notification.repository.NotificationPreferenceRepository;
 import com.gym.notification.repository.NotificationRepository;
 import com.gym.notification.repository.PushTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,16 +36,16 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationPreferenceRepository notificationPreferenceRepository;
     private final PushTokenRepository pushTokenRepository;
-
-    @Autowired(required = false)
-    private FirebaseMessaging firebaseMessaging;
+    private final FirebaseMessaging firebaseMessaging;
 
     public NotificationService(NotificationRepository notificationRepository,
                                NotificationPreferenceRepository notificationPreferenceRepository,
-                               PushTokenRepository pushTokenRepository) {
+                               PushTokenRepository pushTokenRepository,
+                               @Nullable FirebaseMessaging firebaseMessaging) {
         this.notificationRepository = notificationRepository;
         this.notificationPreferenceRepository = notificationPreferenceRepository;
         this.pushTokenRepository = pushTokenRepository;
+        this.firebaseMessaging = firebaseMessaging;
     }
 
     /**

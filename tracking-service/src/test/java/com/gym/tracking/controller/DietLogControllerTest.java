@@ -1,7 +1,6 @@
 package com.gym.tracking.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gym.tracking.config.TestSecurityConfig;
 import com.gym.tracking.dto.DietLogDTO;
 import com.gym.tracking.dto.DietLogRequestDTO;
 import com.gym.tracking.service.DietLogService;
@@ -13,6 +12,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import com.gym.common.config.GymExceptionHandlerAutoConfiguration;
+import com.gym.common.config.GymTestSecurityAutoConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -26,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(DietLogController.class)
-@Import(TestSecurityConfig.class)
+@Import({GymTestSecurityAutoConfiguration.class, GymExceptionHandlerAutoConfiguration.class})
 @ActiveProfiles("test")
 class DietLogControllerTest {
     

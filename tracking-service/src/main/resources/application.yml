@@ -18,5 +18,30 @@ server:
   servlet:
     context-path: /tracking
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/index.html
+  api-docs:
+    path: /v3/api-docs
+
+gym:
+  openapi:
+    title: Tracking Service API
+    description: Diet tracking, measurements, objectives, and progress tracking service
+  security:
+    public-paths:
+      - /api/v1/diet-components/**
+      - /api/v1/training-components/**
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
 jwt:
   secret: ${JWT_SECRET:your-secret-key-change-in-production}

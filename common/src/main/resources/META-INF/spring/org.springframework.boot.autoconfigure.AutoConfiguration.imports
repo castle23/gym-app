@@ -1,0 +1,6 @@
+com.gym.common.config.GymSecurityAutoConfiguration
+com.gym.common.config.GymTestSecurityAutoConfiguration
+com.gym.common.config.GymOpenApiAutoConfiguration
+com.gym.common.config.GymJwtAutoConfiguration
+com.gym.common.config.GymExceptionHandlerAutoConfiguration
+com.gym.common.config.GymMdcAutoConfiguration

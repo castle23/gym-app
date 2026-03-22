@@ -1,17 +1,19 @@
 package com.gym.notification.controller;
 
+import com.gym.common.config.GymExceptionHandlerAutoConfiguration;
 import com.gym.notification.dto.PushTokenRequestDTO;
 import com.gym.notification.dto.PushTokenResponseDTO;
-import com.gym.notification.exception.ResourceNotFoundException;
-import com.gym.notification.exception.UnauthorizedException;
+import com.gym.common.exception.ResourceNotFoundException;
+import com.gym.common.exception.UnauthorizedException;
 import com.gym.notification.service.PushTokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import com.gym.notification.config.TestSecurityConfig;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import com.gym.common.config.GymTestSecurityAutoConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -27,7 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PushTokenController.class)
-@Import(TestSecurityConfig.class)
+@Import({GymTestSecurityAutoConfiguration.class, GymExceptionHandlerAutoConfiguration.class})
 @ActiveProfiles("test")
 class PushTokenControllerTest {
 
@@ -193,6 +195,6 @@ class PushTokenControllerTest {
         mockMvc.perform(delete("/api/v1/push-tokens")
                 .header("X-User-Id", VALID_USER_ID)
                 .param("token", token))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 }

@@ -37,8 +37,18 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             "/tracking/api/v1/measurements",
             "/tracking/api/v1/diet-logs",
             "/notifications/api/v1/notifications",
-            "/health",
-            "/actuator"
+            "/auth/actuator",
+            "/training/actuator",
+            "/tracking/actuator",
+            "/notifications/actuator",
+            "/auth/swagger-ui",
+            "/auth/v3/api-docs",
+            "/training/swagger-ui",
+            "/training/v3/api-docs",
+            "/tracking/swagger-ui",
+            "/tracking/v3/api-docs",
+            "/notifications/swagger-ui",
+            "/notifications/v3/api-docs"
     );
 
     @Value("${jwt.secret}")
