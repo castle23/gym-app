@@ -40,10 +40,8 @@ Client              API Gateway              Auth Service
 ```
 Payload (Claims):
 {
-  "sub": "123",            // User ID (Long, as string)
-  "username": "john.doe",
-  "email": "john@example.com",
-  "roles": ["ROLE_USER"],   // ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN
+  "sub": "123",        // User ID (Long, as string)
+  "roles": "ROLE_USER", // comma-separated: ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN
   "iat": 1516239022,
   "exp": 1516325422
 }
@@ -247,7 +245,7 @@ JWT validation happens **exclusively in the API Gateway** (`JwtAuthFilter`). The
 //   X-User-Roles: ROLE_USER
 
 // Downstream services: GymRoleInterceptor (from gym-common)
-// reads headers → stores in GymSecurityContext
+// reads headers → stores in UserContextHolder
 ```
 
 ## Authentication Controller
@@ -294,7 +292,7 @@ public class AuthController {
 
 ### Authorization via gym-common
 
-Services use `@RequiresRole` from `gym-common` and read identity from `GymSecurityContext`:
+Services use `@RequiresRole` from `gym-common` and read identity from `UserContextHolder`:
 
 ```java
 @RestController
@@ -309,9 +307,9 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
-        Long currentUserId = GymSecurityContext.getCurrentUserId();
-        List<String> roles = GymSecurityContext.getCurrentRoles();
-        if (!id.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+        String currentUserId = UserContextHolder.getUserId();
+        Set<String> roles = UserContextHolder.getRoles();
+        if (!id.toString().equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
             throw new UnauthorizedException("Access denied");
         }
         return ResponseEntity.ok(userService.getUserById(id));

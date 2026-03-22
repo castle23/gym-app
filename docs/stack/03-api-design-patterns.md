@@ -81,9 +81,9 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
-        Long currentUserId = GymSecurityContext.getCurrentUserId();
-        List<String> roles = GymSecurityContext.getCurrentRoles();
-        if (!id.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+        String currentUserId = UserContextHolder.getUserId();
+        Set<String> roles = UserContextHolder.getRoles();
+        if (!id.toString().equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
             throw new UnauthorizedException("Cannot access other users' data");
         }
         return ResponseEntity.ok(userService.getUserById(id));
@@ -93,9 +93,9 @@ public class UserController {
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request) {
-        Long currentUserId = GymSecurityContext.getCurrentUserId();
-        List<String> roles = GymSecurityContext.getCurrentRoles();
-        if (!id.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+        String currentUserId = UserContextHolder.getUserId();
+        Set<String> roles = UserContextHolder.getRoles();
+        if (!id.toString().equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
             throw new UnauthorizedException("Cannot update other users' data");
         }
         return ResponseEntity.ok(userService.updateUser(id, request));

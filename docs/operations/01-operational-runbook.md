@@ -115,12 +115,12 @@ done
 
 # API Request Counts
 echo "API Request Summary:"
-docker logs --since 24h gym-auth-prod | grep "GET\|POST\|PUT\|DELETE" | wc -l
+docker logs --since 24h gym-auth-service | grep "GET\|POST\|PUT\|DELETE" | wc -l
 
 # Errors in last 24 hours
 echo "Error Summary:"
-for service in auth training tracking notification; do
-  COUNT=$(docker logs --since 24h gym-${service}-prod | grep -i ERROR | wc -l)
+for service in auth-service training-service tracking-service notification-service; do
+  COUNT=$(docker logs --since 24h gym-${service} | grep -i ERROR | wc -l)
   echo "  $service: $COUNT errors"
 done
 
@@ -174,20 +174,20 @@ docker-compose -f docker-compose.prod.yml up -d --build auth-service
 
 ```bash
 # Real-time logs for Auth Service
-docker logs -f gym-auth-prod
+docker logs -f gym-auth-service
 
 # Last 100 lines
-docker logs --tail 100 gym-auth-prod
+docker logs --tail 100 gym-auth-service
 
 # Logs from last hour with timestamps
-docker logs --since 1h --timestamps gym-auth-prod
+docker logs --since 1h --timestamps gym-auth-service
 
 # Filter logs for specific keywords
-docker logs gym-auth-prod | grep "ERROR"
-docker logs gym-auth-prod | grep "SQLException"
+docker logs gym-auth-service | grep "ERROR"
+docker logs gym-auth-service | grep "SQLException"
 
 # Export logs to file
-docker logs gym-auth-prod > /tmp/auth-service.log 2>&1
+docker logs gym-auth-service > /tmp/auth-service.log 2>&1
 ```
 
 ### Service Resource Usage
@@ -197,13 +197,13 @@ docker logs gym-auth-prod > /tmp/auth-service.log 2>&1
 docker stats
 
 # Specific service stats
-docker stats gym-auth-prod gym-training-prod gym-tracking-prod gym-notification-prod
+docker stats gym-auth-service gym-training-service gym-tracking-service gym-notification-service
 
 # View container memory limit
-docker inspect -f '{{.HostConfig.Memory}}' gym-auth-prod
+docker inspect -f '{{.HostConfig.Memory}}' gym-auth-service
 
 # View CPU limits
-docker inspect -f '{{.HostConfig.CpuShares}}' gym-auth-prod
+docker inspect -f '{{.HostConfig.CpuShares}}' gym-auth-service
 ```
 
 ---
@@ -349,13 +349,13 @@ alerts:
 
 ```bash
 # Slow query log
-docker exec gym-db-prod psql -U gym_admin -d gym_db -c "
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "
   SELECT * FROM pg_stat_statements
   ORDER BY mean_exec_time DESC
   LIMIT 10;"
 
 # Check index usage
-docker exec gym-db-prod psql -U gym_admin -d gym_db -c "
+docker exec gym-postgres psql -U gym_admin -d gym_db -c "
   SELECT schemaname, tablename, indexname
   FROM pg_indexes
   WHERE schemaname NOT IN ('pg_catalog', 'information_schema')

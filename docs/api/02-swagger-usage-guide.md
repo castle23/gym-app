@@ -12,11 +12,12 @@ Each microservice exposes its API documentation at:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| **Auth Service** | http://localhost:8081/swagger-ui.html | Authentication and JWT management |
-| **Training Service** | http://localhost:8082/swagger-ui.html | Exercises, routines, and training programs |
-| **Tracking Service** | http://localhost:8083/swagger-ui.html | Diet, measurements, objectives, progress |
-| **Notification Service** | http://localhost:8084/swagger-ui.html | Push notifications and alerts |
-| **API Gateway** | http://localhost:8080/swagger-ui.html | Unified API documentation |
+| **Auth Service** | http://localhost:8081/auth/swagger-ui/index.html | Authentication and JWT management |
+| **Training Service** | http://localhost:8082/training/swagger-ui/index.html | Exercises, routines, and training programs |
+| **Tracking Service** | http://localhost:8083/tracking/swagger-ui/index.html | Diet, measurements, objectives, progress |
+| **Notification Service** | http://localhost:8084/notifications/swagger-ui/index.html | Push notifications and alerts |
+
+Also accessible via API Gateway (port 8080) with the same paths.
 
 ---
 
@@ -67,13 +68,11 @@ Every request and response includes detailed schema information:
 
 The raw OpenAPI 3.0 JSON specification is available at:
 
-- **Individual service**: `http://localhost:<port>/v3/api-docs`
-  - Auth: http://localhost:8081/v3/api-docs
-  - Training: http://localhost:8082/v3/api-docs
-  - Tracking: http://localhost:8083/v3/api-docs
-  - Notification: http://localhost:8084/v3/api-docs
-  
-- **API Gateway aggregated**: http://localhost:8080/v3/api-docs
+- **Individual service**: `http://localhost:<port>/<context-path>/v3/api-docs`
+  - Auth: http://localhost:8081/auth/v3/api-docs
+  - Training: http://localhost:8082/training/v3/api-docs
+  - Tracking: http://localhost:8083/tracking/v3/api-docs
+  - Notification: http://localhost:8084/notifications/v3/api-docs
 
 ### Spec Format
 
@@ -152,29 +151,27 @@ Different endpoints require different user roles:
 
 | Role | Description | Access |
 |------|-------------|--------|
-| `USER` | Regular user | Basic user operations |
-| `PROFESSIONAL` | Professional trainer | Training program creation, advanced features |
-| `ADMIN` | Administrator | Full system access, user management |
+| `ROLE_USER` | Regular user | Basic user operations |
+| `ROLE_PROFESSIONAL` | Professional trainer | Training program creation, advanced features |
+| `ROLE_ADMIN` | Administrator | Full system access, user management |
 
 Each endpoint's documentation specifies required roles.
 
 ### Bearer Token Format
 
-JWT tokens are signed and include:
-- `iss` (issuer): "gym-auth-service"
-- `sub` (subject): user ID
-- `aud` (audience): "gym-api"
-- `roles`: array of user roles
-- `exp` (expiration): token expiration timestamp
+JWT tokens are signed with HMAC-SHA256 and include:
+- `sub`: user ID (Long as string)
+- `roles`: comma-separated roles string (e.g. `"ROLE_USER"` or `"ROLE_USER,ROLE_PROFESSIONAL"`)
+- `iat`: issued-at timestamp
+- `exp`: expiration timestamp (24h access / 7d refresh)
 
 Example token decoded:
 ```json
 {
-  "iss": "gym-auth-service",
-  "sub": "user-123",
-  "aud": "gym-api",
-  "roles": ["USER", "PROFESSIONAL"],
-  "exp": 1703001600
+  "sub": "123",
+  "roles": "ROLE_USER",
+  "iat": 1703001600,
+  "exp": 1703088000
 }
 ```
 
@@ -206,20 +203,20 @@ Example token decoded:
 **Request:**
 ```json
 {
+  "firstName": "John",
+  "lastName": "Doe",
   "email": "user@example.com",
   "password": "SecurePassword123!",
-  "userType": "USER"
+  "role": "ROLE_USER"
 }
 ```
 
 **Response (201 Created):**
 ```json
 {
-  "success": true,
-  "userId": "user-123",
-  "message": "User registered successfully. Please verify your email.",
-  "token": null,
-  "refreshToken": null
+  "userId": 1,
+  "email": "user@example.com",
+  "message": "User registered successfully"
 }
 ```
 
@@ -238,43 +235,41 @@ Example token decoded:
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "userId": "user-123",
-  "message": "Login successful",
+  "userId": 1,
+  "email": "user@example.com",
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "message": "Login successful"
 }
 ```
 
 ### Example 3: Create Exercise (Protected Endpoint)
 
-**Endpoint:** `POST /api/v1/exercises`
+**Endpoint:** `POST /training/api/v1/exercises`
 
 **Headers:**
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-X-Trace-Id: trace-123
 ```
 
 **Request:**
 ```json
 {
   "name": "Bench Press",
-  "description": "Chest and triceps exercise",
-  "targetMuscles": ["chest", "triceps", "shoulders"],
-  "difficulty": "intermediate"
+  "description": "Chest and triceps compound exercise",
+  "disciplineId": 1
 }
 ```
 
 **Response (201 Created):**
 ```json
 {
-  "id": "exercise-456",
+  "id": 1,
   "name": "Bench Press",
-  "description": "Chest and triceps exercise",
-  "targetMuscles": ["chest", "triceps", "shoulders"],
-  "difficulty": "intermediate",
-  "createdAt": "2026-03-20T10:30:00Z"
+  "description": "Chest and triceps compound exercise",
+  "type": "USER",
+  "disciplineId": 1,
+  "createdAt": "2026-03-20T10:30:00"
 }
 ```
 
@@ -286,7 +281,7 @@ X-Trace-Id: trace-123
 
 1. **Check service is running:**
    ```bash
-   curl http://localhost:8081/health
+   curl http://localhost:8081/auth/actuator/health
    ```
 
 2. **Verify Swagger dependency:**
