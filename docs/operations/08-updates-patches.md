@@ -42,8 +42,9 @@ apt list --upgradable 2>/dev/null | head -10
 echo "Security vulnerabilities:"
 docker scan gym-auth-service:latest 2>/dev/null | grep -i "vulnerability\|critical"
 
-# npm/node packages (if applicable)
-npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities'
+# Maven dependency check
+echo "Checking Maven dependencies for vulnerabilities:"
+mvn dependency-check:check -q 2>/dev/null || echo "Scan completed"
 ```
 
 ### 2. Test Patches
@@ -239,24 +240,25 @@ for service in auth training tracking notification; do
 done
 ```
 
-### Node/npm Packages (if applicable)
+### Maven Dependencies
 
 ```bash
 # Check for updates
-npm outdated
+mvn versions:display-dependency-updates
+mvn versions:display-plugin-updates
 
-# Update package.json
-npm update
+# Update to latest versions
+mvn versions:update-properties
 
-# Fix security vulnerabilities
-npm audit fix
+# Check for security vulnerabilities
+mvn dependency-check:check
 
 # Test
-npm test
+mvn clean test
 
 # Commit and deploy
-git add package.json package-lock.json
-git commit -m "chore: update npm dependencies"
+git add pom.xml
+git commit -m "chore: update maven dependencies"
 ```
 
 ## Version Management

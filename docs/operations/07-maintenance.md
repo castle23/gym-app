@@ -160,7 +160,7 @@ git log --oneline -- "config/**/*" "docker-compose*.yml" | head -10
 
 # Check for outdated dependencies
 echo "Checking for vulnerable dependencies..."
-./mvnw dependency-check:check 2>/dev/null || npm audit 2>/dev/null
+mvn dependency-check:check
 
 echo "Security scan completed"
 ```
