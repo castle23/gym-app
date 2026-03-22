@@ -65,7 +65,7 @@ Auth service overrides the common config with its own `SecurityConfig` because i
 
 ```
 1. Client → POST /auth/login
-2. Auth Service validates credentials, returns { accessToken, refreshToken }
+2. Auth Service validates credentials, returns { token, refreshToken, userId, email }
 3. Client → any request with Authorization: Bearer <token>
 4. API Gateway JwtAuthFilter:
    a. Parses and validates JWT (HMAC-SHA256)

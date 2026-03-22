@@ -73,16 +73,9 @@ Central authentication and authorization service providing secure access control
    - Token revocation on logout
 
 3. **Authorization & RBAC**
-   - User role assignment (ADMIN, MANAGER, USER, TRAINER)
-   - Permission definition and enforcement
-   - Endpoint-level access control
-   - Resource-level authorization checks
-
-4. **Session Management**
-   - Secure session handling
-   - Token expiration policies
-   - Concurrent session limits
-   - Login history tracking
+   - User role assignment (`ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`)
+   - Roles stored in `users` table, embedded in JWT
+   - Gateway injects roles as `X-User-Roles` header
 
 ### API Endpoints
 
@@ -100,19 +93,17 @@ Central authentication and authorization service providing secure access control
 
 ```
 1. Client → POST /auth/login  { email, password }
-2. Auth Service validates credentials, hashes password
-3. Returns { accessToken, refreshToken, userId, success }
-4. Client includes token: Authorization: Bearer <token>
-5. API Gateway validates JWT, injects X-User-Id + X-User-Roles
-6. Downstream services read headers via GymRoleInterceptor
+2. Auth Service validates credentials (BCrypt), returns { token, refreshToken, userId, email }
+3. Client includes token: Authorization: Bearer <token>
+4. API Gateway validates JWT, injects X-User-Id + X-User-Roles
+5. Downstream services read headers via GymRoleInterceptor
 ```
 
-### Database Schema (auth_schema)
+**Database Schema (auth_schema)**
 
 **Core Tables**:
-- `users` - User accounts and credentials
-- `roles` - Role definitions (`ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`)
-- `user_roles` - User-to-role mappings
+- `users` - User accounts, credentials, roles, account status
+- `verifications` - Email verification codes
 
 ### JWT Token Structure
 
@@ -233,11 +224,11 @@ Records and analyzes user performance data. Provides metrics, progress tracking,
 | POST | `/api/v1/measurements` | Record measurement | Yes |
 | GET | `/api/v1/measurements/by-type/{id}` | By measurement type | Yes |
 | POST | `/api/v1/measurements/types` | Create measurement type | Yes |
-| GET | `/api/v1/objectives` | List objectives | No |
+| GET | `/api/v1/objectives` | List user objectives | Yes |
 | POST | `/api/v1/objectives` | Create objective | Yes |
-| GET | `/api/v1/plans` | List plans | No |
+| GET | `/api/v1/plans` | List user plans | Yes |
 | POST | `/api/v1/plans` | Create plan | Yes |
-| GET | `/api/v1/diet-logs` | List diet logs | No |
+| GET | `/api/v1/diet-logs` | List user diet logs | Yes |
 | POST | `/api/v1/diet-logs` | Create diet log | Yes |
 | GET | `/api/v1/diet-components/{id}` | Get diet component | Yes |
 | POST | `/api/v1/diet-components` | Create diet component | Yes |
@@ -270,18 +261,9 @@ Delivers notifications to users via multiple channels (email, SMS, push notifica
 ### Key Responsibilities
 
 1. **Notification Delivery**
-   - Send notifications via email
-   - Send SMS messages
-   - Send push notifications
-   - Track delivery status
-
-2. **Template Management**
-   - Create notification templates
-   - Store template versions
-   - Support template variables
-   - Manage template testing
-
-3. **User Preferences**
+   - Send in-app notifications
+   - Firebase Cloud Messaging (FCM) push notifications
+   - Track read/unread status
    - Define notification settings per user
    - Manage communication channel preferences
    - Frequency control (digest vs. real-time)
@@ -297,7 +279,7 @@ Delivers notifications to users via multiple channels (email, SMS, push notifica
 
 | Method | Endpoint | Purpose | Auth |
 |--------|----------|---------|----- |
-| GET | `/api/v1/notifications` | List notifications | No |
+| GET | `/api/v1/notifications` | List user notifications | Yes |
 | GET | `/api/v1/notifications/unread` | Unread notifications | Yes |
 | GET | `/api/v1/notifications/unread/count` | Unread count | Yes |
 | POST | `/api/v1/notifications` | Create notification | Yes |

@@ -32,8 +32,8 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 └────────────────────┬────────────────────────────────────────┘
                      │
 ┌─────────────────────▼────────────────────────────────────────┐
-│              API Gateway (Optional Layer)                    │
-│            Port: 8080 (for future implementation)            │
+│                    API Gateway                               │
+│            Port: 8080 — JWT validation, header injection     │
 └────────┬─────────────┬─────────────┬─────────────┬───────────┘
          │             │             │             │
 ┌────────▼─┐     ┌─────▼──┐   ┌──────▼──┐   ┌─────▼──────┐
@@ -57,10 +57,10 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 
 ### Communication Patterns
 
-- **Service-to-Service**: RESTful HTTP/HTTPS calls
+- **Client → Gateway**: REST/HTTP, JWT in Authorization header
+- **Gateway → Services**: REST/HTTP, X-User-Id + X-User-Roles headers injected
 - **Database Access**: JDBC/JPA via Hibernate ORM
-- **Authentication**: JWT tokens via HTTP headers
-- **Message Queue**: Internal event-based (future: RabbitMQ/Kafka)
+- **No inter-service calls**: Services do not call each other directly
 
 ## Microservices at a Glance
 
@@ -69,12 +69,11 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 **Responsibility**: User authentication, authorization, and access control
 
 **Capabilities**:
-- User registration and login
-- JWT token generation and validation
+- User registration and email verification
+- Login with BCrypt password verification
+- JWT token generation (access 24h + refresh 7d)
 - Role-based access control (RBAC)
-- Permission management
-- Session management
-- OAuth 2.0 support (extensible)
+- Token refresh
 
 **Key Endpoints**:
 - `POST /auth/register` - Register new user
@@ -84,19 +83,17 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 - `GET /auth/profile` - Get authenticated user profile
 
 **Database Schema**: `auth_schema`
-- users, roles, user_roles
+- users, verifications
 
 ### 2. Training Service (Port 8082)
 
 **Responsibility**: Training program and exercise management
 
 **Capabilities**:
-- Create and manage training programs
-- Define exercises with form descriptions
-- Build workout templates
-- Schedule training sessions
-- Track exercise progressions
-- Generate training recommendations
+- Exercise catalog (system + user-created)
+- Routine templates (system + user-created)
+- User routine assignments
+- Exercise session logging
 
 **Key Endpoints**:
 - `GET /training/api/v1/exercises/system` - List system exercises (public)
@@ -114,20 +111,21 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 **Responsibility**: Performance tracking, metrics, and analytics
 
 **Capabilities**:
-- Record workout completions
-- Track performance metrics
-- Analyze progress over time
-- Generate performance reports
-- Identify trends and patterns
-- Provide analytics and insights
+- Body measurement tracking
+- Measurement type management
+- Fitness objectives
+- Diet and training plans
+- Diet log entries
+- Diet and training components
+- Recommendations
 
 **Key Endpoints**:
 - `GET /tracking/api/v1/measurements` - Get measurements
 - `POST /tracking/api/v1/measurements` - Record measurement
-- `GET /tracking/api/v1/objectives` - Get objectives (public)
-- `GET /tracking/api/v1/plans` - Get plans (public)
+- `GET /tracking/api/v1/objectives` - Get objectives
+- `GET /tracking/api/v1/plans` - Get plans
 - `GET /tracking/api/v1/diet-logs` - Get diet logs
-- `GET /tracking/api/v1/recommendations` - Get recommendations
+- `GET /tracking/api/v1/recommendations/{id}` - Get recommendation
 
 **Database Schema**: `tracking_schema`
 - measurements, objectives, plans, diet_logs, diet_components, training_components, recommendations
@@ -137,15 +135,14 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 **Responsibility**: User notifications and messaging
 
 **Capabilities**:
-- Send notifications via multiple channels (email, SMS, push)
-- Manage notification preferences
-- Queue and retry failed notifications
-- Track notification history
-- Template-based notifications
-- Event-driven notifications
+- In-app notifications (create, read, delete)
+- Unread notification tracking
+- Firebase Cloud Messaging (FCM) push notifications
+- Push token registration and management
+- Notification preferences per user
 
 **Key Endpoints**:
-- `GET /notifications/api/v1/notifications` - List notifications (public)
+- `GET /notifications/api/v1/notifications` - List notifications
 - `GET /notifications/api/v1/notifications/unread` - Unread notifications
 - `GET /notifications/api/v1/notifications/unread/count` - Unread count
 - `POST /notifications/api/v1/notifications` - Create notification
@@ -253,7 +250,7 @@ Production-ready configuration with:
 **Why**: Flexible, maintainable permission management
 - Roles: `ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`
 - Enforced via `@PreAuthorize` at controller level
-- JWT claims carry roles, validated by each service
+- JWT claims carry roles, validated by API Gateway; injected as `X-User-Roles` header
 
 ### 5. Spring Boot 3.x with Java 17+
 **Why**: Latest stable LTS version with modern features
