@@ -48,10 +48,11 @@ services:
       - gym-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/auth/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
   training-service:
     build:
@@ -74,10 +75,11 @@ services:
       - gym-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/training/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
   tracking-service:
     build:
@@ -100,10 +102,11 @@ services:
       - gym-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8083/tracking/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
   notification-service:
     build:
@@ -126,10 +129,11 @@ services:
       - gym-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8084/notifications/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
 volumes:
   gym_db_data_prod:
