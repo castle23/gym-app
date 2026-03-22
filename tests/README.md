@@ -5,9 +5,7 @@ Complete testing suite for Gym Platform microservices with 101 API endpoints acr
 ## 📋 Contents
 
 ### Documentation
-- **TESTING.md** - ⭐ **START HERE** - Comprehensive 800+ line testing guide with all procedures
-- **01-testing-guide.md** - Unit/integration testing guide
-- **02-testing-resources.md** - Testing tools and resources
+- **TESTING.md** - ⭐ **START HERE** - Comprehensive testing guide with all procedures
 - **03-postman-testing-guide.md** - Additional Postman resources
 
 ### Collections & Environments
@@ -21,15 +19,8 @@ Complete testing suite for Gym Platform microservices with 101 API endpoints acr
 ### Test Data & Configuration
 - **test-data/** - Test fixtures and seed data
   - `seed-data.json` - Realistic test data for all 4 microservices
-  - `fixtures/` - Organized test fixtures by entity
 - **package.json** - npm scripts for automation
 - **newman-config.json** - Newman CLI configuration
-
-### Subdirectories
-- **pre-request-scripts/** - Shared pre-request scripts
-- **post-request-scripts/** - Shared post-request scripts
-- **results/** - Test execution reports and results
-- **_archive/** - Old collections (consolidated into master)
 
 ## 🚀 Quick Start
 
@@ -65,20 +56,11 @@ npm run test:ci
 ### Starting Local Services
 
 ```bash
-# Terminal 1: Auth Service
-cd auth-service && npm start
-
-# Terminal 2: Training Service
-cd training-service && npm start
-
-# Terminal 3: Tracking Service
-cd tracking-service && npm start
-
-# Terminal 4: Notification Service
-cd notification-service && npm start
+# From root directory (recommended)
+docker-compose up -d
 ```
 
-Verify: `curl http://localhost:8081/health`
+Verify: `curl http://localhost:8081/actuator/health`
 
 ---
 
