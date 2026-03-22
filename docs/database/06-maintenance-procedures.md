@@ -1,5 +1,7 @@
 # Maintenance
 
+> **Note**: This document describes target maintenance procedures for a production PostgreSQL deployment. The current setup is a single Docker instance. Procedures referencing replicas, Patroni, or S3 apply to the target production architecture.
+
 ## Overview
 
 Comprehensive guide for regular database maintenance procedures for PostgreSQL in the Gym Platform. This guide covers daily/weekly/monthly maintenance tasks, VACUUM and ANALYZE procedures, index maintenance, table maintenance, replication monitoring, and automated maintenance scheduling. Proper maintenance is essential for data integrity, performance optimization, and long-term database health.

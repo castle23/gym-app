@@ -1,5 +1,7 @@
 # Performance Tuning
 
+> **Note**: This document describes PostgreSQL performance tuning best practices. Table and index names in examples may not match the current schema — refer to [Schema Design](02-schema-design.md) for actual table names.
+
 ## Overview
 
 Comprehensive guide to optimizing PostgreSQL performance for the Gym Platform. This guide covers query optimization, index tuning, configuration parameter optimization, monitoring and diagnostic techniques, and workload-specific performance improvements. The Gym Platform handles multiple concurrent workloads across authentication, training planning, and workout tracking, requiring careful performance analysis and tuning.

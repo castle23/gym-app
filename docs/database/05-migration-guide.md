@@ -1,5 +1,7 @@
 # Migration Guide
 
+> **Note**: The current project uses Hibernate `ddl-auto: update` in development and `validate` in production. Flyway/Liquibase are not yet configured. This document describes the target migration strategy for production use.
+
 ## Overview
 
 Comprehensive guide for executing database schema migrations in the Gym Platform. This guide covers migration strategies, tools (Flyway/Liquibase), version control procedures, zero-downtime migrations, rollback strategies, and migration testing. The Gym Platform uses Flyway for SQL-based migrations and Liquibase for complex scenarios, with a robust change control process for production safety.

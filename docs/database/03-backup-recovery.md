@@ -1,5 +1,7 @@
 # Backup & Recovery
 
+> **Note**: This document describes target operational procedures. The current deployment is a single PostgreSQL instance in Docker. HA features (replicas, WAL archiving, S3 backups) are not yet configured.
+
 ## Overview
 
 Comprehensive backup and disaster recovery procedures for PostgreSQL in the Gym Platform. This guide covers backup strategies, recovery scenarios, point-in-time recovery (PITR), backup verification, and disaster recovery best practices. The Gym Platform implements multiple backup layers to ensure data durability with configurable RTO/RPO targets.
