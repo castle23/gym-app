@@ -1,5 +1,11 @@
 # Gym Platform API - Complete Testing Guide
 
+**Note:** This guide covers two testing approaches:
+1. **Postman/Newman** - For API testing (requires Node.js for CLI)
+2. **Maven/JUnit** - For backend unit and integration testing (Java)
+
+Choose the approach that fits your workflow. See "Quick Start" section below for setup instructions for both.
+
 ## Table of Contents
 
 1. [Overview](#overview)
@@ -7,15 +13,16 @@
 3. [Environment Setup](#environment-setup)
 4. [Running Tests Locally](#running-tests-locally)
 5. [Running Tests with Newman](#running-tests-with-newman)
-6. [Running Tests in CI/CD](#running-tests-in-cicd)
-7. [Collection Structure](#collection-structure)
-8. [Test Data & Fixtures](#test-data--fixtures)
-9. [Writing New Tests](#writing-new-tests)
-10. [Pre-Request & Post-Request Scripts](#pre-request--post-request-scripts)
-11. [Troubleshooting](#troubleshooting)
-12. [Best Practices](#best-practices)
-13. [API Endpoint Reference](#api-endpoint-reference)
-14. [Contributing](#contributing)
+6. [Running Tests with Maven](#running-tests-with-maven)
+7. [Running Tests in CI/CD](#running-tests-in-cicd)
+8. [Collection Structure](#collection-structure)
+9. [Test Data & Fixtures](#test-data--fixtures)
+10. [Writing New Tests](#writing-new-tests)
+11. [Pre-Request & Post-Request Scripts](#pre-request--post-request-scripts)
+12. [Troubleshooting](#troubleshooting)
+13. [Best Practices](#best-practices)
+14. [API Endpoint Reference](#api-endpoint-reference)
+15. [Contributing](#contributing)
 
 ---
 
@@ -29,7 +36,8 @@ The Gym Platform API testing suite provides comprehensive coverage of all micros
 
 ### Test Coverage
 
-- **101 API Endpoints** across 4 microservices
+- **101 API Endpoints** across 4 microservices (Postman Collection)
+- **40+ Integration Tests** using Maven/JUnit
 - **Consolidated Master Collection** (`Gym-Platform-API-Master.postman_collection.json`)
 - **3 Environment Files**: Local, Staging, Production
 - **Test Fixtures**: Realistic seed data in `test-data/seed-data.json`
@@ -37,9 +45,11 @@ The Gym Platform API testing suite provides comprehensive coverage of all micros
 
 ### Key Features
 
-- ✅ Automated testing via Newman (CLI runner)
-- ✅ Pre-request scripts for token management
-- ✅ Post-request scripts for data validation
+- ✅ Automated testing via Newman (CLI runner) OR Maven
+- ✅ Postman GUI for interactive API testing
+- ✅ Pre-request scripts for token management (Postman)
+- ✅ Post-request scripts for data validation (Postman)
+- ✅ Unit and integration tests with JUnit (Maven)
 - ✅ Environment-based configuration
 - ✅ CI/CD integration ready
 - ✅ Comprehensive error case coverage
@@ -51,29 +61,57 @@ The Gym Platform API testing suite provides comprehensive coverage of all micros
 
 ### Prerequisites
 
+**For API Testing with Postman/Newman:**
 - **Postman**: [Download here](https://www.postman.com/downloads/)
-- **Node.js**: Version 16+ ([Download](https://nodejs.org/))
+- **Node.js**: Version 16+ ([Download](https://nodejs.org/)) - Required for Newman CLI
 - **npm**: Comes with Node.js
+
+**For Backend Testing:**
+- **Java**: Version 17+ 
+- **Maven**: Version 3.8+
+
 - **Gym Platform Services**: Running locally or accessible
 
 ### 5-Minute Setup
 
+**Option A: Using Postman GUI**
+```bash
+# 1. Open Postman application
+
+# 2. Import the master collection
+# File > Import > collections/Gym-Platform-API-Master.postman_collection.json
+
+# 3. Import environment
+# File > Import > environments/local.postman_environment.json
+
+# 4. Select environment and run first test
+```
+
+**Option B: Using Newman (CLI)**
 ```bash
 # 1. Navigate to tests directory
 cd tests
 
-# 2. Install dependencies (if using Newman)
-npm install
+# 2. Install Newman
+npm install -g newman
 
-# 3. Import the master collection into Postman
-# File > Import > collections/Gym-Platform-API-Master.postman_collection.json
-
-# 4. Import environment
-# File > Import > environments/local.postman_environment.json
-
-# 5. Run first test
-npm run test:local
+# 3. Run tests
+newman run collections/Gym-Platform-API-Master.postman_collection.json \
+  -e environments/local.postman_environment.json
 ```
+
+**Option C: Using Maven**
+```bash
+# 1. Navigate to service directory
+cd auth-service
+
+# 2. Run tests
+mvn clean test
+
+# 3. Run integration tests
+mvn verify
+```
+
 
 ---
 
@@ -98,31 +136,41 @@ npm run test:local
 
 #### Starting Local Services
 
+**Option A: Using Docker Compose (Recommended)**
+```bash
+# From root directory
+docker-compose up -d
+```
+
+**Option B: Starting Manually**
 ```bash
 # Terminal 1: Auth Service
 cd auth-service
-npm start
+mvn spring-boot:run
 
 # Terminal 2: Training Service
 cd training-service
-npm start
+mvn spring-boot:run
 
 # Terminal 3: Tracking Service
 cd tracking-service
-npm start
+mvn spring-boot:run
 
 # Terminal 4: Notification Service
 cd notification-service
-npm start
+mvn spring-boot:run
 ```
 
 Verify all services are running:
 
 ```bash
-curl http://localhost:8081/health
-curl http://localhost:8082/training/health
-curl http://localhost:8083/tracking/health
-curl http://localhost:8084/notifications/health
+# Spring Boot Actuator health endpoints
+curl http://localhost:8081/actuator/health
+curl http://localhost:8082/actuator/health
+curl http://localhost:8083/actuator/health
+curl http://localhost:8084/actuator/health
+
+# Expected response: {"status":"UP"}
 ```
 
 ### Staging Environment
