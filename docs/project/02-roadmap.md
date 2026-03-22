@@ -138,8 +138,6 @@ Flows not yet implemented, ordered by priority.
 
 ### High Priority
 - ⬜ Email verification on registration (token sent, link clicked)
-- ⬜ Password reset (forgot password → email → reset link)
-- ⬜ Professional registration request & admin approval
 - ⬜ Trainer assigns routine/plan to a client user
 - ⬜ Automatic notification triggered on session logged or goal achieved
 
