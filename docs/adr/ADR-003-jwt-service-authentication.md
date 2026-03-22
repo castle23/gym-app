@@ -125,17 +125,36 @@ Header:
   "typ": "JWT"
 }
 
-Payload:
+Payload (access token):
 {
-  "sub": "user-123",
-  "email": "user@example.com",
+  "sub": "123",          // userId
+  "roles": "ROLE_USER",  // comma-separated roles
+  "iss": "gym-platform",
   "iat": 1516239022,
-  "exp": 1516242622,
-  "scope": ["read:exercises", "write:workouts"]
+  "exp": 1516242622
+}
+
+Payload (refresh token):
+{
+  "sub": "123",
+  "iss": "gym-platform",
+  "iat": 1516239022,
+  "exp": 1517448622      // longer expiration
 }
 
 Signature: HMAC-SHA256(header.payload, secret)
 ```
+
+### Gateway Header Injection
+
+The API Gateway validates the JWT and injects user context as headers before forwarding to services:
+
+```
+X-User-Id: 123
+X-User-Roles: ROLE_USER
+```
+
+Services read these headers via `GymRoleInterceptor` — they do **not** validate JWTs themselves and do **not** call each other directly.
 
 ### Best Practices
 

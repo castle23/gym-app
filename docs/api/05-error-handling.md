@@ -19,17 +19,20 @@ All services use a centralized `GymExceptionHandlerAutoConfiguration` (`@RestCon
 
 ## Exception Mapping
 
-| Exception | HTTP Status |
-|-----------|-------------|
-| `ResourceNotFoundException` | 404 Not Found |
-| `UnauthorizedException` | 403 Forbidden |
-| `InvalidDataException` | 400 Bad Request |
-| `MethodArgumentNotValidException` | 400 Bad Request |
-| `MissingServletRequestParameterException` | 400 Bad Request |
-| `MissingRequestHeaderException` | 400 Bad Request |
-| `IllegalArgumentException` | 400 / 403 / 404 (by message content) |
+| Exception | HTTP Status | Usage |
+|-----------|-------------|-------|
+| `ResourceNotFoundException` | 404 Not Found | Entity not found by ID |
+| `UnauthorizedException` | 403 Forbidden | Authenticated but not permitted (e.g. accessing another user's resource) |
+| `AuthenticationException` | 401 Unauthorized | Invalid credentials, expired/invalid token |
+| `InvalidDataException` | 400 Bad Request | Business rule violation, duplicate data |
+| `MethodArgumentNotValidException` | 400 Bad Request | `@Valid` bean validation failure |
+| `MissingServletRequestParameterException` | 400 Bad Request | Missing required query param |
+| `MissingRequestHeaderException` | 400 Bad Request | Missing required header |
+| `IllegalArgumentException` | 400 / 403 / 404 (by message content) | Legacy fallback |
 
-> `UnauthorizedException` maps to **403 Forbidden**, not 401. It represents an authorization failure (authenticated but not permitted). 401 is returned by the API Gateway when JWT is missing or invalid.
+> `UnauthorizedException` → **403 Forbidden** (authorized but not permitted).  
+> `AuthenticationException` → **401 Unauthorized** (bad credentials, invalid token).  
+> 401 from the API Gateway means JWT is missing or invalid before reaching the service.
 
 All exception classes are in `com.gym.common.exception`.
 
@@ -37,11 +40,9 @@ All exception classes are in `com.gym.common.exception`.
 
 ```json
 {
-  "timestamp": "2024-03-21T10:30:00.000+00:00",
-  "status": 404,
-  "error": "Not Found",
+  "status": "NOT_FOUND",
   "message": "Resource not found with id: 123",
-  "path": "/training/api/v1/exercises/123"
+  "timestamp": "2024-03-21T10:30:00"
 }
 ```
 
@@ -51,14 +52,9 @@ When `@Valid` fails on a request body, the response includes field-level details
 
 ```json
 {
-  "timestamp": "2024-03-21T10:30:00.000+00:00",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Validation failed",
-  "errors": [
-    { "field": "email", "message": "must not be blank" },
-    { "field": "password", "message": "size must be between 8 and 100" }
-  ]
+  "status": "BAD_REQUEST",
+  "message": "Validation failed: email: must not be blank, password: size must be between 8 and 100",
+  "timestamp": "2024-03-21T10:30:00"
 }
 ```
 

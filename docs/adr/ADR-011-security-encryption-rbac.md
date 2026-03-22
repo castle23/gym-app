@@ -69,15 +69,12 @@ Users have roles with permissions:
 
 ```
 User Roles:
-├── admin (view/edit all users)
-├── trainer (view/edit assigned users)
-└── user (view/edit own data only)
-
-Resource Permissions:
-├── /profile/me → allowed (current user)
-├── /profile/other-user-id → denied (unless admin/trainer)
-└── /admin → admin only
+├── ROLE_ADMIN       (full access, manage all users)
+├── ROLE_PROFESSIONAL (access to professional endpoints)
+└── ROLE_USER        (access to own data only)
 ```
+
+Roles are stored in the `users` table and embedded in the JWT as a comma-separated string (`roles` claim). The API Gateway injects them as `X-User-Roles` header; services enforce access via `@RequiresRole` annotation and `GymRoleInterceptor`.
 
 ### 5. Data Masking
 In logs and error messages:
@@ -214,35 +211,16 @@ VALUES (
 ### RBAC Configuration
 
 ```java
-// Spring Security RBAC
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-            .authorizeRequests()
-            .antMatchers("/public/**").permitAll()
-            .antMatchers("/admin/**").hasRole("ADMIN")
-            .antMatchers("/trainer/**").hasRole("TRAINER")
-            .antMatchers("/profile/me").authenticated()
-            .antMatchers("/profile/{id}").access("@userService.isUserOrAdmin(authentication, #id)")
-            .anyRequest().authenticated()
-            .and()
-            .oauth2ResourceServer()
-            .jwt();
-    }
-}
+// gym-common auto-configures security for all services
+// GymSecurityAutoConfiguration permits actuator + swagger, requires auth for the rest
+// Services enforce role-level access with @RequiresRole annotation:
 
-// Custom authorization check
-@Component("userService")
-public class UserService {
-    public boolean isUserOrAdmin(Authentication auth, String userId) {
-        String principal = auth.getName();
-        return principal.equals(userId) || hasRole(auth, "ADMIN");
-    }
-}
+@RequiresRole("ROLE_ADMIN")
+@GetMapping("/admin/users")
+public ResponseEntity<?> listUsers() { ... }
+
+// GymRoleInterceptor reads X-User-Roles header injected by the API Gateway
+// and populates UserContextHolder for the current request
 ```
 
 ### Secrets Management
