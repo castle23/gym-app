@@ -44,10 +44,8 @@ curl -X POST http://localhost:8080/auth/register \
 ```json
 {
   "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "success": true,
-  "message": "User registered successfully"
+  "email": "jane@example.com",
+  "message": "Registration successful. Please check your email to verify."
 }
 ```
 
@@ -63,9 +61,9 @@ curl -X POST http://localhost:8080/auth/login \
 ```json
 {
   "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "email": "jane@example.com",
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
   "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "success": true,
   "message": "Login successful"
 }
 ```
@@ -76,14 +74,15 @@ curl -X POST http://localhost:8080/auth/login \
 curl -X POST http://localhost:8080/auth/refresh \
   -H "Authorization: Bearer <accessToken>" \
   -H "Content-Type: application/json" \
-  -d '{"refreshToken": "eyJhbGciOiJIUzI1NiJ9..."}'
+  -d '{"token": "eyJhbGciOiJIUzI1NiJ9..."}'
 ```
 
 **Response (200)**:
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "success": true
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "expiresIn": 86400
 }
 ```
 

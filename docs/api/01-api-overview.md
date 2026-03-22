@@ -45,9 +45,9 @@ Authorization: Bearer <JWT_TOKEN>
 ```json
 {
   "userId": "<uuid>",
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
   "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "success": true,
+  "email": "user@example.com",
   "message": "Login successful"
 }
 ```
@@ -60,7 +60,7 @@ Access tokens expire after 24h, refresh tokens after 7d.
 
 ```json
 {
-  "refreshToken": "your-refresh-token"
+  "token": "your-refresh-token"
 }
 ```
 
@@ -100,16 +100,13 @@ All responses are in JSON format.
 
 ### Successful Response (2xx)
 
+Services return the DTO directly — no wrapper object:
+
 ```json
 {
-  "data": {
-    "id": 1,
-    "name": "Beginner Strength",
-    "description": "12-week strength building program",
-    "duration": 12
-  },
-  "status": "success",
-  "timestamp": "2024-03-21T10:30:00Z"
+  "id": 1,
+  "name": "Beginner Strength",
+  "description": "12-week strength building program"
 }
 ```
 
@@ -117,11 +114,9 @@ All responses are in JSON format.
 
 ```json
 {
-  "error": "Unauthorized",
-  "message": "Invalid or expired JWT token",
-  "status": 401,
-  "timestamp": "2024-03-21T10:30:00Z",
-  "path": "/api/v1/training/programs"
+  "status": "NOT_FOUND",
+  "message": "Resource not found with id: 123",
+  "timestamp": "2024-03-21T10:30:00"
 }
 ```
 
@@ -129,19 +124,14 @@ All responses are in JSON format.
 
 ```json
 {
-  "data": [
-    { "id": 1, "name": "Program 1" },
-    { "id": 2, "name": "Program 2" }
+  "content": [
+    { "id": 1, "name": "Exercise 1" },
+    { "id": 2, "name": "Exercise 2" }
   ],
-  "pagination": {
-    "page": 1,
-    "pageSize": 20,
-    "totalElements": 42,
-    "totalPages": 3,
-    "hasNext": true,
-    "hasPrevious": false
-  },
-  "status": "success"
+  "page": 0,
+  "size": 20,
+  "totalElements": 42,
+  "totalPages": 3
 }
 ```
 
@@ -149,14 +139,14 @@ All responses are in JSON format.
 
 ### Query Parameters
 
-- `page` - Page number (1-indexed, default: 1)
-- `pageSize` - Items per page (default: 20, max: 100)
-- `sort` - Sort field and direction: `field:asc` or `field:desc`
+- `page` - Page number (0-indexed, default: 0)
+- `size` - Items per page (default: 20)
+- `sort` - Sort field and direction: `field,asc` or `field,desc`
 
 ### Example
 
 ```http
-GET /api/v1/training/programs?page=2&pageSize=10&sort=name:asc
+GET /training/api/v1/exercises/system?page=0&size=10&sort=name,asc
 ```
 
 ## Filtering & Search
@@ -302,14 +292,7 @@ curl http://localhost:8080/training/api/v1/exercises/my-exercises \
 ### Fetching Paginated Results
 
 ```bash
-curl 'http://localhost:8082/api/v1/training/programs?page=1&pageSize=10&sort=name:asc' \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### Filtering Resources
-
-```bash
-curl 'http://localhost:8082/api/v1/training/programs?status=active&duration>8' \
+curl 'http://localhost:8080/training/api/v1/exercises/system?page=0&size=10&sort=name,asc' \
   -H "Authorization: Bearer $TOKEN"
 ```
 

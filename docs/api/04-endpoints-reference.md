@@ -73,7 +73,7 @@ All endpoints are accessible via the API Gateway at `http://localhost:8080`. Eac
 ### Objectives
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/tracking/api/v1/objectives` | No | List objectives |
+| GET | `/tracking/api/v1/objectives` | Yes | List user objectives |
 | GET | `/tracking/api/v1/objectives/{id}` | Yes | Get objective |
 | POST | `/tracking/api/v1/objectives` | Yes | Create objective |
 | PUT | `/tracking/api/v1/objectives/{id}` | Yes | Update objective |
@@ -82,7 +82,7 @@ All endpoints are accessible via the API Gateway at `http://localhost:8080`. Eac
 ### Plans
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/tracking/api/v1/plans` | No | List plans |
+| GET | `/tracking/api/v1/plans` | Yes | List user plans |
 | GET | `/tracking/api/v1/plans/{id}` | Yes | Get plan |
 | POST | `/tracking/api/v1/plans` | Yes | Create plan |
 | PUT | `/tracking/api/v1/plans/{id}` | Yes | Update plan |
@@ -91,7 +91,7 @@ All endpoints are accessible via the API Gateway at `http://localhost:8080`. Eac
 ### Diet Logs
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/tracking/api/v1/diet-logs` | No | List diet logs |
+| GET | `/tracking/api/v1/diet-logs` | Yes | List user diet logs |
 | GET | `/tracking/api/v1/diet-logs/{id}` | Yes | Get diet log |
 | GET | `/tracking/api/v1/diet-logs/date/{date}` | Yes | By date |
 | POST | `/tracking/api/v1/diet-logs` | Yes | Create diet log |
@@ -127,7 +127,7 @@ All endpoints are accessible via the API Gateway at `http://localhost:8080`. Eac
 ### Notifications
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/notifications/api/v1/notifications` | No | List notifications |
+| GET | `/notifications/api/v1/notifications` | Yes | List user notifications |
 | GET | `/notifications/api/v1/notifications/unread` | Yes | Unread notifications |
 | GET | `/notifications/api/v1/notifications/unread/count` | Yes | Unread count |
 | POST | `/notifications/api/v1/notifications` | Yes | Create notification |
