@@ -141,7 +141,8 @@ Test C: Create separate users list
 
 **Prerequisites:**
 - Docker & Docker Compose
-- Node.js 16+
+- Java 17+
+- Maven 3.8+
 - PostgreSQL client tools
 
 **1. Start Services**
@@ -164,7 +165,7 @@ docker-compose ps
 **2. Initialize Test Databases**
 ```bash
 # Create test databases for each service
-npm run db:setup:test
+./scripts/database/setup-test.sh
 
 # This script:
 # - Creates test_auth, test_training, test_tracking, test_notification databases
@@ -174,13 +175,13 @@ npm run db:setup:test
 
 **3. Verify Services Healthy**
 ```bash
-# Health check each service
-curl http://localhost:8081/health  # Auth
-curl http://localhost:8082/health  # Training
-curl http://localhost:8083/health  # Tracking
-curl http://localhost:8084/health  # Notification
+# Health check each service (Spring Boot Actuator)
+curl http://localhost:8081/actuator/health  # Auth
+curl http://localhost:8082/actuator/health  # Training
+curl http://localhost:8083/actuator/health  # Tracking
+curl http://localhost:8084/actuator/health  # Notification
 
-# Expected response: { "status": "ok" }
+# Expected response: { "status": "UP" }
 ```
 
 ### Test Data Management
@@ -295,7 +296,7 @@ Use the consolidated Postman collection (Phase 1) for integration tests:
 
 ```bash
 # Run Postman collection with Newman (CLI)
-npm run test:api:local
+mvn verify
 
 # Configuration (newman-config.json):
 {
@@ -668,7 +669,7 @@ it('should handle service timeout gracefully', async () => {
 
 **Run all integration tests:**
 ```bash
-npm run test:integration
+mvn verify
 
 # Output:
 # User Registration Flow
@@ -684,7 +685,7 @@ npm run test:integration
 
 **Run specific test file:**
 ```bash
-npm run test:integration -- tests/integration/user-registration.test.js
+mvn verify -- tests/integration/user-registration.test.js
 
 # Or with jest
 jest tests/integration/user-registration.test.js --testTimeout=10000
@@ -692,7 +693,7 @@ jest tests/integration/user-registration.test.js --testTimeout=10000
 
 **Run with coverage:**
 ```bash
-npm run test:integration -- --coverage
+mvn verify -- --coverage
 
 # Output:
 # Coverage Summary
@@ -727,18 +728,19 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-java@v2
       with:
-        node-version: '16'
+        java-version: '17'
+        distribution: 'temurin'
     
     - name: Install dependencies
-      run: npm install
+      run: mvn clean install
     
     - name: Setup test databases
-      run: npm run db:setup:test
+      run: ./scripts/database/setup-test.sh
     
     - name: Run integration tests
-      run: npm run test:integration
+      run: mvn verify
     
     - name: Upload coverage
       uses: codecov/codecov-action@v2
@@ -748,7 +750,7 @@ jobs:
 
 **Generate HTML Report:**
 ```bash
-npm run test:integration -- --reporter=html --reporterOptions.outputDir=test-results
+mvn verify -- --no-fail -Dmaven.test.failure.ignore=true
 
 # Opens in browser:
 # test-results/index.html
@@ -757,7 +759,7 @@ npm run test:integration -- --reporter=html --reporterOptions.outputDir=test-res
 **Metrics Dashboard:**
 ```bash
 # Track test metrics over time
-npm run test:metrics
+mvn test -Dgroups=metrics
 
 # Outputs:
 # Test Success Rate: 98.2%
@@ -845,7 +847,7 @@ psql -U test_user -d test_auth -c "SELECT 1"
 DATABASE_URL=postgresql://test_user:password@localhost:5432/test_auth
 
 # Reset database
-npm run db:reset:test
+./scripts/database/reset-test.sh
 ```
 
 ### Event Not Received

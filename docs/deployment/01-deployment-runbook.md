@@ -33,8 +33,8 @@ Complete ALL items before proceeding:
   □ No hardcoded secrets or credentials
 
 ☐ Testing
-  □ Unit tests passing locally (npm test)
-  □ Integration tests passing (npm run test:integration)
+  □ Unit tests passing locally (mvn clean test)
+  □ Integration tests passing (mvn verify)
   □ All tests passing in CI/CD pipeline
   □ Coverage targets met (>70%)
 

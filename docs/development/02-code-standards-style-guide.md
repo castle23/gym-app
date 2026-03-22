@@ -518,11 +518,12 @@ resource "aws_instance" "app" {
 #!/bin/bash
 # .git/hooks/pre-commit
 
-# Run linting
-npm run lint || exit 1
+# Run code quality checks
+mvn spotbugs:check || exit 1
+mvn checkstyle:check || exit 1
 
 # Run tests
-npm test || exit 1
+mvn clean test || exit 1
 
 # Check for hardcoded secrets
 git diff --cached | grep -E "password|secret|token" && {
