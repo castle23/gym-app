@@ -25,6 +25,7 @@ class AuthServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private VerificationRepository verificationRepository;
     @Mock private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Mock private ProfessionalRegistrationRequestRepository registrationRepository;
     @Mock private JwtService jwtService;
     @Mock private EmailService emailService;
     @Mock private PasswordEncoder passwordEncoder;
@@ -118,5 +119,94 @@ class AuthServiceTest {
         when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
 
         assertThrows(InvalidDataException.class, () -> authService.confirmPasswordReset(request));
+    }
+
+
+    @Test
+    void testRequestProfessionalStatusSuccess() {
+        User user = User.builder().id(1L).email("user@test.com").build();
+        ProfessionalRegistrationDto dto = new ProfessionalRegistrationDto("Specialty", "License123");
+
+        when(registrationRepository.existsByUser(user)).thenReturn(false);
+
+        AuthResponse response = authService.requestProfessionalStatus(user, dto);
+
+        assertNotNull(response);
+        assertEquals("Registration request submitted", response.getMessage());
+        verify(registrationRepository, times(1)).save(any(ProfessionalRegistrationRequest.class));
+    }
+
+    @Test
+    void testRequestProfessionalStatusDuplicate() {
+        User user = User.builder().id(1L).email("user@test.com").build();
+        ProfessionalRegistrationDto dto = new ProfessionalRegistrationDto("Specialty", "License123");
+
+        when(registrationRepository.existsByUser(user)).thenReturn(true);
+
+        assertThrows(InvalidDataException.class, () -> authService.requestProfessionalStatus(user, dto));
+    }
+
+    @Test
+    void testGetRegistrationRequestsSuccess() {
+        authService.getRegistrationRequests();
+        verify(registrationRepository, times(1)).findByStatus(ProfessionalRegistrationRequest.RequestStatus.PENDING);
+    }
+
+    @Test
+    void testApproveRegistrationSuccess() {
+        Long requestId = 1L;
+        User user = User.builder().roles(new java.util.HashSet<>()).build();
+        ProfessionalRegistrationRequest request = ProfessionalRegistrationRequest.builder()
+                .user(user)
+                .status(ProfessionalRegistrationRequest.RequestStatus.PENDING)
+                .build();
+        ProfessionalApprovalDto dto = new ProfessionalApprovalDto(null, null);
+
+        when(registrationRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        AuthResponse response = authService.approveRegistration(requestId, dto);
+
+        assertNotNull(response);
+        assertEquals("Registration approved", response.getMessage());
+        assertEquals(ProfessionalRegistrationRequest.RequestStatus.APPROVED, request.getStatus());
+        assertTrue(user.getRoles().contains(User.UserType.PROFESSIONAL.name()));
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    void testApproveRegistrationNotFound() {
+        Long requestId = 1L;
+        when(registrationRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> authService.approveRegistration(requestId, new ProfessionalApprovalDto(null, null)));
+    }
+
+    @Test
+    void testRejectRegistrationSuccess() {
+        Long requestId = 1L;
+        User user = User.builder().email("user@test.com").build();
+        ProfessionalRegistrationRequest request = ProfessionalRegistrationRequest.builder()
+                .user(user)
+                .status(ProfessionalRegistrationRequest.RequestStatus.PENDING)
+                .build();
+        ProfessionalApprovalDto dto = new ProfessionalApprovalDto(null, "Rejected reason");
+
+        when(registrationRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        AuthResponse response = authService.rejectRegistration(requestId, dto);
+
+        assertNotNull(response);
+        assertEquals("Registration rejected", response.getMessage());
+        assertEquals(ProfessionalRegistrationRequest.RequestStatus.REJECTED, request.getStatus());
+        assertEquals("Rejected reason", request.getRejectionReason());
+        verify(registrationRepository, times(1)).save(request);
+    }
+
+    @Test
+    void testRejectRegistrationNotFound() {
+        Long requestId = 1L;
+        when(registrationRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> authService.rejectRegistration(requestId, new ProfessionalApprovalDto(null, "reason")));
     }
 }

@@ -1,13 +1,12 @@
 package com.gym.auth.service;
 
-import com.gym.auth.dto.AuthResponse;
-import com.gym.auth.dto.LoginRequest;
-import com.gym.auth.dto.RegisterRequest;
-import com.gym.auth.dto.RefreshTokenRequest;
-import com.gym.auth.dto.TokenRefreshResponse;
-import com.gym.auth.dto.VerifyEmailRequest;
+import com.gym.auth.dto.*;
+import com.gym.auth.entity.PasswordResetToken;
+import com.gym.auth.entity.ProfessionalRegistrationRequest;
 import com.gym.auth.entity.User;
 import com.gym.auth.entity.Verification;
+import com.gym.auth.repository.PasswordResetTokenRepository;
+import com.gym.auth.repository.ProfessionalRegistrationRequestRepository;
 import com.gym.auth.repository.UserRepository;
 import com.gym.auth.repository.VerificationRepository;
 import com.gym.common.exception.AuthenticationException;
@@ -21,8 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -31,6 +32,8 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final VerificationRepository verificationRepository;
+    private final ProfessionalRegistrationRequestRepository registrationRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final JwtService jwtService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -183,5 +186,101 @@ public class AuthService {
     private String generateVerificationCode() {
         int code = new Random().nextInt(900000) + 100000;
         return String.valueOf(code);
+    }
+
+    @Transactional
+    public AuthResponse requestPasswordReset(PasswordResetRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(token)
+                .user(user)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .used(false)
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), token);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email", e);
+        }
+        log.info("Password reset requested for email: {}", user.getEmail());
+        return AuthResponse.builder().message("Password reset link sent").build();
+    }
+
+    @Transactional
+    public AuthResponse confirmPasswordReset(PasswordResetConfirm request) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new InvalidDataException("Invalid reset token"));
+
+        if (resetToken.isUsed() || LocalDateTime.now().isAfter(resetToken.getExpiresAt())) {
+            throw new InvalidDataException("Reset token is expired or already used");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+
+        log.info("Password reset successful for user: {}", user.getEmail());
+        return AuthResponse.builder().message("Password reset successful").build();
+    }
+
+    @Transactional
+    public AuthResponse requestProfessionalStatus(User user, ProfessionalRegistrationDto dto) {
+        if (registrationRepository.existsByUser(user)) {
+            throw new InvalidDataException("Request already pending");
+        }
+        
+        ProfessionalRegistrationRequest request = ProfessionalRegistrationRequest.builder()
+                .user(user)
+                .specialty(dto.getSpecialty())
+                .licenseNumber(dto.getLicenseNumber())
+                .status(ProfessionalRegistrationRequest.RequestStatus.PENDING)
+                .build();
+        
+        registrationRepository.save(request);
+        log.info("Professional request submitted for user: {}", user.getEmail());
+        return AuthResponse.builder().message("Registration request submitted").build();
+    }
+    
+    @Transactional(readOnly = true)
+    public List<ProfessionalRegistrationRequest> getRegistrationRequests() {
+        return registrationRepository.findByStatus(ProfessionalRegistrationRequest.RequestStatus.PENDING);
+    }
+    
+    @Transactional
+    public AuthResponse approveRegistration(Long requestId, ProfessionalApprovalDto dto) {
+        ProfessionalRegistrationRequest request = registrationRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+        
+        request.setStatus(ProfessionalRegistrationRequest.RequestStatus.APPROVED);
+        registrationRepository.save(request);
+        
+        User user = request.getUser();
+        user.getRoles().add(User.UserType.PROFESSIONAL.name());
+        userRepository.save(user);
+        
+        log.info("Professional registration approved for user: {}", user.getEmail());
+        return AuthResponse.builder().message("Registration approved").build();
+    }
+    
+    @Transactional
+    public AuthResponse rejectRegistration(Long requestId, ProfessionalApprovalDto dto) {
+        ProfessionalRegistrationRequest request = registrationRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+        
+        request.setStatus(ProfessionalRegistrationRequest.RequestStatus.REJECTED);
+        request.setRejectionReason(dto.getRejectionReason());
+        registrationRepository.save(request);
+        
+        log.info("Professional registration rejected for user: {}", request.getUser().getEmail());
+        return AuthResponse.builder().message("Registration rejected").build();
     }
 }

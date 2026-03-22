@@ -41,4 +41,18 @@ public class EmailService {
             log.error("Failed to send welcome email to: {}", toEmail, e);
         }
     }
+
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject("Password Reset Request");
+            message.setText("Your password reset token is: " + token + "\n\n" +
+                    "This token will expire in 15 minutes.");
+            mailSender.send(message);
+            log.info("Password reset email sent to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", toEmail, e);
+        }
+    }
 }
