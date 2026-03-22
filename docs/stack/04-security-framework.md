@@ -13,49 +13,40 @@ Gym Platform implements comprehensive security using **Spring Security 6.x** wit
 
 ## Authentication Flow
 
-### User Login Process
+### Authentication Flow
 
 ```
-Client                    Auth Service                  Token Service
-  │                            │                              │
-  ├─ POST /api/v1/auth/login──>│                              │
-  │  (username, password)      │                              │
-  │                            ├─ Validate credentials        │
-  │                            ├─ Hash password check         │
-  │                            │                              │
-  │                            ├─ Generate JWT token ────────>│
-  │                            │                              │
-  │                            │<─ Token created ─────────────┤
-  │                            │                              │
-  │<─ 200 OK ─────────────────┤                              │
-  │  { "token": "jwt..." }     │                              │
-  │  { "refresh": "token..." } │                              │
+Client              API Gateway              Auth Service
+  │                      │                       │
+  ├─ POST /auth/login ──>│                       │
+  │                      ├─ forward to auth ────>│
+  │                      │                       ├─ validate credentials
+  │                      │                       ├─ generate JWT
+  │                      │<─ AuthResponse ────────┤
+  │<─ AuthResponse ──────┤                       │
+  │  { token, refreshToken, userId, email }       │
+  │                      │                       │
+  ├─ GET /training/... ──>│                      │
+  │  Authorization: Bearer <jwt>                  │
+  │                      ├─ validate JWT          │
+  │                      ├─ inject X-User-Id      │
+  │                      ├─ inject X-User-Roles   │
+  │                      ├─ forward ────────────>Training Service
+  │<─ response ──────────┤<──────────────────────┤
 ```
 
 ### JWT Token Structure
 
 ```
-Header.Payload.Signature
-
-Header (Algorithm & Type):
-{
-  "alg": "HS256",
-  "typ": "JWT"
-}
-
 Payload (Claims):
 {
-  "sub": "550e8400-e29b-41d4-a716-446655440000",  // User ID
+  "sub": "123",            // User ID (Long, as string)
   "username": "john.doe",
   "email": "john@example.com",
-  "role": "USER",
-  "iat": 1516239022,      // Issued at
-  "exp": 1516242622,      // Expiration (1 hour)
-  "iss": "gym-auth-service"
+  "roles": ["ROLE_USER"],   // ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN
+  "iat": 1516239022,
+  "exp": 1516325422
 }
-
-Signature:
-HMACSHA256(base64UrlEncode(header) + "." + base64UrlEncode(payload), secret)
 ```
 
 ## Spring Security Configuration
@@ -144,10 +135,10 @@ public class JwtProvider {
             .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         return Jwts.builder()
-            .subject(user.getId().toString())
+            .subject(user.getId().toString())  // Long userId as string
             .claim("username", user.getUsername())
             .claim("email", user.getEmail())
-            .claim("role", user.getRole().toString())
+            .claim("roles", List.of(user.getRole()))  // e.g. ["ROLE_USER"]
             .issuedAt(new Date())
             .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs * 1000))
             .signWith(SignatureAlgorithm.HS256, jwtSecret)
@@ -182,27 +173,24 @@ public class JwtProvider {
     /**
      * Extract user ID from token
      */
-    public UUID getUserIdFromToken(String token) {
-        String userId = Jwts.parserBuilder()
+    public Long getUserIdFromToken(String token) {
+        String subject = Jwts.parserBuilder()
             .setSigningKey(jwtSecret)
             .build()
             .parseClaimsJws(token)
             .getBody()
             .getSubject();
-
-        return UUID.fromString(userId);
+        return Long.parseLong(subject);
     }
 
-    /**
-     * Extract role from token
-     */
-    public String getRoleFromToken(String token) {
-        return Jwts.parserBuilder()
+    @SuppressWarnings("unchecked")
+    public List<String> getRolesFromToken(String token) {
+        return (List<String>) Jwts.parserBuilder()
             .setSigningKey(jwtSecret)
             .build()
             .parseClaimsJws(token)
             .getBody()
-            .get("role", String.class);
+            .get("roles");
     }
 
     /**
@@ -249,284 +237,93 @@ public class JwtProvider {
 }
 ```
 
-## JWT Filter
+## JWT Filter (API Gateway only)
 
-### Request Authentication Filter
+JWT validation happens **exclusively in the API Gateway** (`JwtAuthFilter`). The gateway injects `X-User-Id` and `X-User-Roles` headers into every forwarded request. Downstream services do **not** run a JWT filter — they read the injected headers via `GymRoleInterceptor` from `gym-common`.
 
 ```java
-@RequiredArgsConstructor
-@Slf4j
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+// API Gateway: JwtAuthFilter validates token and injects:
+//   X-User-Id: 123
+//   X-User-Roles: ROLE_USER
 
-    private final JwtProvider jwtProvider;
-
-    @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
-
-        try {
-            String token = extractJwtFromRequest(request);
-
-            if (token != null && jwtProvider.validateToken(token)) {
-                String username = jwtProvider.getUsernameFromToken(token);
-                String role = jwtProvider.getRoleFromToken(token);
-
-                List<GrantedAuthority> authorities = Arrays.asList(
-                    new SimpleGrantedAuthority("ROLE_" + role)
-                );
-
-                UsernamePasswordAuthenticationToken authentication = 
-                    new UsernamePasswordAuthenticationToken(
-                        username, null, authorities);
-
-                authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                log.debug("User authenticated: {} with role: {}", username, role);
-            }
-        } catch (Exception e) {
-            log.error("Could not set user authentication: {}", e.getMessage());
-        }
-
-        filterChain.doFilter(request, response);
-    }
-
-    /**
-     * Extract JWT from Authorization header
-     */
-    private String extractJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-
-        return null;
-    }
-}
+// Downstream services: GymRoleInterceptor (from gym-common)
+// reads headers → stores in GymSecurityContext
 ```
 
 ## Authentication Controller
 
-### Login & Token Management
-
 ```java
 @RestController
-@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Slf4j
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtProvider jwtProvider;
-    private final AuthenticationManager authenticationManager;
 
-    /**
-     * User login
-     */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    request.getUsername(),
-                    request.getPassword()
-                )
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            String username = authentication.getName();
-            String token = jwtProvider.generateToken(username);
-            String refreshToken = jwtProvider.generateRefreshToken(username);
-
-            LoginResponse response = LoginResponse.builder()
-                .token(token)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(3600)
-                .build();
-
-            log.info("User logged in: {}", username);
-            return ResponseEntity.ok(response);
-
-        } catch (BadCredentialsException e) {
-            log.warn("Login failed: invalid credentials for user: {}", request.getUsername());
-            throw new UnauthorizedException("Invalid username or password");
-        }
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 
-    /**
-     * Refresh access token
-     */
-    @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refresh(
-            @Valid @RequestBody RefreshTokenRequest request) {
-
-        try {
-            String username = jwtProvider.getUsernameFromToken(request.getRefreshToken());
-
-            if (!jwtProvider.validateToken(request.getRefreshToken())) {
-                throw new UnauthorizedException("Invalid refresh token");
-            }
-
-            String token = jwtProvider.generateToken(username);
-
-            LoginResponse response = LoginResponse.builder()
-                .token(token)
-                .refreshToken(request.getRefreshToken())
-                .tokenType("Bearer")
-                .expiresIn(3600)
-                .build();
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            log.error("Token refresh failed: {}", e.getMessage());
-            throw new UnauthorizedException("Could not refresh token");
-        }
-    }
-
-    /**
-     * User registration
-     */
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(
             @Valid @RequestBody RegisterRequest request) {
-
-        User user = authService.registerUser(request);
-
-        RegisterResponse response = RegisterResponse.builder()
-            .id(user.getId())
-            .username(user.getUsername())
-            .email(user.getEmail())
-            .message("User registered successfully")
-            .build();
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
-    /**
-     * Logout (invalidate token)
-     */
-    @PostMapping("/logout")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
-        // Token invalidation typically handled by client or token blacklist
-        SecurityContextHolder.clearContext();
-        log.info("User logged out");
-        return ResponseEntity.noContent().build();
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(
+            @Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
     }
 }
 ```
+
+**AuthResponse fields:** `token`, `refreshToken`, `userId`, `email`, `message`
+
+**RegisterResponse fields:** `userId`, `email`, `message` (no tokens)
 
 ## Role-Based Access Control (RBAC)
 
 ### User Roles
 
 ```java
-public enum UserRole {
-    ADMIN(3),        // Full system access
-    SUPERVISOR(2),   // Manage other users, view reports
-    COACH(1),        // Manage assigned users, create programs
-    USER(0);         // Basic access to own data
-
-    private final int level;
-
-    UserRole(int level) {
-        this.level = level;
-    }
-
-    public int getLevel() {
-        return level;
-    }
-}
+// Roles: ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN
+// Stored as a string field on the User entity
 ```
 
-### Authorization Annotations
+### Authorization via gym-common
+
+Services use `@RequiresRole` from `gym-common` and read identity from `GymSecurityContext`:
 
 ```java
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/users")
 public class UserController {
 
-    /**
-     * Only ADMIN can access
-     */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @RequiresRole({"ROLE_ADMIN"})
     public ResponseEntity<List<UserDTO>> getAllUsers() {
-        // Implementation
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    /**
-     * ADMIN or SUPERVISOR can access
-     */
-    @GetMapping("/{id}/reports")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
-    public ResponseEntity<ReportDTO> getUserReport(@PathVariable UUID id) {
-        // Implementation
-    }
-
-    /**
-     * User can access only own data
-     */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('USER') and #id == authentication.principal.id or hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID id) {
-        // Implementation
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        Long currentUserId = GymSecurityContext.getCurrentUserId();
+        List<String> roles = GymSecurityContext.getCurrentRoles();
+        if (!id.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+            throw new UnauthorizedException("Access denied");
+        }
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    /**
-     * Complex permission check
-     */
     @PostMapping("/{userId}/programs")
-    @PreAuthorize("""
-        hasRole('COACH') and 
-        (
-            hasRole('ADMIN') or 
-            @authorizationService.isCoachFor(#userId)
-        )
-    """)
+    @RequiresRole({"ROLE_PROFESSIONAL", "ROLE_ADMIN"})
     public ResponseEntity<ProgramDTO> createProgram(
-            @PathVariable UUID userId,
+            @PathVariable Long userId,
             @RequestBody CreateProgramRequest request) {
-        // Implementation
-    }
-}
-```
-
-### Custom Permission Service
-
-```java
-@Component
-public class AuthorizationService {
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private CoachUserMappingRepository coachUserMappingRepository;
-
-    /**
-     * Check if coach is assigned to user
-     */
-    public boolean isCoachFor(UUID userId, UUID coachId) {
-        return coachUserMappingRepository
-            .existsByUserIdAndCoachId(userId, coachId);
-    }
-
-    /**
-     * Check if user has permission to resource
-     */
-    public boolean canAccessResource(UUID userId, UUID resourceId, String resourceType) {
-        // Custom logic based on resource type
-        return true;
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(programService.create(userId, request));
     }
 }
 ```
@@ -597,37 +394,7 @@ public class PasswordValidator {
 
 ## HTTPS/TLS Configuration
 
-### SSL Configuration (Production)
-
-**application-prod.yml:**
-```yaml
-server:
-  ssl:
-    key-store: classpath:keystore.p12
-    key-store-password: ${SSL_KEYSTORE_PASSWORD}
-    key-store-type: PKCS12
-    key-alias: gym-api
-  http2:
-    enabled: true
-```
-
-**Generate certificate:**
-```bash
-# Generate self-signed certificate (development)
-keytool -genkeypair \
-  -alias gym-api \
-  -keyalg RSA \
-  -keysize 2048 \
-  -keystore keystore.p12 \
-  -keypass changeit \
-  -storepass changeit \
-  -storetype PKCS12 \
-  -validity 365 \
-  -dname "CN=localhost,OU=Gym,O=Gym,L=City,ST=State,C=US"
-
-# Convert to PEM format if needed
-openssl pkcs12 -in keystore.p12 -out gym-api.pem -nodes
-```
+> **Note**: TLS is not configured at the application layer in the current Docker Compose deployment. TLS termination would be handled by a reverse proxy in front of the services.
 
 ## Security Best Practices
 

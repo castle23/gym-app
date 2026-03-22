@@ -11,25 +11,16 @@ Gym Platform uses **PostgreSQL 13+** as the primary relational database. This do
 ### Database Structure
 
 ```
-Gym Platform PostgreSQL
-├── auth_db (Auth Service)
-│   └── public schema (users, roles, tokens)
-├── training_db (Training Service)
-│   └── public schema (programs, exercises, workouts)
-├── tracking_db (Tracking Service)
-│   └── public schema (metrics, progress, analytics)
-└── notification_db (Notification Service)
-    └── public schema (notifications, subscriptions, templates)
+Gym Platform PostgreSQL (single instance: gym_db)
+├── auth_schema      (Auth Service)
+├── training_schema  (Training Service)
+├── tracking_schema  (Tracking Service)
+└── notification_schema (Notification Service)
 ```
 
 ### Service Isolation Strategy
 
-Each microservice has:
-- Dedicated database (logical isolation)
-- Separate credentials
-- Independent backup/restore procedures
-- Scalable schema structure
-- Cross-service queries via API only (no direct DB access)
+All services share a single PostgreSQL instance (`gym_db`) with separate schemas per service. A single user `gym_admin` is used for all services. Schema isolation is enforced via `hibernate.default_schema` in each service's `application.yml`. Cross-service queries are not performed — services communicate only via the API Gateway.
 
 ## PostgreSQL Configuration
 
@@ -61,47 +52,25 @@ docker run --name gym-postgres \
   -d postgres:13-alpine
 ```
 
-**Docker Compose (Full Stack):**
+**Docker Compose (actual configuration):**
 ```yaml
-version: '3.8'
-
 services:
   postgres:
-    image: postgres:13-alpine
+    image: postgres:15-alpine
     container_name: gym-postgres
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      POSTGRES_USER: gym_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-gym_password}
+      POSTGRES_DB: gym_db
     volumes:
       - gym_postgres_data:/var/lib/postgresql/data
-      - ./dba/initialization/schemas:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U gym_admin -d gym_db"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - gym-network
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: gym-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@gym.local
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    networks:
-      - gym-network
-
-volumes:
-  gym_postgres_data:
-
-networks:
-  gym-network:
-    driver: bridge
 ```
 
 ### postgresql.conf Optimization
@@ -157,13 +126,13 @@ shared_preload_libraries = 'pg_stat_statements'
 
 ### Connection Pooling with HikariCP
 
-**Configuration (application.yml):**
+**Connection configuration (application.yml):**
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/auth_db
-    username: auth_user
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://postgres:5432/gym_db
+    username: gym_admin
+    password: ${DB_PASSWORD:gym_password}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
@@ -240,54 +209,22 @@ Each service database is created with:
 - UUID extensions
 - Audit tables and triggers
 
-**Example Auth Schema:**
+**Example Auth Schema (Hibernate-managed, BIGSERIAL PKs):**
 ```sql
--- Create database
-CREATE DATABASE auth_db
-    ENCODING 'UTF8'
-    LOCALE 'en_US.UTF-8'
-    TEMPLATE template0;
-
--- Connect to auth_db
-\c auth_db
-
--- Extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
--- Auth schema
-CREATE SCHEMA IF NOT EXISTS auth;
-
--- Create user tables
-CREATE TABLE auth.users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- Schema created by Hibernate ddl-auto=update
+-- auth_schema.users (representative structure)
+CREATE TABLE auth_schema.users (
+    id BIGSERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL DEFAULT 'USER',
-    is_active BOOLEAN DEFAULT true,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'ROLE_USER',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Audit table
-CREATE TABLE auth.audit_log (
-    id BIGSERIAL PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id),
-    action VARCHAR(100) NOT NULL,
-    entity_type VARCHAR(50) NOT NULL,
-    entity_id UUID NOT NULL,
-    old_values JSONB,
-    new_values JSONB,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indices
-CREATE INDEX idx_users_username ON auth.users(username);
-CREATE INDEX idx_users_email ON auth.users(email);
-CREATE INDEX idx_audit_user_id ON auth.audit_log(user_id);
-CREATE INDEX idx_audit_timestamp ON auth.audit_log(timestamp);
+CREATE INDEX idx_users_username ON auth_schema.users(username);
+CREATE INDEX idx_users_email ON auth_schema.users(email);
 ```
 
 ### Data Initialization
@@ -309,22 +246,10 @@ GROUP BY u.id, u.username
 ORDER BY token_count DESC;
 ```
 
-**Index Strategy:**
+**Index Strategy (example for auth_schema):**
 ```sql
--- Single column indices for frequent filters
-CREATE INDEX idx_users_role ON auth.users(role);
-CREATE INDEX idx_users_is_active ON auth.users(is_active);
-CREATE INDEX idx_users_created_at ON auth.users(created_at);
-
--- Composite indices for common queries
-CREATE INDEX idx_users_active_role 
-    ON auth.users(is_active, role) 
-    WHERE is_active = true;
-
--- Partial indices for specific conditions
-CREATE INDEX idx_users_admin 
-    ON auth.users(id) 
-    WHERE role = 'ADMIN' AND is_active = true;
+CREATE INDEX idx_users_role ON auth_schema.users(role);
+CREATE INDEX idx_users_created_at ON auth_schema.users(created_at);
 ```
 
 ### Vacuum and Analyze
@@ -374,28 +299,18 @@ LIMIT 20;
 
 **Full backup:**
 ```bash
-# Using pg_dump
-pg_dump -U postgres -h localhost auth_db | gzip > auth_db_$(date +%Y%m%d_%H%M%S).sql.gz
-
-# Using pg_dump with custom format (faster restore)
-pg_dump -U postgres -h localhost -Fc auth_db > auth_db_backup.dump
+# Backup single database (gym_db contains all schemas)
+docker exec gym-postgres pg_dump -U gym_admin gym_db | gzip > gym_db_$(date +%Y%m%d_%H%M%S).sql.gz
 ```
 
 **Scheduled backups (cron):**
 ```bash
-# /etc/cron.d/postgres-backup
-0 2 * * * postgres /usr/local/bin/backup-databases.sh
+0 2 * * * /usr/local/bin/backup-gym-db.sh
 
-# backup-databases.sh
 #!/bin/bash
 BACKUP_DIR="/backups/postgres"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-for db in auth_db training_db tracking_db notification_db; do
-    pg_dump -U postgres -Fc $db | gzip > $BACKUP_DIR/${db}_${TIMESTAMP}.sql.gz
-done
-
-# Remove backups older than 30 days
+docker exec gym-postgres pg_dump -U gym_admin gym_db | gzip > $BACKUP_DIR/gym_db_${TIMESTAMP}.sql.gz
 find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
 ```
 
@@ -403,34 +318,12 @@ find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
 
 **Restore from dump:**
 ```bash
-# From SQL file
-psql -U postgres auth_db < auth_db_backup.sql
-
-# From custom format
-pg_restore -U postgres -d auth_db auth_db_backup.dump
+gunzip < gym_db_backup.sql.gz | docker exec -i gym-postgres psql -U gym_admin gym_db
 ```
 
 ## Replication (High Availability)
 
-### Primary-Replica Setup
-
-**Primary server (postgresql.conf):**
-```ini
-wal_level = replica
-max_wal_senders = 10
-wal_keep_size = 1GB
-hot_standby = on
-```
-
-**Create replication user:**
-```sql
-CREATE USER replication_user REPLICATION ENCRYPTED PASSWORD 'password';
-```
-
-**Replica initialization:**
-```bash
-pg_basebackup -h primary_host -U replication_user -D /var/lib/postgresql/data -v -P
-```
+> **Note**: Replication is not currently configured. The platform runs a single PostgreSQL instance via Docker Compose.
 
 ## Monitoring and Alerting
 
@@ -447,15 +340,13 @@ pg_basebackup -h primary_host -U replication_user -D /var/lib/postgresql/data -v
 ### PostgreSQL Exporter (Prometheus)
 
 ```yaml
-# docker-compose.yml addition
+# docker-compose.yml addition (not currently configured)
 postgres-exporter:
   image: prometheuscommunity/postgres-exporter:latest
   environment:
-    DATA_SOURCE_NAME: "postgresql://postgres:password@postgres:5432/postgres?sslmode=disable"
+    DATA_SOURCE_NAME: "postgresql://gym_admin:gym_password@postgres:5432/gym_db?sslmode=disable"
   ports:
     - "9187:9187"
-  networks:
-    - gym-network
 ```
 
 ## Security Best Practices
@@ -463,14 +354,11 @@ postgres-exporter:
 ### User Management
 
 ```sql
--- Create service user with minimal permissions
-CREATE USER auth_service WITH ENCRYPTED PASSWORD 'secure_password';
-
--- Grant only necessary permissions
-GRANT CONNECT ON DATABASE auth_db TO auth_service;
-GRANT USAGE ON SCHEMA auth TO auth_service;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA auth TO auth_service;
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA auth TO auth_service;
+-- Single user gym_admin has access to all schemas
+GRANT CONNECT ON DATABASE gym_db TO gym_admin;
+GRANT USAGE ON SCHEMA auth_schema, training_schema, tracking_schema, notification_schema TO gym_admin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA auth_schema TO gym_admin;
+-- (repeat for other schemas)
 ```
 
 ### Connection Security

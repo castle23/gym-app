@@ -54,105 +54,56 @@ Gym Platform implements industry-standard design patterns for REST API developme
 
 ```java
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 @Validated
 public class UserController {
 
     private final UserService userService;
-    private final UserMapper userMapper;
 
-    /**
-     * Get all users with pagination
-     * @param page Zero-indexed page number
-     * @param size Page size
-     * @return Paginated user list
-     */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @RequiresRole({"ROLE_ADMIN"})
     public ResponseEntity<PageResponse<UserDTO>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<User> users = userService.getAllUsers(pageable);
-
-        List<UserDTO> content = users.getContent()
-            .stream()
-            .map(userMapper::toDTO)
-            .collect(Collectors.toList());
-
-        PageResponse<UserDTO> response = new PageResponse<>(
-            content,
-            users.getPageable().getPageNumber(),
-            users.getPageable().getPageSize(),
-            users.getTotalElements(),
-            users.getTotalPages()
-        );
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(userService.getAllUsers(pageable));
     }
 
-    /**
-     * Create new user
-     * @param request User creation request
-     * @return Created user with 201 status
-     */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @RequiresRole({"ROLE_ADMIN"})
     public ResponseEntity<UserDTO> createUser(
             @Valid @RequestBody CreateUserRequest request) {
-
-        User user = userService.createUser(request);
-        return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(userMapper.toDTO(user));
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(userService.createUser(request));
     }
 
-    /**
-     * Get user by ID
-     * @param id User UUID
-     * @return User data
-     */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR') or #id == authentication.principal.id")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID id) {
-
-        return userService.getUserById(id)
-            .map(userMapper::toDTO)
-            .map(ResponseEntity::ok)
-            .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    /**
-     * Update user
-     * @param id User UUID
-     * @param request Update request
-     * @return Updated user
-     */
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN') or #id == authentication.principal.id")
-    public ResponseEntity<UserDTO> updateUser(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateUserRequest request) {
-
-        try {
-            User user = userService.updateUser(id, request);
-            return ResponseEntity.ok(userMapper.toDTO(user));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        Long currentUserId = GymSecurityContext.getCurrentUserId();
+        List<String> roles = GymSecurityContext.getCurrentRoles();
+        if (!id.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+            throw new UnauthorizedException("Cannot access other users' data");
         }
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    /**
-     * Delete user
-     * @param id User UUID
-     * @return No content response
-     */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
+    @PutMapping("/{id}")
+    public ResponseEntity<UserDTO> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request) {
+        Long currentUserId = GymSecurityContext.getCurrentUserId();
+        List<String> roles = GymSecurityContext.getCurrentRoles();
+        if (!id.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+            throw new UnauthorizedException("Cannot update other users' data");
+        }
+        return ResponseEntity.ok(userService.updateUser(id, request));
+    }
 
+    @DeleteMapping("/{id}")
+    @RequiresRole({"ROLE_ADMIN"})
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
@@ -177,21 +128,17 @@ public class CreateUserRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 128)
     private String password;
-
-    @NotNull(message = "Role is required")
-    private String role;
 }
 
 @Data
 @Builder
 public class UserDTO {
 
-    private UUID id;
+    private Long id;  // BIGSERIAL PK
     private String username;
     private String email;
-    private String role;
+    private String role;  // ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
 ```
 
@@ -207,83 +154,29 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final UserMapper userMapper;
 
-    /**
-     * Create new user with hashed password
-     */
     @Transactional
-    public User createUser(CreateUserRequest request) {
+    public UserDTO createUser(CreateUserRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new DuplicateResourceException("Username already exists");
-        }
-
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("Email already exists");
+            throw new InvalidDataException("Username already exists");
         }
 
         User user = User.builder()
             .username(request.getUsername())
             .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
-            .role(UserRole.valueOf(request.getRole()))
-            .isActive(true)
+            .password(passwordEncoder.encode(request.getPassword()))
+            .role("ROLE_USER")
             .build();
 
-        User savedUser = userRepository.save(user);
-        log.info("User created: {} ({})", savedUser.getUsername(), savedUser.getId());
-
-        return savedUser;
+        return toDTO(userRepository.save(user));
     }
 
-    /**
-     * Get user by ID
-     */
     @Transactional(readOnly = true)
-    public Optional<User> getUserById(UUID id) {
-        return userRepository.findById(id);
-    }
-
-    /**
-     * Get all users with pagination
-     */
-    @Transactional(readOnly = true)
-    public Page<User> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable);
-    }
-
-    /**
-     * Update user
-     */
-    @Transactional
-    public User updateUser(UUID id, UpdateUserRequest request) {
-
-        User user = userRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        if (StringUtils.hasText(request.getEmail()) 
-            && !user.getEmail().equals(request.getEmail())
-            && userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("Email already in use");
-        }
-
-        user.setEmail(request.getEmail());
-        user.setUpdatedAt(LocalDateTime.now());
-
-        return userRepository.save(user);
-    }
-
-    /**
-     * Delete user
-     */
-    @Transactional
-    public void deleteUser(UUID id) {
-        User user = userRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        userRepository.delete(user);
-        log.info("User deleted: {} ({})", user.getUsername(), id);
+    public UserDTO getUserById(Long id) {
+        return userRepository.findById(id)
+            .map(this::toDTO)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }
 ```
@@ -294,34 +187,13 @@ public class UserService {
 
 ```java
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUsername(String username);
-
     Optional<User> findByEmail(String email);
-
     boolean existsByUsername(String username);
-
     boolean existsByEmail(String email);
-
-    Page<User> findByRole(UserRole role, Pageable pageable);
-
-    Page<User> findByIsActiveTrue(Pageable pageable);
-
-    List<User> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
-
-    @Query("SELECT u FROM User u WHERE u.role = :role AND u.isActive = true")
-    List<User> findActiveUsersByRole(@Param("role") UserRole role);
-
-    @Query(value = """
-        SELECT u.id, u.username, COUNT(t.id) as token_count
-        FROM users u
-        LEFT JOIN tokens t ON u.id = t.user_id
-        WHERE u.created_at > NOW() - INTERVAL '30 days'
-        GROUP BY u.id, u.username
-        ORDER BY token_count DESC
-        """, nativeQuery = true)
-    List<Object[]> findRecentActiveUsers();
+    Page<User> findByRole(String role, Pageable pageable);
 }
 ```
 

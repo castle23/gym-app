@@ -93,265 +93,111 @@ RUN apk add --no-cache openjdk17-jre
 
 ## Docker Compose Configuration
 
-### Full Stack (Production-Ready)
+### Actual Stack
+
+The real `docker-compose.yml` runs 6 containers: `postgres`, `api-gateway`, `auth-service`, `training-service`, `tracking-service`, `notification-service`. All services share a single `gym_db` database with user `gym_admin`/`gym_password`.
 
 ```yaml
-version: '3.8'
-
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: gym-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeMe}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: gym_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-gym_password}
+      POSTGRES_DB: gym_db
     volumes:
       - gym_postgres_data:/var/lib/postgresql/data
-      - ./dba/initialization/schemas:/docker-entrypoint-initdb.d
-      - ./dba/backups:/backups
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U gym_admin -d gym_db"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
-    networks:
-      - gym-network
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "100m"
-        max-file: "10"
 
-  # PgAdmin (Database Management)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: gym-pgadmin
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: gym-api-gateway
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@gym.local
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
-      SCRIPT_NAME: /pgadmin
+      JWT_SECRET: ${JWT_SECRET}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
     ports:
-      - "5050:80"
-    networks:
-      - gym-network
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # Auth Service
   auth-service:
     build:
-      context: .
-      dockerfile: auth-service/Dockerfile
+      context: ./auth-service
     container_name: gym-auth-service
     environment:
-      SPRING_PROFILES_ACTIVE: ${PROFILE:-dev}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
-      SPRING_DATASOURCE_USERNAME: auth_user
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeMe}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-key-change-in-production}
-      JWT_EXPIRATION: 3600
-      JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+      SPRING_DATASOURCE_USERNAME: gym_admin
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-gym_password}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8081:8081"
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/auth/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
-    networks:
-      - gym-network
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "100m"
-        max-file: "10"
+      start_period: 40s
 
-  # Training Service
   training-service:
     build:
-      context: .
-      dockerfile: training-service/Dockerfile
+      context: ./training-service
     container_name: gym-training-service
     environment:
-      SPRING_PROFILES_ACTIVE: ${PROFILE:-dev}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/training_db
-      SPRING_DATASOURCE_USERNAME: training_user
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeMe}
-      AUTH_SERVICE_URL: http://auth-service:8081
-      JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+      SPRING_DATASOURCE_USERNAME: gym_admin
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-gym_password}
     ports:
       - "8082:8082"
     depends_on:
       postgres:
         condition: service_healthy
-      auth-service:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/training/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
-    networks:
-      - gym-network
-    restart: unless-stopped
-
-  # Tracking Service
-  tracking-service:
-    build:
-      context: .
-      dockerfile: tracking-service/Dockerfile
-    container_name: gym-tracking-service
-    environment:
-      SPRING_PROFILES_ACTIVE: ${PROFILE:-dev}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tracking_db
-      SPRING_DATASOURCE_USERNAME: tracking_user
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeMe}
-      AUTH_SERVICE_URL: http://auth-service:8081
-      JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC"
-    ports:
-      - "8083:8083"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      auth-service:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    networks:
-      - gym-network
-    restart: unless-stopped
-
-  # Notification Service
-  notification-service:
-    build:
-      context: .
-      dockerfile: notification-service/Dockerfile
-    container_name: gym-notification-service
-    environment:
-      SPRING_PROFILES_ACTIVE: ${PROFILE:-dev}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
-      SPRING_DATASOURCE_USERNAME: notification_user
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeMe}
-      AUTH_SERVICE_URL: http://auth-service:8081
-      JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC"
-    ports:
-      - "8084:8084"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      auth-service:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    networks:
-      - gym-network
-    restart: unless-stopped
-
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:1.24-alpine
-    container_name: gym-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - auth-service
-      - training-service
-      - tracking-service
-      - notification-service
-    networks:
-      - gym-network
-    restart: unless-stopped
+      start_period: 40s
 
 volumes:
   gym_postgres_data:
-    driver: local
-
-networks:
-  gym-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
 ```
+
+(tracking-service on 8083 and notification-service on 8084 follow the same pattern.)
 
 ## Environment Configuration
 
-### .env File (Development)
+### .env File
 
 ```bash
 # Database
-DB_PASSWORD=development_password
-DB_USER=gym_user
-
-# PgAdmin
-PGADMIN_PASSWORD=admin
-
-# Application Profile
-PROFILE=dev
+DB_PASSWORD=gym_password
 
 # JWT
-JWT_SECRET=dev-secret-key-for-testing-only
+JWT_SECRET=your-secret-key-here
 
-# Service URLs
-AUTH_SERVICE_URL=http://localhost:8081
-TRAINING_SERVICE_URL=http://localhost:8082
-TRACKING_SERVICE_URL=http://localhost:8083
-NOTIFICATION_SERVICE_URL=http://localhost:8084
-
-# Logging
-LOG_LEVEL=DEBUG
+# Spring profile
+SPRING_PROFILES_ACTIVE=default
 ```
 
-### .env.prod File (Production)
-
-```bash
-# Database
-DB_PASSWORD=${SECURE_PASSWORD_FROM_VAULT}
-DB_USER=gym_service
-
-# Application Profile
-PROFILE=prod
-
-# JWT (Generate with: openssl rand -base64 32)
-JWT_SECRET=${SECURE_JWT_SECRET_FROM_VAULT}
-
-# Service URLs (behind reverse proxy)
-AUTH_SERVICE_URL=https://api.gym.local/auth
-TRAINING_SERVICE_URL=https://api.gym.local/training
-TRACKING_SERVICE_URL=https://api.gym.local/tracking
-NOTIFICATION_SERVICE_URL=https://api.gym.local/notification
-
-# Logging
-LOG_LEVEL=INFO
-```
+See `.env.example` in the project root for the full template.
 
 ## Container Operations
 
@@ -433,47 +279,7 @@ docker network inspect gym-network
 
 ## Container Networking
 
-### Service-to-Service Communication
-
-```java
-// auth-service calling training-service
-@Configuration
-public class RestClientConfig {
-
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-}
-
-@Service
-public class TrainingServiceClient {
-
-    @Value("${training.service.url:http://training-service:8082}")
-    private String trainingServiceUrl;
-
-    @Autowired
-    private RestTemplate restTemplate;
-
-    public Program getProgram(UUID programId) {
-        String url = trainingServiceUrl + "/api/v1/programs/" + programId;
-        return restTemplate.getForObject(url, Program.class);
-    }
-}
-```
-
-### Health Checks
-
-```yaml
-services:
-  auth-service:
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-```
+All services communicate via the Docker internal network. There is **no service-to-service HTTP communication** — all client requests flow through the API Gateway (port 8080), which routes to the appropriate service.
 
 ## Volume Management
 
@@ -498,145 +304,31 @@ volumes:
 ### Backup Strategy
 
 ```bash
-# Backup PostgreSQL data
-docker exec gym-postgres pg_dump -U postgres auth_db | gzip > backup_auth_$(date +%Y%m%d_%H%M%S).sql.gz
-
-# Backup all databases
-docker-compose exec -T postgres pg_dumpall -U postgres | gzip > backup_all_$(date +%Y%m%d_%H%M%S).sql.gz
+# Backup gym_db (single database, all schemas)
+docker exec gym-postgres pg_dump -U gym_admin gym_db | gzip > backup_$(date +%Y%m%d_%H%M%S).sql.gz
 
 # Restore from backup
-gunzip < backup_auth_20240101_120000.sql.gz | docker exec -i gym-postgres psql -U postgres auth_db
+gunzip < backup_20240101_120000.sql.gz | docker exec -i gym-postgres psql -U gym_admin gym_db
 ```
 
 ## Production Deployment
 
-### Nginx Configuration
-
-**nginx/conf.d/gym-api.conf:**
-```nginx
-upstream gym_auth_service {
-    server auth-service:8081;
-}
-
-upstream gym_training_service {
-    server training-service:8082;
-}
-
-upstream gym_tracking_service {
-    server tracking-service:8083;
-}
-
-upstream gym_notification_service {
-    server notification-service:8084;
-}
-
-server {
-    listen 80;
-    server_name api.gym.local;
-    client_max_body_size 10M;
-
-    # Redirect HTTP to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name api.gym.local;
-
-    ssl_certificate /etc/nginx/ssl/server.crt;
-    ssl_certificate_key /etc/nginx/ssl/server.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    # Auth Service
-    location /auth {
-        proxy_pass http://gym_auth_service/api/v1/auth;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 300s;
-    }
-
-    # Training Service
-    location /training {
-        proxy_pass http://gym_training_service/api/v1/training;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 300s;
-    }
-
-    # Tracking Service
-    location /tracking {
-        proxy_pass http://gym_tracking_service/api/v1/tracking;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 300s;
-    }
-
-    # Notification Service
-    location /notification {
-        proxy_pass http://gym_notification_service/api/v1/notification;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 300s;
-    }
-}
-```
-
-### Deploy Script
+See `docker-compose.prod.yml` for the production configuration. Key differences from development:
+- `restart: always` on all services
+- PostgreSQL port not exposed externally
+- `SPRING_PROFILES_ACTIVE: production`
+- Build context is each service's own directory
 
 ```bash
-#!/bin/bash
-# scripts/operational/deploy-docker-prod.sh
+# Deploy production stack
+docker compose -f docker-compose.prod.yml up -d
 
-set -e
-
-# Load environment
-source .env.prod
-
-# Validate environment
-if [ -z "$JWT_SECRET" ]; then
-    echo "Error: JWT_SECRET not set"
-    exit 1
-fi
-
-# Build images
-echo "Building Docker images..."
-docker-compose build --no-cache
-
-# Backup database
-echo "Creating database backup..."
-docker exec gym-postgres pg_dumpall -U postgres | \
-    gzip > ./dba/backups/backup_$(date +%Y%m%d_%H%M%S).sql.gz
-
-# Stop current containers
-echo "Stopping services..."
-docker-compose stop
-
-# Start new containers
-echo "Starting services..."
-docker-compose up -d
-
-# Wait for services to be healthy
-echo "Waiting for services to be healthy..."
-for i in {1..30}; do
-    if curl -f http://localhost:8081/actuator/health > /dev/null 2>&1; then
-        echo "Services are healthy"
-        exit 0
-    fi
-    echo "Waiting... ($i/30)"
-    sleep 2
-done
-
-echo "Error: Services failed to start"
-exit 1
+# Verify health
+curl http://localhost:8080/actuator/health
+curl http://localhost:8081/auth/actuator/health
+curl http://localhost:8082/training/actuator/health
+curl http://localhost:8083/tracking/actuator/health
+curl http://localhost:8084/notifications/actuator/health
 ```
 
 ## Monitoring
@@ -648,35 +340,14 @@ exit 1
 docker stats --no-stream
 
 # View logs with filtering
-docker-compose logs --tail=100 auth-service
-docker-compose logs -f auth-service 2>&1 | grep ERROR
+docker compose logs --tail=100 auth-service
+docker compose logs -f auth-service 2>&1 | grep ERROR
 
 # Inspect container details
-docker inspect gym-auth-service | jq '.[] | {Name, State}'
+docker inspect gym-auth-service
 ```
 
-### Log Aggregation
-
-**docker-compose.yml (with ELK):**
-```yaml
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.0.0
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-    ports:
-      - "9200:9200"
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.0.0
-    volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.0.0
-    ports:
-      - "5601:5601"
-```
+> **Note**: ELK stack (Elasticsearch, Logstash, Kibana) is not currently configured.
 
 ## Security Best Practices
 

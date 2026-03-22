@@ -19,11 +19,12 @@ The Gym Platform API is built with modern, production-ready technologies designe
 
 ## Microservices
 
-The platform consists of 4 independent services:
-1. **Auth Service** (Port 8081) - Authentication & Authorization
-2. **Training Service** (Port 8082) - Training Program Management
-3. **Tracking Service** (Port 8083) - Progress Tracking & Analytics
-4. **Notification Service** (Port 8084) - User Notifications
+The platform consists of 5 services:
+1. **API Gateway** (Port 8080) - JWT validation, request routing
+2. **Auth Service** (Port 8081) - Authentication & User Management
+3. **Training Service** (Port 8082) - Training Program Management
+4. **Tracking Service** (Port 8083) - Progress Tracking & Analytics
+5. **Notification Service** (Port 8084) - User Notifications
 
 ## Documentation Files
 
@@ -32,15 +33,14 @@ The platform consists of 4 independent services:
 - **03-api-design-patterns.md** - API design and patterns
 - **04-security-framework.md** - Security implementation
 - **05-deployment-docker.md** - Docker and containerization
-- **06-monitoring-logging.md** - Monitoring and logging stack
 
 ## Key Dependencies
 
 ### Spring Boot Starter Dependencies
 - spring-boot-starter-web
 - spring-boot-starter-data-jpa
-- spring-boot-starter-security
 - spring-boot-starter-validation
+- gym-common (shared security, exception handling, MDC logging)
 
 ### Database
 - spring-boot-starter-data-jpa (JPA/Hibernate)

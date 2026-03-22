@@ -99,41 +99,31 @@ module gym.auth.service {
 ```
 auth-service/
 ├── src/main/java/com/gym/auth/
-│   ├── AuthApplication.java (Main bootstrap class)
+│   ├── AuthApplication.java
 │   ├── config/
 │   │   ├── SecurityConfig.java
-│   │   ├── JwtConfig.java
-│   │   └── CorsConfig.java
+│   │   └── JwtConfig.java
 │   ├── controller/
-│   │   ├── AuthController.java
-│   │   └── UserController.java
+│   │   └── AuthController.java
 │   ├── service/
-│   │   ├── AuthService.java
-│   │   ├── TokenService.java
-│   │   └── UserService.java
+│   │   └── AuthService.java
 │   ├── repository/
-│   │   ├── UserRepository.java
-│   │   └── TokenRepository.java
+│   │   └── UserRepository.java
 │   ├── dto/
 │   │   ├── LoginRequest.java
-│   │   ├── LoginResponse.java
-│   │   └── UserDTO.java
+│   │   ├── AuthResponse.java
+│   │   └── RegisterRequest.java
 │   ├── entity/
-│   │   ├── User.java
-│   │   └── RefreshToken.java
+│   │   └── User.java
 │   ├── exception/
-│   │   ├── AuthenticationException.java
-│   │   └── GlobalExceptionHandler.java
+│   │   └── AuthenticationException.java
 │   └── security/
 │       ├── JwtProvider.java
-│       ├── JwtFilter.java
 │       └── CustomUserDetailsService.java
 ├── src/main/resources/
-│   ├── application.yml (Primary config)
-│   ├── application-dev.yml (Development)
-│   ├── application-prod.yml (Production)
-│   └── db/migration/ (Flyway migrations)
-└── pom.xml (Maven dependencies)
+│   ├── application.yml
+│   └── application-test.yml
+└── pom.xml
 ```
 
 ### Bootstrap Configuration
@@ -142,16 +132,10 @@ auth-service/
 ```java
 @SpringBootApplication
 @EnableWebSecurity
-@EnableConfigurationProperties(JwtProperties.class)
 public class AuthApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(AuthApplication.class, args);
-    }
-
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
     }
 
     @Bean
@@ -165,87 +149,42 @@ public class AuthApplication {
 
 ### Configuration Management
 
-**application.yml (Common):**
+**application.yml (Auth Service example):**
 ```yaml
 spring:
   application:
     name: auth-service
-  profiles:
-    active: ${PROFILE:dev}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQL13Dialect
-        jdbc:
-          batch_size: 20
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: auth_schema
   datasource:
+    url: jdbc:postgresql://postgres:5432/gym_db
+    username: gym_admin
+    password: ${DB_PASSWORD:gym_password}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
       connection-timeout: 30000
-  security:
-    user:
-      password: admin123
-  mvc:
-    log-request-details: false
 
 management:
   endpoints:
     web:
-      exposure: include: health,metrics,info
-  endpoint:
-    health:
-      show-details: when-authorized
-
-logging:
-  level:
-    root: INFO
-    com.gym: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/auth-service.log
-    max-size: 10MB
-    max-history: 30
+      exposure:
+        include: health,info
 
 server:
   port: 8081
   servlet:
-    context-path: /api/v1
-```
+    context-path: /auth
 
-**application-prod.yml (Production):**
-```yaml
-spring:
-  jpa:
-    hibernate:
-      ddl-auto: validate
-  datasource:
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 10
-      leak-detection-threshold: 60000
-
-management:
-  endpoints:
-    web:
-      exposure: include: health,info
-  endpoint:
-    health:
-      show-details: always
-
-logging:
-  level:
-    root: WARN
-    com.gym: INFO
-  file:
-    name: /var/log/auth-service.log
-    max-size: 100MB
-    max-history: 90
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
 ```
 
 ## Dependency Management
