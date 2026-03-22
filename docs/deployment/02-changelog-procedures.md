@@ -413,18 +413,11 @@ app:
   version: 1.1.0
 ```
 
-**JavaScript (package.json):**
-```json
-{
-  "version": "1.1.0"
-}
-```
-
 #### Step 4: Commit Release Changes
 
 ```bash
 # Stage version changes
-git add pom.xml package.json Dockerfile docs/deployment/deployment.yaml
+git add pom.xml Dockerfile docs/deployment/deployment.yaml
 
 # Commit with clear message
 git commit -m "chore(release): prepare v1.1.0"
@@ -490,13 +483,16 @@ curl https://api.gym-platform.com/health
 
 ```bash
 # Check API version endpoint
-curl https://api.gym-platform.com/api/version
+curl https://api.gym-platform.com/api/auth/version
+curl https://api.gym-platform.com/api/training/version
+curl https://api.gym-platform.com/api/tracking/version
+curl https://api.gym-platform.com/api/notifications/version
 
 # Run smoke tests
-npm run test:smoke:production
+./scripts/operational/smoke-tests.sh production
 
-# Monitor error rates
-# Check Grafana dashboard for any anomalies
+# Monitor error rates in Grafana dashboard
+# Check logs for any anomalies: kubectl logs -f deployment/<service>
 ```
 
 ---

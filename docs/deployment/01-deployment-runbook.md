@@ -83,7 +83,7 @@ kubectl set image deployment/gym-staging \
 kubectl rollout status deployment/gym-staging -n staging --timeout=5m
 
 # 3. Run smoke tests
-npm run test:smoke -- --env=staging
+./scripts/operational/smoke-tests.sh staging
 
 # 4. Verify metrics normal
 # Check Grafana: http://grafana.internal/staging-health
@@ -221,7 +221,7 @@ kubectl logs -f deployment/gym-prod -n production --all-containers=true \
 
 ```bash
 # Run automated smoke tests (happy path only)
-npm run test:smoke -- --env=production
+./scripts/operational/smoke-tests.sh production
 
 # Expected: All smoke tests pass
 # ✓ Create user
@@ -338,7 +338,7 @@ kubectl rollout undo deployment/gym-prod -n production
 
 # 5. Verify restoration
 curl https://api.gym.com/health
-npm run test:smoke -- --env=production
+./scripts/operational/smoke-tests.sh production
 ```
 
 ---
@@ -502,7 +502,7 @@ kubectl get deployment/gym-prod -n production -o jsonpath='{.spec.template.spec.
 # Expected: gym/gym-service:v1.1.5 (old version)
 
 # Run smoke tests
-npm run test:smoke -- --env=production
+./scripts/operational/smoke-tests.sh production
 
 # Check metrics
 # Error rate should return to normal
