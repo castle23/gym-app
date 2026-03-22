@@ -40,11 +40,11 @@ When troubleshooting, follow this systematic approach:
 docker ps -a | grep gym
 
 # View container logs
-docker logs gym-auth-prod
-docker logs gym-training-prod
+docker logs auth-service
+docker logs training-service
 
 # Check for error messages
-docker logs gym-auth-prod 2>&1 | grep -i error
+docker logs auth-service 2>&1 | grep -i error
 ```
 
 **Solutions**:
@@ -60,7 +60,7 @@ docker system prune -a  # Clean up unused resources
 
 ```bash
 # Check if .env file exists
-ls -la /opt/gym-platform/.env
+ls -la .env
 
 # Validate environment variables
 docker run --env-file .env alpine env | grep -i gym
@@ -69,8 +69,8 @@ docker run --env-file .env alpine env | grep -i gym
 3. **Rebuild image**
 
 ```bash
-docker-compose -f docker-compose.prod.yml build --no-cache auth-service
-docker-compose -f docker-compose.prod.yml up -d auth-service
+docker-compose build --no-cache auth-service
+docker-compose up -d auth-service
 ```
 
 4. **Check port conflicts**
@@ -95,14 +95,14 @@ taskkill /PID <PID> /F  # On Windows
 
 ```bash
 # Test service endpoint
-curl -v http://localhost:8081/actuator/health
-curl -v http://127.0.0.1:8081/api/auth/register
+curl -v http://localhost:8081/auth/actuator/health
+curl -v http://127.0.0.1:8081/auth/register
 
 # Check if ports are listening
 netstat -tuln | grep 8081
 
 # Check service logs
-docker logs gym-auth-prod | tail -50
+docker logs auth-service | tail -50
 ```
 
 **Solutions**:
@@ -110,18 +110,18 @@ docker logs gym-auth-prod | tail -50
 1. **Verify service is running**
 
 ```bash
-docker-compose -f docker-compose.prod.yml ps
-docker container ls | grep gym-auth
+docker-compose ps
+docker container ls | grep auth-service
 ```
 
 2. **Restart the service**
 
 ```bash
-docker-compose -f docker-compose.prod.yml restart auth-service
+docker-compose restart auth-service
 sleep 10
 
 # Verify restart
-curl http://localhost:8081/actuator/health
+curl http://localhost:8081/auth/actuator/health
 ```
 
 3. **Check firewall rules**
@@ -133,19 +133,6 @@ sudo iptables -L | grep 8081
 # Check firewall status
 sudo firewall-cmd --list-ports
 sudo firewall-cmd --add-port=8081/tcp --permanent
-```
-
-4. **Check Nginx/Reverse Proxy**
-
-```bash
-# Test reverse proxy configuration
-nginx -t
-
-# Reload Nginx
-nginx -s reload
-
-# Check Nginx error log
-tail -f /var/log/nginx/error.log
 ```
 
 ---
@@ -161,25 +148,26 @@ tail -f /var/log/nginx/error.log
 docker stats --no-stream
 
 # Check container memory limit
-docker inspect gym-auth-prod | grep -A 5 Memory
+docker inspect auth-service | grep -A 5 Memory
 
 # Check JVM memory settings
-docker logs gym-auth-prod | grep Xmx
+docker logs auth-service | grep Xmx
 ```
 
 **Solutions**:
 
 1. **Increase JVM heap size**
 
-Update `.env`:
-```env
-JAVA_OPTS=-Xmx2048m -Xms1024m
+Update `docker-compose.yml` environment:
+```yaml
+environment:
+  JAVA_OPTS: "-Xmx2048m -Xms1024m"
 ```
 
 2. **Restart with new settings**
 
 ```bash
-docker-compose -f docker-compose.prod.yml restart
+docker-compose restart
 ```
 
 3. **Add memory limit to docker-compose.yml**
@@ -210,10 +198,7 @@ jstat -gc -h 20 <PID> 1000
 
 ```bash
 # Time the request
-time curl http://localhost:8081/api/auth/login
-
-# Check service metrics
-curl http://localhost:8081/actuator/prometheus | grep http_server_requests
+time curl http://localhost:8081/auth/login
 
 # Check database query performance
 psql -h localhost -U gym_admin -d gym_db
@@ -229,7 +214,7 @@ SELECT query, calls, total_time, mean_time FROM pg_stat_statements ORDER BY mean
 psql -h localhost -U gym_admin -d gym_db -c "ANALYZE;"
 
 # Check for slow queries
-docker exec gym-db-prod psql -U gym_admin -d gym_db -c "
+docker exec postgres psql -U gym_admin -d gym_db -c "
   SELECT query, calls, total_time, mean_time
   FROM pg_stat_statements
   WHERE mean_time > 1000
@@ -249,15 +234,6 @@ CREATE INDEX idx_plans_user_id ON tracking_schema.plans(user_id);
 Review slow queries and consider:
 - Adding appropriate indexes
 - Rewriting complex queries
-- Implementing caching
-
-4. **Scale horizontally**
-
-```yaml
-auth-service:
-  deploy:
-    replicas: 3
-```
 
 ---
 
@@ -272,7 +248,7 @@ auth-service:
 psql -h localhost -U gym_admin -d gym_db -c "SELECT datname, usename, state, count(*) FROM pg_stat_activity GROUP BY datname, usename, state;"
 
 # Check connection pool status in service logs
-docker logs gym-auth-prod | grep "HikariPool"
+docker logs auth-service | grep "HikariPool"
 ```
 
 **Solutions**:
@@ -303,7 +279,7 @@ psql -h localhost -U gym_admin -d gym_db -c "
 3. **Restart services**
 
 ```bash
-docker-compose -f docker-compose.prod.yml restart
+docker-compose restart
 ```
 
 ---
@@ -316,10 +292,10 @@ docker-compose -f docker-compose.prod.yml restart
 
 ```bash
 # Check JWT configuration
-docker logs gym-auth-prod | grep -i jwt
+docker logs auth-service | grep -i jwt
 
 # Test login endpoint
-curl -X POST http://localhost:8081/api/auth/login \
+curl -X POST http://localhost:8081/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password"}'
 
@@ -343,7 +319,7 @@ psql -h localhost -U gym_admin -d gym_db -c "UPDATE auth_schema.users SET failed
 
 ```bash
 # Check service logs
-docker logs gym-training-prod | grep -i error
+docker logs training-service | grep -i error
 
 # Verify database connection
 psql -h localhost -U gym_admin -d gym_db -c "SELECT * FROM training_schema.exercises LIMIT 5;"
@@ -358,7 +334,7 @@ psql -h localhost -U gym_admin -d gym_db -c "\d training_schema.exercises"
 
 ```bash
 # Check tracking service logs
-docker logs gym-tracking-prod | grep -i error
+docker logs tracking-service | grep -i error
 
 # Verify data consistency
 psql -h localhost -U gym_admin -d gym_db -c "
@@ -366,21 +342,18 @@ psql -h localhost -U gym_admin -d gym_db -c "
   SELECT COUNT(*) FROM tracking_schema.objectives;"
 
 # Check for transaction rollbacks
-docker logs gym-tracking-prod | grep -i "rollback"
+docker logs tracking-service | grep -i "rollback"
 ```
 
 ### Notification Service Issues
 
-**Emails not being sent**
+**Notifications not being sent**
 
 ```bash
-# Check SMTP configuration
-docker logs gym-notification-prod | grep -i smtp
+# Check notification service logs
+docker logs notification-service | grep -i error
 
-# Verify email service status
-docker logs gym-notification-prod | grep -i "mail\|email"
-
-# Check notification queue
+# Check notification records
 psql -h localhost -U gym_admin -d gym_db -c "SELECT * FROM notification_schema.notifications WHERE status='PENDING';"
 ```
 
@@ -398,10 +371,10 @@ docker ps | grep postgres
 psql -h localhost -U gym_admin -d gym_db -c "SELECT 1;"
 
 # If connection fails, restart database
-docker-compose -f docker-compose.prod.yml restart db
+docker-compose restart postgres
 
 # Check PostgreSQL logs
-docker logs gym-db-prod | tail -50
+docker logs postgres | tail -50
 ```
 
 ### Database Locked / Deadlock
@@ -514,10 +487,10 @@ docker-compose -f docker-compose.prod.yml restart auth-service
 
 ```bash
 # Check logs for failed auth attempts
-docker logs gym-auth-prod | grep "UNAUTHORIZED\|401"
+docker logs auth-service | grep "UNAUTHORIZED\|401"
 
 # Check for brute force patterns
-docker logs gym-auth-prod | grep "Invalid credentials" | wc -l
+docker logs auth-service | grep "Invalid credentials" | wc -l
 
 # Block suspicious IP addresses
 # Update firewall rules to drop traffic from attacking IP
@@ -528,12 +501,12 @@ sudo iptables -I INPUT -s <ATTACKER_IP> -j DROP
 
 ```bash
 # Check database logs for suspicious queries
-docker exec gym-db-prod psql -U gym_admin -d gym_db -c "
+docker exec postgres psql -U gym_admin -d gym_db -c "
   SELECT query FROM pg_stat_statements
   WHERE query LIKE '%OR%1=1%' OR query LIKE '%DROP%' OR query LIKE '%UNION%';"
 
 # Check application logs
-docker logs gym-auth-prod | grep -i "sql\|injection"
+docker logs auth-service | grep -i "sql\|injection"
 ```
 
 ---
@@ -552,9 +525,11 @@ docker ps
 
 # Service health
 echo "Service Health:"
-for port in 8081 8082 8083 8084; do
-  curl -s http://localhost:$port/actuator/health | jq '.status'
-done
+curl -s http://localhost:8080/actuator/health | jq '.status'
+curl -s http://localhost:8081/auth/actuator/health | jq '.status'
+curl -s http://localhost:8082/training/actuator/health | jq '.status'
+curl -s http://localhost:8083/tracking/actuator/health | jq '.status'
+curl -s http://localhost:8084/notifications/actuator/health | jq '.status'
 
 # Database health
 echo "Database Health:"
@@ -567,10 +542,6 @@ df -h /
 # Memory usage
 echo "Memory Usage:"
 free -h
-
-# Network connectivity
-echo "Network Connectivity:"
-ping -c 1 8.8.8.8
 ```
 
 ### Log Collection
@@ -578,11 +549,12 @@ ping -c 1 8.8.8.8
 ```bash
 # Collect all service logs for analysis
 mkdir -p /tmp/gym-logs
-docker logs gym-auth-prod > /tmp/gym-logs/auth.log 2>&1
-docker logs gym-training-prod > /tmp/gym-logs/training.log 2>&1
-docker logs gym-tracking-prod > /tmp/gym-logs/tracking.log 2>&1
-docker logs gym-notification-prod > /tmp/gym-logs/notification.log 2>&1
-docker logs gym-db-prod > /tmp/gym-logs/database.log 2>&1
+docker logs api-gateway > /tmp/gym-logs/api-gateway.log 2>&1
+docker logs auth-service > /tmp/gym-logs/auth.log 2>&1
+docker logs training-service > /tmp/gym-logs/training.log 2>&1
+docker logs tracking-service > /tmp/gym-logs/tracking.log 2>&1
+docker logs notification-service > /tmp/gym-logs/notification.log 2>&1
+docker logs postgres > /tmp/gym-logs/database.log 2>&1
 
 tar -czf /tmp/gym-logs-$(date +%Y%m%d_%H%M%S).tar.gz /tmp/gym-logs/
 ```
@@ -607,14 +579,14 @@ logging:
 Restart services:
 
 ```bash
-docker-compose -f docker-compose.prod.yml restart
+docker-compose restart
 ```
 
 ### Attach to Running Container
 
 ```bash
 # Start interactive shell in container
-docker exec -it gym-auth-prod /bin/bash
+docker exec -it auth-service /bin/bash
 
 # View running processes
 ps aux

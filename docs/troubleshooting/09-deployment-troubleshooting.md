@@ -6,11 +6,10 @@ This guide addresses deployment-related issues in the Gym Platform: container st
 
 **Deployment Process:**
 1. Build Docker image
-2. Run docker-compose up
+2. Run `docker-compose up`
 3. Wait for health checks
-4. Execute database migrations
-5. Verify service readiness
-6. Direct traffic to new version
+4. Verify service readiness
+5. Direct traffic to new version
 
 ---
 
@@ -240,11 +239,10 @@ ENTRYPOINT exec java -jar app.jar
 
 **Add health checks:**
 ```yaml
-# docker-compose.yml
 services:
-  gym-auth:
+  auth-service:
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/auth/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -305,12 +303,24 @@ curl http://localhost:8080/actuator/health
 EXPOSE 8080
 ```
 
-**Ensure port is mapped in docker-compose:**
+**Fix port mapping in docker-compose:**
 ```yaml
 services:
-  gym-auth:
+  api-gateway:
     ports:
       - "8080:8080"
+  auth-service:
+    ports:
+      - "8081:8081"
+  training-service:
+    ports:
+      - "8082:8082"
+  tracking-service:
+    ports:
+      - "8083:8083"
+  notification-service:
+    ports:
+      - "8084:8084"
 ```
 
 **Check if port is available:**
@@ -426,12 +436,12 @@ docker exec gym-auth nc -zv postgres 5432
 services:
   postgres:
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gym_user -d gym_db"]
+      test: ["CMD-SHELL", "pg_isready -U gym_admin -d gym_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  gym-auth:
+  auth-service:
     depends_on:
       postgres:
         condition: service_healthy
@@ -500,24 +510,21 @@ docker exec gym-auth cat /app/application.properties | grep -i db
 ```bash
 # .env file (in same directory as docker-compose.yml)
 JWT_SECRET=my-secret-here
-DB_PASSWORD=postgres-password
-SPRING_PROFILES_ACTIVE=prod
+DB_PASSWORD=gym_password
 ```
 
 **Reference in docker-compose:**
 ```yaml
-version: '3.8'
-
 services:
   postgres:
     environment:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: gym_admin
 
-  gym-auth:
+  api-gateway:
     environment:
       JWT_SECRET: ${JWT_SECRET}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
 ```
 
 **Pass environment explicitly:**
@@ -533,170 +540,77 @@ docker-compose --env-file .env.prod up
 
 ## Database Migration Issues
 
-### Issue: Database Migrations Fail
+> **Note**: This platform uses Hibernate `ddl-auto: update` — not Flyway or Liquibase. Schema changes are applied automatically on startup. The section below covers general schema issues.
+
+### Issue: Schema Mismatch on Startup
 
 **Symptoms:**
 ```
-Flyway migration failed
-Liquibase validation failed
-SQL migration syntax error
+org.hibernate.tool.schema.spi.SchemaManagementException
+Table 'gym_db.auth_schema.users' doesn't exist
 ```
 
 **Diagnostic Steps:**
 
-1. **Check migration logs:**
+1. **Check startup logs:**
 ```bash
-docker logs gym-auth | grep -i "migration\|flyway"
+docker logs auth-service | grep -i "schema\|hibernate\|ddl"
 ```
 
-2. **Verify migration files:**
+2. **Verify database schemas exist:**
 ```bash
-ls -la src/main/resources/db/migration/
+docker exec postgres psql -U gym_admin -d gym_db -c \
+  "SELECT schema_name FROM information_schema.schemata;"
 ```
 
-3. **Check database state:**
+3. **Check ddl-auto setting:**
 ```bash
-docker exec postgres psql -U gym_user -d gym_db -c \
-  "SELECT * FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 5;"
+docker exec auth-service env | grep DDL
 ```
 
 **Resolution:**
 
-**Fix migration syntax:**
-```sql
--- Before: Incorrect DDL
-CREATE TABLE gym_auth (
-  id INT PRIMARY KEY,
-  username VARCHAR,
-  password VARCHAR
-);
-
--- After: Correct DDL
-CREATE TABLE IF NOT EXISTS gym_auth (
-  id BIGSERIAL PRIMARY KEY,
-  username VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-**Use Flyway properly:**
-```yaml
-# docker-compose.yml
-services:
-  gym-auth:
-    environment:
-      SPRING_FLYWAY_ENABLED: "true"
-      SPRING_FLYWAY_LOCATIONS: "classpath:db/migration"
-      SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"  # Don't let Hibernate change schema
-```
-
-**Skip failed migration (if necessary):**
-```bash
-# Only in emergency - can cause data corruption
-docker exec postgres psql -U gym_user -d gym_db << EOF
-DELETE FROM flyway_schema_history WHERE success = false;
-EOF
-
-# Re-run migration
-docker-compose restart gym-auth
-```
+Ensure `spring.jpa.hibernate.ddl-auto=update` is set and the database schemas (`auth_schema`, `training_schema`, etc.) exist. Hibernate will create/update tables automatically.
 
 ---
 
 ## Rolling Deployment Issues
 
-### Issue: Zero-Downtime Deployment Fails
+> **Note**: The current platform uses a single `docker-compose.yml` without rolling deployments. The patterns below are for reference when upgrading to multi-instance setups.
+
+### Issue: Downtime During Redeployment
 
 **Symptoms:**
 ```
-Service unavailable during deployment
-Requests fail during rolling update
-Incomplete deployment
-```
-
-**Diagnostic Steps:**
-
-1. **Check current version:**
-```bash
-curl http://localhost:8080/actuator/info | jq '.build.version'
-```
-
-2. **Monitor deployment progress:**
-```bash
-watch -n 1 'docker-compose ps'
-```
-
-3. **Check health of new version:**
-```bash
-docker-compose logs gym-auth-v2 | tail -20
-curl http://localhost:8081/actuator/health  # If using different port
+Service unavailable during docker-compose up
+Requests fail while container restarts
 ```
 
 **Resolution:**
 
-**Implement blue-green deployment:**
-```yaml
-# docker-compose.yml for green deployment
-services:
-  gym-auth-blue:
-    image: gym/auth:v1.0.0
-    ports:
-      - "8080:8080"
-    environment:
-      - DEPLOYMENT_VERSION=blue
+**Rebuild and restart with minimal downtime:**
+```bash
+# Build new image first
+docker-compose build auth-service
 
-  gym-auth-green:
-    image: gym/auth:v1.1.0  # New version
-    ports:
-      - "8081:8080"
-    environment:
-      - DEPLOYMENT_VERSION=green
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+# Restart only the changed service
+docker-compose up -d auth-service
 
-  nginx:
-    image: nginx:latest
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    # Update nginx.conf to point to green, then switch back to blue
-```
-
-**Use rolling deployment with health checks:**
-```yaml
-services:
-  gym-auth-1:
-    image: gym/auth:v1.1.0
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
-      start_period: 30s
-
-  gym-auth-2:
-    image: gym/auth:v1.0.0
-    depends_on:
-      gym-auth-1:
-        condition: service_healthy
-    # Stop after health check passes
+# Verify health
+curl http://localhost:8081/auth/actuator/health
 ```
 
 **Verify deployment success:**
 ```bash
-# Check all instances running
-docker-compose ps | grep gym-auth
+# Check all services running
+docker-compose ps
 
 # Verify all healthy
-for i in {8080..8082}; do
-  echo "Checking $i..."
-  curl -s http://localhost:$i/actuator/health | jq .status
-done
-
-# Monitor error rate during deployment
-curl http://prometheus:9090/api/v1/query?query=rate(http_requests_total{status=~\"5..\"}\[5m\])
+curl -s http://localhost:8080/actuator/health | jq .status
+curl -s http://localhost:8081/auth/actuator/health | jq .status
+curl -s http://localhost:8082/training/actuator/health | jq .status
+curl -s http://localhost:8083/tracking/actuator/health | jq .status
+curl -s http://localhost:8084/notifications/actuator/health | jq .status
 ```
 
 ---
@@ -705,14 +619,12 @@ curl http://prometheus:9090/api/v1/query?query=rate(http_requests_total{status=~
 
 - [ ] Docker image builds successfully
 - [ ] Image size reasonable (<200MB)
-- [ ] All environment variables set
-- [ ] Database migrations pass
-- [ ] Health checks passing
-- [ ] Service dependencies ready
-- [ ] No secrets in logs
-- [ ] Monitoring/logging enabled
-- [ ] Rollback plan tested
-- [ ] Zero-downtime deployment verified
+- [ ] All environment variables set in `.env`
+- [ ] Database schemas created and accessible
+- [ ] Health checks passing on all services
+- [ ] Service dependencies ready (postgres healthy before services start)
+- [ ] No secrets in logs or version control
+- [ ] Rollback plan: `docker-compose up -d` with previous image tag
 
 ---
 

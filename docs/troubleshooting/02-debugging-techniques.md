@@ -59,7 +59,7 @@ services:
 jstack <pid> > thread_dump.txt
 
 # Or from Docker container
-docker exec gym-auth-service jstack 1 > thread_dump.txt
+docker exec auth-service jstack 1 > thread_dump.txt
 
 # Analyze for deadlocks
 grep -A 5 "Found one Java-level deadlock" thread_dump.txt
@@ -78,10 +78,10 @@ grep "java.lang.Thread.State:" thread_dump.txt | sort | uniq -c
 jmap -dump:live,format=b,file=heap.bin <pid>
 
 # From Docker
-docker exec gym-auth-service jmap -dump:live,format=b,file=heap.bin 1
+docker exec auth-service jmap -dump:live,format=b,file=heap.bin 1
 
 # Copy from container
-docker cp gym-auth-service:/heap.bin ./heap.bin
+docker cp auth-service:/heap.bin ./heap.bin
 
 # Analyze with Eclipse Memory Analyzer
 # Download: https://www.eclipse.org/mat/
@@ -116,19 +116,19 @@ export SPRING_LOG_LEVEL_COM_GYM=DEBUG
 
 ```bash
 # Show only errors
-docker logs gym-auth-service | grep ERROR
+docker logs auth-service | grep ERROR
 
 # Show with timestamps
-docker logs --timestamps gym-auth-service | tail -100
+docker logs --timestamps auth-service | tail -100
 
 # Search for specific request
-docker logs gym-auth-service | grep "requestId:abc123"
+docker logs auth-service | grep "requestId:abc123"
 
 # Count errors by type
-docker logs gym-auth-service 2>&1 | grep ERROR | awk -F: '{print $NF}' | sort | uniq -c
+docker logs auth-service 2>&1 | grep ERROR | awk -F: '{print $NF}' | sort | uniq -c
 
 # Follow logs in real-time with filter
-docker logs -f gym-auth-service | grep --color=auto "ERROR\|WARN\|Exception"
+docker logs -f auth-service | grep --color=auto "ERROR\|WARN\|Exception"
 ```
 
 ## Database Debugging
@@ -246,28 +246,22 @@ jcmd <pid> JFR.dump filename=recording.jfr
 
 ```bash
 # Simple GET request
-curl -X GET http://localhost:8081/api/v1/users
+curl -X GET http://localhost:8082/training/sessions
 
 # POST with data
-curl -X POST http://localhost:8081/api/v1/auth/login \
+curl -X POST http://localhost:8081/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"test","password":"pass"}'
+  -d '{"email":"test@example.com","password":"pass"}'
 
-# With authentication
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8081/api/v1/users/me
+# With injected headers (as API Gateway would send)
+curl -H "X-User-Id: 1" -H "X-User-Roles: ROLE_USER" \
+  http://localhost:8082/training/sessions
 
 # Verbose output (headers + body)
-curl -v http://localhost:8081/api/v1/health
+curl -v http://localhost:8081/auth/actuator/health
 
 # Save response to file
-curl http://localhost:8081/api/v1/users > response.json
-
-# Follow redirects
-curl -L http://localhost:8081/api/v1/redirect
-
-# Measure timing
-curl -w "@curl-format.txt" -o /dev/null -s http://localhost:8081/api/v1/health
+curl http://localhost:8082/training/sessions > response.json
 ```
 
 ### Using Postman for Complex Tests
@@ -293,20 +287,19 @@ tcpdump -i eth0 -A 'tcp port 8081'
 
 ## Service Integration Debugging
 
-### Test Service-to-Service Communication
+> **Note**: Services in this platform do not communicate directly with each other. All requests flow through the API Gateway (port 8080). The sections below apply to debugging gateway-to-service communication.
+
+### Test Service Health from Gateway
 
 ```bash
-# From inside container
-docker exec gym-auth-service curl -v http://training-service:8082/actuator/health
+# Check each service health via API Gateway
+curl -v http://localhost:8080/auth/actuator/health
+curl -v http://localhost:8080/training/actuator/health
+curl -v http://localhost:8080/tracking/actuator/health
+curl -v http://localhost:8080/notifications/actuator/health
 
-# Check DNS resolution
-docker exec gym-auth-service nslookup training-service
-
-# Test connection timing
-docker exec gym-auth-service bash -c 'time curl http://training-service:8082/actuator/health'
-
-# Check open ports
-docker exec gym-auth-service netstat -tuln | grep LISTEN
+# Check open ports inside a container
+docker exec auth-service netstat -tuln | grep LISTEN
 ```
 
 ## Debugging Tools Reference

@@ -54,19 +54,15 @@ echo $TOKEN_PAYLOAD | jq '.exp'
 date -d @$(jq '.exp' <<< $TOKEN_PAYLOAD)
 ```
 
-3. **Verify JWT secret across services:**
+3. **Verify JWT secret in gateway:**
 ```bash
-# All services must share same JWT_SECRET
-docker exec gym-auth env | grep JWT_SECRET
-docker exec gym-training env | grep JWT_SECRET
-docker exec gym-tracking env | grep JWT_SECRET
-# Should all be identical
+docker exec api-gateway env | grep JWT_SECRET
+# JWT validation only happens in the API Gateway
 ```
 
 4. **Check service clock synchronization:**
 ```bash
-# All services must have synchronized clocks
-date && docker exec gym-auth date && docker exec postgres date
+date && docker exec api-gateway date && docker exec postgres date
 # Differences >1 minute will cause token issues
 ```
 
@@ -80,14 +76,14 @@ logging.level.com.gym.security.jwt=DEBUG
 
 **Fix token signature mismatch:**
 ```java
-// Verify same secret is used everywhere
+// Verify secret is configured in gateway
 @Configuration
 public class JwtConfig {
     
     @Value("${jwt.secret}")
     private String jwtSecret;
     
-    @Value("${jwt.expiration:86400000}")  // 24 hours default
+    @Value("${jwt.expiration:86400000}")
     private long jwtExpiration;
     
     @Bean
@@ -97,17 +93,18 @@ public class JwtConfig {
 }
 ```
 
-**Check environment variable:**
+**Check environment variable in gateway:**
 ```bash
-# Ensure JWT_SECRET is set
 docker-compose config | grep JWT_SECRET
 
 # If not set, update docker-compose.yml:
 services:
-  gym-auth:
+  api-gateway:
     environment:
       - JWT_SECRET=${JWT_SECRET}  # From .env file
 ```
+
+> **Note**: JWT validation only happens in the API Gateway. Downstream services trust `X-User-Id` and `X-User-Roles` headers.
 
 **Allow clock skew for distributed systems:**
 ```java
@@ -130,78 +127,7 @@ public boolean validateToken(String token) {
 
 ### Issue: LDAP/OAuth2 Integration Failures
 
-**Symptoms:**
-```
-LDAP connection refused
-OAuth2 provider unreachable
-"Failed to obtain access token"
-```
-
-**Diagnostic Steps:**
-
-1. **Test LDAP connectivity:**
-```bash
-# Test LDAP connection
-docker exec gym-auth ldapsearch -H ldap://ldap.example.com:389 \
-  -D "cn=admin,dc=example,dc=com" \
-  -w password \
-  -b "dc=example,dc=com" \
-  "uid=testuser"
-```
-
-2. **Check OAuth2 configuration:**
-```bash
-# Verify OAuth2 endpoints are accessible
-curl https://oauth2.provider.com/.well-known/openid-configuration
-```
-
-3. **Verify credentials:**
-```bash
-# Check OAuth2 client ID and secret
-docker exec gym-auth env | grep -i "oauth2\|ldap"
-```
-
-4. **Check SSL certificate for LDAP/OAuth2:**
-```bash
-openssl s_client -connect ldap.example.com:636
-openssl s_client -connect oauth2.provider.com:443
-```
-
-**Resolution:**
-
-**Configure LDAP correctly:**
-```properties
-# application.properties
-spring.ldap.urls=ldap://ldap.example.com:389
-spring.ldap.base=dc=example,dc=com
-spring.ldap.username=cn=admin,dc=example,dc=com
-spring.ldap.password=${LDAP_PASSWORD}
-
-# Configure user search
-spring.ldap.user.search.base=ou=users
-spring.ldap.user.search.filter=uid={0}
-```
-
-**Configure OAuth2:**
-```yaml
-# application.yml
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          gym-oauth2:
-            client-id: ${OAUTH2_CLIENT_ID}
-            client-secret: ${OAUTH2_CLIENT_SECRET}
-            authorization-grant-type: authorization_code
-            redirect-uri: http://localhost:8080/login/oauth2/code/gym-oauth2
-        provider:
-          gym-oauth2:
-            authorization-uri: https://oauth2.provider.com/oauth/authorize
-            token-uri: https://oauth2.provider.com/oauth/token
-            user-info-uri: https://oauth2.provider.com/oauth/user
-            jwk-set-uri: https://oauth2.provider.com/.well-known/jwks.json
-```
+> **Note**: LDAP and OAuth2 are not part of the current platform implementation. The auth service uses email/password with JWT only.
 
 ---
 
@@ -220,99 +146,47 @@ Privilege escalation possible
 
 1. **Find authorization annotations:**
 ```bash
-grep -r "@PreAuthorize\|@Secured\|@RolesAllowed" src/ --include="*.java"
+grep -r "@RequiresRole" src/ --include="*.java"
 ```
 
-2. **Verify method-level security is enabled:**
-```bash
-# Check for @EnableGlobalMethodSecurity
-grep -r "@EnableGlobalMethodSecurity\|@EnableMethodSecurity" src/ --include="*.java"
-```
-
-3. **Test authorization boundaries:**
+2. **Test authorization boundaries:**
 ```bash
 # Get user token
-USER_TOKEN=$(curl -X POST http://localhost:8080/api/auth/login \
+USER_TOKEN=$(curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"user","password":"pass"}' | jq -r '.token')
+  -d '{"email":"user@example.com","password":"pass"}' | jq -r '.token')
 
 # Try to access admin endpoint
 curl -H "Authorization: Bearer $USER_TOKEN" \
-  http://localhost:8080/api/admin/users
+  http://localhost:8080/admin/users
 # Should return 403 Forbidden
 ```
 
-4. **Check role assignments:**
+3. **Check role assignments:**
 ```bash
-docker exec postgres psql -U gym_user -d gym_db -c \
-  "SELECT u.username, r.name FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id ORDER BY u.username;"
+docker exec postgres psql -U gym_admin -d gym_db -c \
+  "SELECT id, email, roles FROM auth_schema.users ORDER BY email;"
 ```
 
 **Resolution:**
 
-**Implement proper authorization annotations:**
+**Use `@RequiresRole` annotation (correct pattern for this platform):**
 ```java
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/admin")
 public class AdminController {
     
-    // Only ADMIN role can access
-    @PreAuthorize("hasRole('ADMIN')")
+    @RequiresRole("ROLE_ADMIN")
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userRepository.findAll());
     }
     
-    // Multiple roles allowed
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    @PostMapping("/users/{id}/suspend")
-    public ResponseEntity<Void> suspendUser(@PathVariable Long id) {
-        userService.suspend(id);
-        return ResponseEntity.ok().build();
-    }
-    
-    // User can only access their own data
-    @PreAuthorize("#userId == authentication.principal.id")
-    @GetMapping("/users/{userId}/sessions")
-    public ResponseEntity<List<Session>> getUserSessions(@PathVariable Long userId) {
-        return ResponseEntity.ok(sessionRepository.findByUserId(userId));
-    }
-}
-```
-
-**Enable method-level security:**
-```java
-@Configuration
-@EnableMethodSecurity(
-    prePostEnabled = true,
-    securedEnabled = true,
-    jsr250Enabled = true
-)
-public class SecurityConfig {
-    // Configuration
-}
-```
-
-**Verify tenant isolation (multi-tenant):**
-```java
-@Service
-public class SessionService {
-    
-    public List<Session> getUserSessions(Long userId) {
-        // Get current user's organization/tenant
-        Long currentUserId = SecurityContextHolder.getContext()
-            .getAuthentication()
-            .getPrincipal().getId();
-        
-        // Verify user is in same organization
-        User currentUser = userRepository.findById(currentUserId).orElseThrow();
-        User targetUser = userRepository.findById(userId).orElseThrow();
-        
-        if (!currentUser.getOrganizationId().equals(targetUser.getOrganizationId())) {
-            throw new UnauthorizedException("Cannot access other organization's data");
-        }
-        
-        return sessionRepository.findByUserId(userId);
+    // Access own data using GymSecurityContext
+    @GetMapping("/sessions")
+    public ResponseEntity<List<Session>> getUserSessions() {
+        Long currentUserId = GymSecurityContext.getCurrentUserId();
+        return ResponseEntity.ok(sessionRepository.findByUserId(currentUserId));
     }
 }
 ```
@@ -451,11 +325,12 @@ git secrets --list
 ```yaml
 # docker-compose.yml - NEVER include actual secrets
 services:
-  gym-auth:
+  api-gateway:
     environment:
-      - JWT_SECRET=${JWT_SECRET}  # Loaded from .env
-      - DB_PASSWORD=${DB_PASSWORD}
-      - OAUTH2_CLIENT_SECRET=${OAUTH2_CLIENT_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
 ```
 
 **.env file (NEVER commit to git):**
@@ -463,7 +338,6 @@ services:
 # .env - Add to .gitignore
 JWT_SECRET=actual-secret-here
 DB_PASSWORD=postgres-password-here
-OAUTH2_CLIENT_SECRET=oauth-secret-here
 ```
 
 **.gitignore:**
@@ -481,26 +355,11 @@ keystore.p12
 # application.properties - NEVER include secrets
 spring.datasource.password=${DB_PASSWORD}
 jwt.secret=${JWT_SECRET}
-oauth2.client.secret=${OAUTH2_CLIENT_SECRET}
 ```
 
-**Use Spring Cloud Config (production):**
-```yaml
-# docker-compose.yml
-services:
-  config-server:
-    image: spring-cloud-config-server
-    ports:
-      - "8888:8888"
-    environment:
-      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://secure-git-repo
-      - SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME=${GIT_USER}
-      - SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD=${GIT_TOKEN}
+**Use Spring Cloud Config (aspirational):**
 
-  gym-auth:
-    environment:
-      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
-```
+> **Note**: Spring Cloud Config is not currently configured in this platform. Secrets are managed via `.env` file and Docker Compose environment variables.
 
 ---
 
@@ -628,7 +487,7 @@ public class AccessDeniedHandler implements org.springframework.security.web.acc
 **Track failed login attempts:**
 ```bash
 # Count failed logins in last hour
-docker logs gym-auth | grep "AUDIT: Authentication failed" | \
+docker logs auth-service | grep "AUDIT: Authentication failed" | \
   awk -F'user: ' '{print $2}' | sort | uniq -c
 ```
 

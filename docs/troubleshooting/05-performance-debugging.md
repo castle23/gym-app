@@ -33,67 +33,41 @@ This guide covers identifying and resolving performance issues in the Gym Platfo
 
 **Access:**
 ```bash
-# Get all available metrics
-curl http://localhost:8080/actuator/metrics | jq '.names'
+# Get all available metrics (example: auth-service)
+curl http://localhost:8081/auth/actuator/metrics | jq '.names'
 
 # Get specific metric
-curl http://localhost:8080/actuator/metrics/http.server.requests | jq '.'
+curl http://localhost:8081/auth/actuator/metrics/http.server.requests | jq '.'
 ```
 
 **Key Metrics:**
 
 1. **Request Latency:**
 ```bash
-curl http://localhost:8080/actuator/metrics/http.server.requests | jq '.measurements'
+curl http://localhost:8081/auth/actuator/metrics/http.server.requests | jq '.measurements'
 # Shows: count, total, max latencies
 ```
 
 2. **Database Connection Pool:**
 ```bash
-curl http://localhost:8080/actuator/metrics/hikaricp.connections | jq '.measurements'
+curl http://localhost:8081/auth/actuator/metrics/hikaricp.connections | jq '.measurements'
 # Active, idle, pending connections
 ```
 
 3. **Memory Usage:**
 ```bash
-curl http://localhost:8080/actuator/metrics/jvm.memory.used | jq '.measurements'
+curl http://localhost:8081/auth/actuator/metrics/jvm.memory.used | jq '.measurements'
 # Heap, non-heap memory
 ```
 
 4. **Garbage Collection:**
 ```bash
-curl http://localhost:8080/actuator/metrics/jvm.gc.max.data.size | jq '.measurements'
+curl http://localhost:8081/auth/actuator/metrics/jvm.gc.max.data.size | jq '.measurements'
 ```
 
 ---
 
-### Prometheus Scraping
-
-**Purpose:** Time-series collection of application metrics
-
-**Configuration:**
-```yaml
-# prometheus.yml
-scrape_configs:
-  - job_name: 'gym-platform'
-    static_configs:
-      - targets: ['localhost:8080', 'localhost:8081', 'localhost:8082', 'localhost:8083']
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 15s
-```
-
-**Query Examples:**
-
-```bash
-# Average response time
-curl 'http://prometheus:9090/api/v1/query?query=rate(http_server_requests_seconds_sum[5m])/rate(http_server_requests_seconds_count[5m])'
-
-# Request rate
-curl 'http://prometheus:9090/api/v1/query?query=rate(http_server_requests_seconds_count[5m])'
-
-# Error rate
-curl 'http://prometheus:9090/api/v1/query?query=rate(http_server_requests_seconds_count{status=~"5.."}[5m])'
-```
+> **Note**: Prometheus is not currently configured in this platform. Use the Actuator metrics endpoint for manual inspection.
 
 ---
 
@@ -103,7 +77,7 @@ curl 'http://prometheus:9090/api/v1/query?query=rate(http_server_requests_second
 
 **Start recording:**
 ```bash
-docker exec gym-auth jcmd <pid> JFR.start duration=60s filename=/tmp/recording.jfr
+docker exec auth-service jcmd <pid> JFR.start duration=60s filename=/tmp/recording.jfr
 ```
 
 **View recording:**
@@ -120,22 +94,16 @@ docker exec gym-auth jcmd <pid> JFR.start duration=60s filename=/tmp/recording.j
 **Step 1: Start CPU profiling**
 ```bash
 # Get Java process ID
-docker exec gym-auth pgrep -f SpringApplication
+docker exec auth-service pgrep -f SpringApplication
 
-# Start async-profiler (if available)
-docker exec gym-auth \
-  java -cp /opt/async-profiler/profiler.jar \
-  jvm.Profiler -d 30 -f /tmp/cpu.html <pid>
+# Start JFR recording
+docker exec auth-service jcmd <pid> JFR.start duration=60s filename=/tmp/profile.jfr
 ```
 
-**Step 2: Generate flamegraph**
+**Step 2: Retrieve and analyze**
 ```bash
-# Using JFR
-docker exec gym-auth jcmd <pid> JFR.start duration=60s filename=/tmp/profile.jfr
-
-# Convert to flamegraph
-# Download from container and process with online flamegraph tools
-docker cp gym-auth:/tmp/profile.jfr ./profile.jfr
+docker cp auth-service:/tmp/profile.jfr ./profile.jfr
+# Analyze with JDK Mission Control or online flamegraph tools
 ```
 
 **Step 3: Analyze results**
@@ -180,22 +148,18 @@ CREATE INDEX idx_sessions_user_id ON training_sessions(user_id);
 
 **Method 1: JVM Command**
 ```bash
-# Force garbage collection first
-docker exec gym-auth jcmd <pid> GC.run
-
-# Generate heap dump
-docker exec gym-auth jcmd <pid> GC.heap_dump /tmp/heap.hprof
-
-# Copy to host
-docker cp gym-auth:/tmp/heap.hprof ./heap.hprof
+docker exec auth-service jcmd <pid> GC.run
+docker exec auth-service jcmd <pid> GC.heap_dump /tmp/heap.hprof
+docker cp auth-service:/tmp/heap.hprof ./heap.hprof
 ```
 
 **Method 2: Out-of-memory trigger**
-```bash
-# Configure automatic heap dump on OOM
-docker-compose.yml:
-environment:
-  - JAVA_OPTS=-Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp
+```yaml
+# docker-compose.yml
+services:
+  auth-service:
+    environment:
+      - JAVA_OPTS=-Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp
 ```
 
 ### Analyze Heap Dump
@@ -262,19 +226,15 @@ public class SessionCache {
 
 **Real-time monitoring:**
 ```bash
-# Watch JVM memory
 while true; do
-    docker exec gym-auth jcmd <pid> VM.memory_usage
+    docker exec auth-service jcmd <pid> VM.memory_usage
     sleep 5
 done
 ```
 
 **Metrics to track:**
 ```bash
-# Used heap percentage
-curl http://localhost:8080/actuator/metrics/jvm.memory.usage \
-  -H "Accept: application/vnd.spring-boot.actuator.v3+json" | jq '.measurements'
-
+curl http://localhost:8081/auth/actuator/metrics/jvm.memory.used | jq '.measurements'
 # Expected: Keep <80% of max heap
 ```
 
@@ -302,7 +262,7 @@ docker logs postgres | grep "duration:" | head -20
 **Analyze query execution plan:**
 ```bash
 # Get EXPLAIN ANALYZE output
-docker exec postgres psql -U gym_user -d gym_db << 'EOF'
+docker exec postgres psql -U gym_admin -d gym_db << 'EOF'
 EXPLAIN ANALYZE
 SELECT s.id, s.name, u.username, COUNT(e.id) as exercise_count
 FROM training_sessions s
@@ -391,9 +351,8 @@ public List<Session> findRecentSessions(LocalDateTime date) {
 
 **Monitor pool usage:**
 ```bash
-# Real-time monitoring
 while true; do
-    curl -s http://localhost:8080/actuator/metrics/hikaricp.connections | jq '.measurements'
+    curl -s http://localhost:8081/auth/actuator/metrics/hikaricp.connections | jq '.measurements'
     sleep 5
 done
 ```
@@ -425,19 +384,16 @@ spring.datasource.hikari.leak-detection-threshold=60000
 **Client-side measurement:**
 ```bash
 # Single request timing
-time curl http://localhost:8080/api/training/sessions
+time curl http://localhost:8080/training/sessions
 
 # Batch requests with stats
-ab -n 1000 -c 10 http://localhost:8080/api/training/sessions
+ab -n 1000 -c 10 http://localhost:8080/training/sessions
 # Shows: requests/sec, min/mean/max/stddev latency
 ```
 
 **Server-side metrics:**
 ```bash
-# From Prometheus
-curl 'http://prometheus:9090/api/v1/query?query=histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m]))'
-
-# p50, p95, p99 latencies
+curl http://localhost:8082/training/actuator/metrics/http.server.requests | jq '.measurements'
 ```
 
 ### Optimize Response Times
@@ -462,7 +418,7 @@ List<SessionCompactDTO> getSessions();
 ```yaml
 # docker-compose.yml
 services:
-  gym-auth:
+  auth-service:
     environment:
       - SERVER_COMPRESSION_ENABLED=true
       - SERVER_COMPRESSION_MIME_TYPES=application/json,application/xml,text/html,text/xml,text/plain
@@ -498,12 +454,10 @@ public class TrainingService {
 
 ### Systematic Approach
 
-**1. Identify Slow Operations (Tracing)**
+**1. Identify Slow Operations**
 ```bash
-# Enable Spring Cloud Sleuth for request tracing
-docker-compose.yml:
-environment:
-  - MANAGEMENT_TRACING_BAGGAGE_REMOTE_FIELDS=x-trace-id
+# Check Actuator metrics per endpoint
+curl http://localhost:8081/auth/actuator/metrics/http.server.requests | jq '.'
 ```
 
 **2. Measure Each Component**
@@ -514,11 +468,8 @@ environment:
 
 **3. Find Top 3 Bottlenecks**
 ```bash
-# Example: Database is slowest
-curl http://localhost:8080/actuator/metrics | grep db
-
-# Example: Specific endpoint is slow
-curl 'http://prometheus:9090/api/v1/query?query=rate(http_server_requests_seconds_sum{uri=~"/api/training.*"}[5m])'
+# Check database-related metrics
+curl http://localhost:8082/training/actuator/metrics/hikaricp.connections | jq '.'
 ```
 
 **4. Optimize One at a Time**
@@ -688,7 +639,6 @@ public ResponseEntity<Page<Session>> getAllSessions(
 @EnableCaching
 public class CacheConfig {
     
-    // L1: Local in-memory cache
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager manager = new CaffeineCacheManager("sessions", "users");
@@ -697,9 +647,6 @@ public class CacheConfig {
             .expireAfterWrite(5, TimeUnit.MINUTES));
         return manager;
     }
-    
-    // L2: Redis cache (if configured)
-    // L3: Database
 }
 
 @Service
@@ -727,8 +674,8 @@ public class SessionService {
 ### Load Testing with Apache Bench
 
 ```bash
-# Simple load test
-ab -n 1000 -c 10 http://localhost:8080/api/sessions
+# Simple load test (via API Gateway)
+ab -n 1000 -c 10 http://localhost:8080/training/sessions
 
 # Results show:
 # - Requests per second
@@ -754,7 +701,7 @@ docker run -it gatling/gatling:latest \
 watch -n 1 'docker stats'
 
 # Also check metrics
-curl http://localhost:8080/actuator/metrics/http.server.requests
+curl http://localhost:8082/training/actuator/metrics/http.server.requests
 ```
 
 ---

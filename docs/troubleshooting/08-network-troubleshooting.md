@@ -6,10 +6,9 @@ This guide addresses network-level issues in the Gym Platform microservices: DNS
 
 **Network Architecture:**
 - Internal: Docker Compose network (gym_default)
-- Services: Auth, Training, Tracking, Notification (TCP 8080+)
-- External: PostgreSQL, RabbitMQ
-- API Gateway: Nginx (optional, for production)
-- Monitoring: Prometheus scraping services on /actuator/prometheus
+- Services: API Gateway (8080), Auth (8081), Training (8082), Tracking (8083), Notification (8084)
+- Database: PostgreSQL (5432)
+- No service-to-service direct communication — all requests go through API Gateway
 
 ---
 
@@ -39,45 +38,37 @@ DNS resolution failed
 
 1. **Test DNS inside container:**
 ```bash
-docker exec gym-auth nslookup gym-training
-docker exec gym-auth nslookup postgres
-docker exec gym-auth nslookup rabbitmq
+docker exec auth-service nslookup postgres
+docker exec api-gateway nslookup auth-service
 ```
 
 2. **Check /etc/resolv.conf inside container:**
 ```bash
-docker exec gym-auth cat /etc/resolv.conf
-# Should have nameserver entries pointing to Docker's DNS
+docker exec auth-service cat /etc/resolv.conf
 ```
 
 3. **Test with ping:**
 ```bash
-docker exec gym-auth ping gym-training
-# Should resolve and respond
+docker exec auth-service ping postgres
 ```
 
 4. **Inspect Docker network:**
 ```bash
 docker network ls
 docker network inspect gym_default
-# Should show all service containers with their IPs
 ```
 
 **Resolution:**
 
 **Ensure containers on same network:**
 ```yaml
-# docker-compose.yml
-version: '3.8'
 services:
-  gym-auth:
+  api-gateway:
     networks:
       - gym_network
-
-  gym-training:
+  auth-service:
     networks:
       - gym_network
-
   postgres:
     networks:
       - gym_network
@@ -107,138 +98,38 @@ nslookup google.com  # Should resolve external names
 
 ## Service-to-Service Communication
 
+> **Note**: Services in this platform do not communicate directly with each other. All requests flow through the API Gateway (port 8080), which validates JWT and injects `X-User-Id`/`X-User-Roles` headers. The diagnostics below apply to gateway-to-service connectivity.
+
 ### Issue: Connection Refused Between Services
 
 **Symptoms:**
 ```
-ERROR: Connection refused connecting to http://gym-training:8080
+ERROR: Connection refused connecting to http://auth-service:8081
 java.net.ConnectException: Connection refused
-ERROR: 111 (Connection refused)
 ```
 
 **Diagnostic Steps:**
 
 1. **Verify service is running and listening:**
 ```bash
-# Inside service container
-docker exec gym-training netstat -tlnp | grep 8080
-
-# Or from another container
-docker exec gym-auth curl -v http://gym-training:8080/actuator/health
+docker exec auth-service netstat -tlnp | grep 8081
+docker exec api-gateway curl -v http://auth-service:8081/auth/actuator/health
 ```
 
 2. **Check service logs:**
 ```bash
-docker logs gym-training | tail -50
-# Look for "Tomcat started", errors, or "not listening"
+docker logs auth-service | tail -50
 ```
 
 3. **Verify network connectivity:**
 ```bash
-# From source service
-docker exec gym-auth nc -zv gym-training 8080
-# Expected: succeeded! (if service running)
-
-docker exec gym-auth ping gym-training
-# Should return IP address
-```
-
-4. **Check service port configuration:**
-```bash
-# Verify internal port is correct
-docker exec gym-training env | grep PORT
-docker exec gym-training curl http://localhost:8080/actuator/health
+docker exec api-gateway nc -zv auth-service 8081
+docker exec api-gateway ping auth-service
 ```
 
 **Resolution:**
 
-**Fix service URL in calling service:**
-```java
-// Before: Wrong port/hostname
-@Configuration
-public class RestClientConfig {
-    
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-    
-    public void callService() {
-        // Wrong: 127.0.0.1 only works inside container
-        // Wrong: 8081 might not be mapped
-        restTemplate.getForObject("http://127.0.0.1:8081/api/...", String.class);
-    }
-}
-
-// After: Use service name and internal port
-@Configuration
-public class RestClientConfig {
-    
-    @Value("${training.service.url:http://gym-training:8080}")
-    private String trainingServiceUrl;
-    
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-    
-    public void callService() {
-        restTemplate.getForObject(
-            trainingServiceUrl + "/api/training/sessions",
-            String.class
-        );
-    }
-}
-```
-
-**Configure through environment:**
-```yaml
-# docker-compose.yml
-services:
-  gym-auth:
-    environment:
-      - TRAINING_SERVICE_URL=http://gym-training:8080
-      - TRACKING_SERVICE_URL=http://gym-tracking:8080
-      - NOTIFICATION_SERVICE_URL=http://gym-notification:8080
-```
-
-**Add connection retry logic:**
-```java
-@Configuration
-public class RestClientConfig {
-    
-    @Bean
-    public RestTemplate restTemplate() {
-        HttpClientHttpRequestFactory factory = new HttpClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(5000);
-        
-        return new RestTemplate(factory);
-    }
-    
-    @Bean
-    public Resilience4jCircuitBreakerFactory resilience4jFactory() {
-        return new Resilience4jCircuitBreakerFactory();
-    }
-}
-
-@Service
-public class TrainingServiceClient {
-    
-    @CircuitBreaker(name = "trainingService", fallbackMethod = "trainingServiceFallback")
-    public List<Session> getSessions() {
-        return restTemplate.getForObject(
-            trainingServiceUrl + "/api/sessions",
-            new ParameterizedTypeReference<List<Session>>() {}
-        );
-    }
-    
-    public List<Session> trainingServiceFallback(Exception e) {
-        log.warn("Training service unavailable, returning empty list");
-        return Collections.emptyList();
-    }
-}
-```
+Ensure all services are on the same Docker network and use the correct service name and port as defined in `docker-compose.yml`.
 
 ---
 
@@ -394,34 +285,30 @@ docker exec gym-training curl http://localhost:8080/actuator/health
 
 **Fix port mapping in docker-compose:**
 ```yaml
-# docker-compose.yml
 services:
-  gym-auth:
+  api-gateway:
     ports:
-      - "8080:8080"  # host:container - maps host 8080 to container 8080
-    environment:
-      - SERVER_PORT=8080  # Internal port
+      - "8080:8080"
 
-  gym-training:
+  auth-service:
     ports:
-      - "8081:8080"  # Different host port, same container port
+      - "8081:8081"
 
-  gym-tracking:
+  training-service:
     ports:
-      - "8082:8080"
+      - "8082:8082"
 
-  gym-notification:
+  tracking-service:
     ports:
-      - "8083:8080"
+      - "8083:8083"
+
+  notification-service:
+    ports:
+      - "8084:8084"
 
   postgres:
     ports:
       - "5432:5432"
-
-  rabbitmq:
-    ports:
-      - "5672:5672"
-      - "15672:15672"  # Management console
 ```
 
 **Kill process using port:**
@@ -451,26 +338,18 @@ Timeouts on normally fast operations
 
 1. **Measure latency:**
 ```bash
-# Ping service
-docker exec gym-auth ping gym-training -c 5
-
-# Measure HTTP latency
-docker exec gym-auth curl -w "Time: %{time_total}s\n" http://gym-training:8080/actuator/health
+docker exec api-gateway ping auth-service -c 5
+docker exec api-gateway curl -w "Time: %{time_total}s\n" http://auth-service:8081/auth/actuator/health
 ```
 
 2. **Check network stats:**
 ```bash
-# Docker network stats
-docker exec gym-auth cat /proc/net/dev
-
-# Network interface stats
-docker exec gym-auth netstat -s
+docker exec auth-service cat /proc/net/dev
 ```
 
 3. **Monitor traffic:**
 ```bash
-# From host, capture traffic between containers
-tcpdump -i docker0 -n host gym-auth
+tcpdump -i docker0 -n host auth-service
 ```
 
 **Resolution:**
@@ -511,65 +390,7 @@ List<User> users = restTemplate.postForObject(
 
 ## Load Balancing
 
-### Using Nginx as API Gateway
-
-**Purpose:** Route requests to multiple service instances
-
-**Configuration:**
-```nginx
-# nginx.conf
-upstream gym_auth {
-    server gym-auth-1:8080;
-    server gym-auth-2:8080;
-    server gym-auth-3:8080;
-}
-
-upstream gym_training {
-    server gym-training-1:8080;
-    server gym-training-2:8080;
-}
-
-server {
-    listen 80;
-    
-    location /api/auth {
-        proxy_pass http://gym_auth;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-    
-    location /api/training {
-        proxy_pass http://gym_training;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-**Docker Compose with Nginx:**
-```yaml
-services:
-  nginx:
-    image: nginx:latest
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-
-  gym-auth-1:
-    image: gym/auth:latest
-
-  gym-auth-2:
-    image: gym/auth:latest
-
-  gym-training-1:
-    image: gym/training:latest
-
-  gym-training-2:
-    image: gym/training:latest
-```
+> **Note**: The current platform uses a single Spring Boot API Gateway (port 8080) — not Nginx. Load balancing with multiple instances is not part of the current setup.
 
 ---
 

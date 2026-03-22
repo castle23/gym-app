@@ -8,9 +8,7 @@ This guide documents the most frequently encountered problems in the Gym Platfor
 - Services: Auth, Training, Tracking, Notification (Java 17 Spring Boot 3.x)
 - Database: PostgreSQL 15+
 - Container Orchestration: Docker Compose
-- Message Queue: RabbitMQ
-- Monitoring: Prometheus + Grafana
-- API Gateway: Nginx
+- API Gateway: Spring Boot (port 8080)
 
 ---
 
@@ -53,7 +51,7 @@ netstat -ano | findstr :8080
 
 2. Check if it's our service:
 ```bash
-docker ps -a | grep gym-auth  # or other service
+docker ps -a | grep auth-service  # or other service
 ```
 
 3. Verify process details:
@@ -76,11 +74,11 @@ taskkill /PID <PID> /F
 ```yaml
 # docker-compose.yml
 services:
-  gym-auth:
+  auth-service:
     ports:
-      - "8081:8080"  # Changed from 8080
+      - "8091:8081"  # Changed host port
     environment:
-      - SERVER_PORT=8080  # Internal port remains
+      - SERVER_PORT=8081  # Internal port remains
 ```
 
 **Option C - Wait for TIME_WAIT timeout (production workaround):**
@@ -209,8 +207,7 @@ Logs show spinning on initialization
 
 **Root Cause:**
 - Database connectivity issues during initialization
-- Waiting for RabbitMQ connection
-- Large data migrations or schema initialization
+- Large data initialization
 - Slow DNS resolution
 - Resource contention (CPU, disk I/O)
 
@@ -218,31 +215,31 @@ Logs show spinning on initialization
 
 1. Check startup logs with timestamps:
 ```bash
-docker logs -f gym-auth | tail -100
+docker logs -f auth-service | tail -100
 ```
 
 2. Measure startup time:
 ```bash
-time docker-compose up gym-auth
+time docker-compose up auth-service
 # Time from container start to "tomcat started" message
 ```
 
 3. Check if service accepts connections:
 ```bash
 for i in {1..10}; do
-  curl -s http://localhost:8080/actuator/health || echo "Failed $i"
+  curl -s http://localhost:8081/auth/actuator/health || echo "Failed $i"
   sleep 5
 done
 ```
 
 4. Check database connectivity:
 ```bash
-docker exec gym-auth nc -zv postgres 5432
+docker exec auth-service nc -zv postgres 5432
 ```
 
 5. Monitor container resources during startup:
 ```bash
-docker stats gym-auth --no-stream
+docker stats auth-service --no-stream
 ```
 
 **Resolution:**
@@ -251,9 +248,9 @@ docker stats gym-auth --no-stream
 ```yaml
 # docker-compose.yml
 services:
-  gym-auth:
+  auth-service:
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/auth/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 30  # 5 minutes total
@@ -264,12 +261,12 @@ services:
 ```yaml
 # docker-compose.yml
 services:
-  gym-auth:
+  auth-service:
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=30000
       - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=10
 ```
@@ -339,7 +336,7 @@ java.lang.NullPointerException
 
 1. Identify the exact line:
 ```bash
-docker logs gym-training | grep -A 5 "TrainingService.java:45"
+docker logs training-service | grep -A 5 "TrainingService.java:45"
 ```
 
 2. Check if beans are properly initialized:
@@ -452,16 +449,16 @@ if (user.isPresent()) {
 
 **Symptoms:**
 ```
-Request: GET /api/training/sessions
+Request: GET /training/sessions
 Response: 401 Unauthorized
 Message: "Token has expired" or "Invalid token signature"
 ```
 
 **Root Cause:**
-- Token signature verification failing
-- JWT secret mismatch between services
+- Token signature verification failing in API Gateway
+- JWT secret misconfigured in gateway
 - Token expiration time too short
-- Clock skew between services
+- Clock skew
 - Token tampered with
 
 **Diagnostic Steps:**
@@ -475,22 +472,20 @@ curl https://jwt.io/ -d "token=eyJhbGciOiJIUzI1NiIs..."
 echo "eyJhbGciOiJIUzI1NiIs..." | base64 -d
 ```
 
-2. Check token claims:
+2. Decode token claims:
 ```bash
-curl -X GET http://localhost:8080/actuator/metrics/token.validation \
-  -H "Authorization: Bearer $TOKEN"
+echo $TOKEN | cut -d. -f2 | base64 -d | jq '.'
 ```
 
-3. Verify JWT secret in service:
+3. Verify JWT secret in gateway:
 ```bash
-docker exec gym-auth env | grep JWT_SECRET
-docker exec gym-training env | grep JWT_SECRET
+docker exec api-gateway env | grep JWT_SECRET
 ```
 
-4. Check service clock synchronization:
+4. Check clock synchronization:
 ```bash
 date
-docker exec gym-auth date
+docker exec api-gateway date
 docker exec postgres date
 ```
 
@@ -502,20 +497,16 @@ logging.level.com.gym.security.jwt=DEBUG
 
 **Resolution:**
 
-**Ensure JWT secrets match across services:**
+**Ensure JWT secret is set in gateway:**
 ```yaml
 # docker-compose.yml
 services:
-  gym-auth:
-    environment:
-      - JWT_SECRET=${JWT_SECRET}
-  gym-training:
-    environment:
-      - JWT_SECRET=${JWT_SECRET}
-  gym-tracking:
+  api-gateway:
     environment:
       - JWT_SECRET=${JWT_SECRET}
 ```
+
+> **Note**: JWT validation only happens in the API Gateway. Downstream services trust the `X-User-Id` and `X-User-Roles` headers injected by the gateway.
 
 **Verify JWT configuration:**
 ```java
@@ -572,18 +563,14 @@ public JwtProvider jwtProvider() {
 **Refresh token before expiration:**
 ```java
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 public class AuthController {
     
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refreshToken(
             @RequestHeader("Authorization") String bearerToken) {
         String token = bearerToken.replace("Bearer ", "");
-        
-        // Validate token not completely expired
         Claims claims = jwtProvider.extractClaims(token);
-        
-        // Issue new token
         String newToken = jwtProvider.generateToken(claims);
         return ResponseEntity.ok(new TokenResponse(newToken));
     }
@@ -591,11 +578,10 @@ public class AuthController {
 ```
 
 **Prevention:**
-- Use same JWT_SECRET across all services (preferably from vault)
+- Keep JWT_SECRET in gateway only
 - Set reasonable token expiration (24-48 hours for web, shorter for mobile)
 - Implement token refresh endpoint
 - Synchronize system clocks via NTP
-- Monitor token validation metrics
 
 **Related Documentation:**
 - See docs/stack/04-security-framework.md for JWT implementation details
@@ -630,7 +616,7 @@ curl http://localhost:8080/actuator/metrics/hikaricp.connections \
 
 2. Monitor active connections in real-time:
 ```bash
-docker exec postgres psql -U gym_user -d gym_db -c \
+docker exec postgres psql -U gym_admin -d gym_db -c \
   "SELECT count(*) as active_connections FROM pg_stat_activity;"
 ```
 
@@ -652,7 +638,7 @@ ORDER BY query_start;
 
 4. Check pool configuration:
 ```bash
-docker exec gym-auth env | grep HIKARI
+docker exec auth-service env | grep HIKARI
 ```
 
 **Resolution:**
@@ -718,14 +704,14 @@ CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 ```yaml
 # docker-compose.yml
 services:
-  gym-auth:
+  auth-service:
     environment:
       - SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_FETCH_SIZE=50
       - SPRING_JPA_PROPERTIES_HIBERNATE_QUERY_TIMEOUT=30
 ```
 
 **Prevention:**
-- Monitor connection pool metrics in Prometheus
+- Monitor connection pool metrics via Actuator
 - Set up alerts for pool exhaustion
 - Use Spring Data JPA to prevent manual resource leaks
 - Implement request timeouts
@@ -917,7 +903,7 @@ logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 
 2. Find slow queries in logs:
 ```bash
-docker logs gym-training | grep "Query took" | awk -F'took ' '{print $2}' | sort -rn | head -10
+docker logs training-service | grep "Query took" | awk -F'took ' '{print $2}' | sort -rn | head -10
 ```
 
 3. Use EXPLAIN ANALYZE on suspect queries:
@@ -1054,7 +1040,6 @@ Logs: Connection refused
 
 **Root Cause:**
 - Database not fully started before service attempts connection
-- RabbitMQ not ready for connections
 - Network not initialized properly in Docker Compose
 - health check hasn't passed yet
 
@@ -1069,8 +1054,8 @@ docker-compose logs
 
 2. Test database connectivity:
 ```bash
-docker exec gym-auth ping postgres
-docker exec gym-auth nc -zv postgres 5432
+docker exec auth-service ping postgres
+docker exec auth-service nc -zv postgres 5432
 ```
 
 3. Verify docker-compose dependencies:
@@ -1088,52 +1073,22 @@ services:
   postgres:
     image: postgres:15
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gym_user -d gym_db"]
+      test: ["CMD-SHELL", "pg_isready -U gym_admin -d gym_db"]
       interval: 10s
       timeout: 5s
       retries: 5
     environment:
       - POSTGRES_DB=gym_db
-      - POSTGRES_USER=gym_user
+      - POSTGRES_USER=gym_admin
       - POSTGRES_PASSWORD=${DB_PASSWORD}
 
-  gym-auth:
+  auth-service:
     depends_on:
       postgres:
-        condition: service_healthy  # Wait for healthcheck, not just container start
+        condition: service_healthy
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/gym_db
       - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=10
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  gym-notification:
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-```
-
-**Add retry logic in Spring Boot:**
-```java
-@Configuration
-public class RabbitMQConfig {
-    
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setRetryTemplate(new RetryTemplate() {{
-            setRetryPolicy(new SimpleRetryPolicy(5));
-            setBackOffPolicy(new ExponentialBackOffPolicy());
-        }});
-        return template;
-    }
-}
 ```
 
 **Connection retry in DataSource configuration:**
@@ -1141,7 +1096,7 @@ public class RabbitMQConfig {
 # application.properties
 spring.datasource.hikari.connection-test-query=SELECT 1
 spring.datasource.hikari.initialization-fail-timeout=60000
-spring.jpa.hibernate.ddl-auto=validate  # Don't recreate schema
+spring.jpa.hibernate.ddl-auto=update
 ```
 
 **Prevention:**
@@ -1196,45 +1151,27 @@ docker port <container-name>
 services:
   postgres:
     ports:
-      - "5432:5432"  # External:Internal
+      - "5432:5432"
 
-  gym-auth:
+  api-gateway:
     ports:
-      - "8080:8080"  # Auth service
+      - "8080:8080"
 
-  gym-training:
+  auth-service:
     ports:
-      - "8081:8080"  # Different external port, same internal
+      - "8081:8081"
 
-  gym-tracking:
+  training-service:
     ports:
-      - "8082:8080"
+      - "8082:8082"
 
-  gym-notification:
+  tracking-service:
     ports:
-      - "8083:8080"
+      - "8083:8083"
 
-  rabbitmq:
+  notification-service:
     ports:
-      - "5672:5672"   # AMQP
-      - "15672:15672" # Management UI
-```
-
-**Use environment variables for port flexibility:**
-```yaml
-# docker-compose.yml
-services:
-  gym-auth:
-    ports:
-      - "${AUTH_PORT:-8080}:8080"
-    environment:
-      - SERVER_PORT=8080
-
-# .env file
-AUTH_PORT=8080
-TRAINING_PORT=8081
-TRACKING_PORT=8082
-NOTIFICATION_PORT=8083
+      - "8084:8084"
 ```
 
 **Prevention:**
@@ -1253,149 +1190,24 @@ NOTIFICATION_PORT=8083
 
 ### Issue: Service-to-Service Communication Fails (Connection Refused)
 
+> **Note**: Services in this platform do not communicate directly with each other. All requests flow through the API Gateway (port 8080). If you see connection refused errors between services, this indicates a misconfiguration.
+
 **Symptoms:**
 ```
-ERROR: Connection refused connecting to http://gym-training:8080/api/...
+ERROR: Connection refused connecting to http://training-service:8082/...
 java.net.ConnectException: Connection refused
 ```
 
 **Root Cause:**
-- Service using incorrect hostname (container name mismatch)
-- Service not listening on specified port
-- Network isolation in Docker Compose
-- Firewall rules blocking communication
-- DNS not resolving service name
-
-**Diagnostic Steps:**
-
-1. Verify service names in docker-compose:
-```bash
-docker-compose config | grep "services:" -A 50 | grep "  [a-z]"
-```
-
-2. Test connectivity between containers:
-```bash
-docker exec gym-auth nslookup gym-training
-docker exec gym-auth curl -v http://gym-training:8080/actuator/health
-```
-
-3. Check if service is listening:
-```bash
-docker exec gym-training netstat -tlnp | grep 8080
-```
-
-4. Verify DNS resolution:
-```bash
-docker exec gym-auth cat /etc/resolv.conf
-```
+- Service incorrectly attempting direct service-to-service call
+- Should route through API Gateway instead
 
 **Resolution:**
 
-**Use correct service names (from docker-compose.yml):**
-```java
-// Before: Hardcoded IP or incorrect name
-@Configuration
-public class RestTemplateConfig {
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-    
-    // Usage: hardcoded localhost
-    public void callTrainingService() {
-        restTemplate.getForObject("http://127.0.0.1:8081/api/...", String.class);
-    }
-}
-
-// After: Use service name (Docker DNS)
-@Configuration
-public class RestTemplateConfig {
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-}
-
-@Service
-public class TrainingClientService {
-    @Value("${training.service.url:http://gym-training:8080}")
-    private String trainingServiceUrl;
-    
-    public void callTrainingService() {
-        restTemplate.getForObject(
-            trainingServiceUrl + "/api/training/sessions", 
-            String.class
-        );
-    }
-}
-```
-
-**Configure service URL in environment:**
-```yaml
-# docker-compose.yml
-services:
-  gym-auth:
-    environment:
-      - TRAINING_SERVICE_URL=http://gym-training:8080
-      - TRACKING_SERVICE_URL=http://gym-tracking:8080
-      - NOTIFICATION_SERVICE_URL=http://gym-notification:8080
-
-  gym-training:
-    environment:
-      - AUTH_SERVICE_URL=http://gym-auth:8080
-      - TRACKING_SERVICE_URL=http://gym-tracking:8080
-```
-
-**Use Service Discovery or Feign Client:**
-```java
-// Spring Cloud OpenFeign for easier HTTP client
-@FeignClient(name = "gym-training", url = "${training.service.url}")
-public interface TrainingServiceClient {
-    @GetMapping("/api/training/sessions")
-    List<TrainingSession> getSessions();
-}
-
-@Service
-public class AuthService {
-    @Autowired
-    private TrainingServiceClient trainingClient;
-    
-    public void processUser(Long userId) {
-        List<TrainingSession> sessions = trainingClient.getSessions();
-    }
-}
-```
-
-**Enable retry and circuit breaker:**
-```java
-@Configuration
-public class RestClientConfig {
-    
-    @Bean
-    public RestTemplate restTemplate() {
-        HttpClientHttpRequestFactory factory = new HttpClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(5000);
-        return new RestTemplate(factory);
-    }
-    
-    @Bean
-    public Resilience4jCircuitBreakerFactory resilience4jFactory() {
-        return new Resilience4jCircuitBreakerFactory();
-    }
-}
-```
-
-**Prevention:**
-- Use service names (not IPs) in Docker Compose
-- Verify Docker network connectivity before deployment
-- Document all service-to-service URLs
-- Use centralized configuration for service URLs
-- Monitor service availability metrics
+All client requests must go through the API Gateway at port 8080. Services receive `X-User-Id` and `X-User-Roles` headers from the gateway and process requests independently.
 
 **Related Documentation:**
-- See docs/troubleshooting/08-network-troubleshooting.md for detailed network diagnostics
-- See docs/architecture/01-overview.md for service communication diagrams
+- See docs/troubleshooting/08-network-troubleshooting.md for network diagnostics
 
 ---
 
@@ -1421,28 +1233,28 @@ docker stats shows HIGH % of available CPU
 
 1. Monitor CPU usage:
 ```bash
-docker stats gym-auth --no-stream
+docker stats auth-service --no-stream
 # Or over time
-docker stats gym-auth
+docker stats auth-service
 ```
 
 2. Check thread count and GC:
 ```bash
-docker exec gym-auth jps -l
-docker exec gym-auth jcmd <pid> Thread.print | head -100
+docker exec auth-service jps -l
+docker exec auth-service jcmd <pid> Thread.print | head -100
 ```
 
 3. Profile CPU usage:
 ```bash
 # Generate CPU flamegraph
-docker exec gym-auth jcmd <pid> JFR.start duration=60s filename=/tmp/recording.jfr
-docker cp gym-auth:/tmp/recording.jfr ./recording.jfr
+docker exec auth-service jcmd <pid> JFR.start duration=60s filename=/tmp/recording.jfr
+docker cp auth-service:/tmp/recording.jfr ./recording.jfr
 # Analyze with JFR viewer or Async Profiler
 ```
 
 4. Check for garbage collection issues:
 ```bash
-docker logs gym-auth | grep "GC"
+docker logs auth-service | grep "GC"
 ```
 
 **Resolution:**
@@ -1480,18 +1292,12 @@ public List<User> findDuplicateEmails() {
 ```
 
 **Optimize garbage collection:**
-```bash
+```yaml
 # docker-compose.yml
 services:
-  gym-auth:
+  auth-service:
     environment:
-      - JAVA_OPTS=-Xmx512m -Xms256m 
-                  -XX:+UseG1GC 
-                  -XX:MaxGCPauseMillis=200
-                  -XX:G1HeapRegionSize=8m
-                  -XX:+ParallelRefProcEnabled
-                  -XX:+UnlockDiagnosticVMOptions
-                  -XX:G1SummarizeRSetStatsPeriod=86400
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
 ```
 
 **Reduce thread count:**
@@ -1535,7 +1341,7 @@ public class ExternalService {
 
 **Prevention:**
 - Profile regularly with JFR
-- Monitor GC metrics in Prometheus
+- Monitor GC metrics via Actuator
 - Implement request timeouts
 - Use efficient data structures (HashMap vs List)
 - Limit thread pools

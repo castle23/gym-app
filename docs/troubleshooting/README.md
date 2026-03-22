@@ -16,8 +16,8 @@ This section contains troubleshooting guides, debugging techniques, and solution
 
 ## Subdirectories
 
-- **faqs/** - Frequently asked questions and answers
-- **diagnostic-tools/** - Diagnostic utilities and tools
+- **faqs/** - Frequently asked questions
+- **diagnostic-tools/** - Diagnostic utilities
 
 ## Quick Troubleshooting
 
@@ -57,16 +57,16 @@ Quick diagnostic steps:
 
 ```bash
 # 1. Check service health
-./scripts/operational/health-check.sh
+curl http://localhost:8081/auth/actuator/health
 
 # 2. Check service logs (Docker)
 docker logs <service-name>
 
 # 3. Check database connectivity
-psql -U postgres -d gym_db -h localhost
+psql -U gym_admin -d gym_db -h localhost
 
 # 4. Test API endpoint
-curl http://localhost:8081/swagger-ui.html
+curl http://localhost:8080/auth/actuator/health
 ```
 
 See **04-diagnostic-procedures.md** for detailed procedures.

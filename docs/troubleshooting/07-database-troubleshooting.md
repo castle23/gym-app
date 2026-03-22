@@ -54,13 +54,13 @@ ORDER BY query_start;
 
 3. **Check pool configuration:**
 ```bash
-docker exec gym-auth env | grep HIKARI
-docker exec postgres psql -U gym_user -d gym_db -c "SHOW max_connections;"
+docker exec auth-service env | grep HIKARI
+docker exec postgres psql -U gym_admin -d gym_db -c "SHOW max_connections;"
 ```
 
 4. **Monitor connections in real-time:**
 ```bash
-watch -n 2 'docker exec postgres psql -U gym_user -d gym_db -c \
+watch -n 2 'docker exec postgres psql -U gym_admin -d gym_db -c \
   "SELECT count(*) as connections FROM pg_stat_activity;"'
 ```
 
@@ -109,25 +109,24 @@ docker logs postgres | tail -20
 
 2. **Test network connectivity:**
 ```bash
-docker exec gym-auth nc -zv postgres 5432
-docker exec gym-auth ping postgres
+docker exec auth-service nc -zv postgres 5432
+docker exec auth-service ping postgres
 ```
 
 3. **Verify environment variables:**
 ```bash
-docker exec gym-auth env | grep -i spring_datasource
+docker exec auth-service env | grep -i spring_datasource
 ```
 
 4. **Test direct connection:**
 ```bash
-docker exec postgres psql -U gym_user -d gym_db -c "SELECT 1"
+docker exec postgres psql -U gym_admin -d gym_db -c "SELECT 1"
 ```
 
 **Resolution:**
 
 **Verify docker-compose configuration:**
 ```yaml
-# docker-compose.yml
 services:
   postgres:
     image: postgres:15
@@ -136,24 +135,24 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: gym_db
-      POSTGRES_USER: gym_user
+      POSTGRES_USER: gym_admin
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gym_user -d gym_db"]
+      test: ["CMD-SHELL", "pg_isready -U gym_admin -d gym_db"]
 
-  gym-auth:
+  auth-service:
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
-      SPRING_DATASOURCE_USERNAME: gym_user
+      SPRING_DATASOURCE_USERNAME: gym_admin
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
 ```
 
 **Ensure database exists:**
 ```bash
-docker exec postgres createdb -U gym_user gym_db 2>/dev/null || echo "Database already exists"
+docker exec postgres createdb -U gym_admin gym_db 2>/dev/null || echo "Database already exists"
 ```
 
 ---
@@ -183,7 +182,7 @@ docker logs postgres | grep "duration:" | tail -20
 
 3. **Get execution plan:**
 ```bash
-docker exec postgres psql -U gym_user -d gym_db << 'EOF'
+docker exec postgres psql -U gym_admin -d gym_db << 'EOF'
 EXPLAIN (ANALYZE, VERBOSE, BUFFERS)
 SELECT s.id, s.name, u.username, COUNT(e.id) as exercise_count
 FROM training_sessions s
@@ -442,7 +441,7 @@ SELECT
 
 3. **Check transaction logs:**
 ```bash
-docker logs gym-auth | grep -i "rollback\|transaction failed"
+docker logs auth-service | grep -i "rollback\|transaction failed"
 ```
 
 **Resolution:**
@@ -490,7 +489,7 @@ docker exec postgres ls -la /var/lib/postgresql/backup/
 
 3. **Test backup command:**
 ```bash
-docker exec postgres pg_dump -U gym_user -d gym_db | gzip > /tmp/test_backup.sql.gz
+docker exec postgres pg_dump -U gym_admin -d gym_db | gzip > /tmp/test_backup.sql.gz
 ls -lah /tmp/test_backup.sql.gz
 ```
 
@@ -504,21 +503,17 @@ docker exec postgres df -h /var/lib/postgresql/
 **Create backup script:**
 ```bash
 #!/bin/bash
-# backup.sh
 BACKUP_DIR="/var/lib/postgresql/backup"
 DB_NAME="gym_db"
-DB_USER="gym_user"
+DB_USER="gym_admin"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="$BACKUP_DIR/${DB_NAME}_${TIMESTAMP}.sql.gz"
 
 mkdir -p $BACKUP_DIR
-
-# Full backup
 pg_dump -U $DB_USER -d $DB_NAME | gzip > $BACKUP_FILE
 
 if [ $? -eq 0 ]; then
     echo "Backup successful: $BACKUP_FILE"
-    # Keep only last 7 days
     find $BACKUP_DIR -name "${DB_NAME}_*.sql.gz" -mtime +7 -delete
 else
     echo "Backup failed!"
@@ -562,30 +557,24 @@ gunzip -t /backup/gym_db_20240321.sql.gz
 
 2. **Check database state before restore:**
 ```bash
-docker exec postgres psql -U gym_user -d gym_db -c "SELECT COUNT(*) FROM users;"
+docker exec postgres psql -U gym_admin -d gym_db -c "SELECT COUNT(*) FROM auth_schema.users;"
 ```
 
 3. **Test restore on test database:**
 ```bash
-# Create test DB
-docker exec postgres createdb -U gym_user -d gym_db_test
-
-# Attempt restore
-docker exec postgres psql -U gym_user -d gym_db_test < gym_db_backup.sql
+docker exec postgres createdb -U gym_admin gym_db_test
+docker exec postgres psql -U gym_admin -d gym_db_test -f /path/to/backup.sql
+docker exec postgres psql -U gym_admin -d gym_db_test -c "SELECT COUNT(*) FROM auth_schema.users;"
 ```
 
 **Resolution:**
 
 **Restore from backup:**
 ```bash
-# Full database restore
-docker exec postgres psql -U gym_user -d gym_db < backup.sql
+docker exec -i postgres psql -U gym_admin -d gym_db < backup.sql
 
 # Or restore from gzip
-gunzip -c backup.sql.gz | docker exec postgres psql -U gym_user -d gym_db
-
-# Or using pipe
-cat backup.sql.gz | docker exec -i postgres gunzip | docker exec -i postgres psql -U gym_user -d gym_db
+gunzip -c backup.sql.gz | docker exec -i postgres psql -U gym_admin -d gym_db
 ```
 
 **Point-in-time recovery:**
@@ -602,6 +591,8 @@ docker exec postgres pg_basebackup -D /var/lib/postgresql/backup/recovery \
 ---
 
 ## Replication Issues
+
+> **Note**: Replication is not configured in the current single-instance setup. The diagnostics below apply if replication is added in the future.
 
 ### Issue: Replica Lag
 

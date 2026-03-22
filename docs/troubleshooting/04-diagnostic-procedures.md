@@ -7,8 +7,6 @@ This guide provides systematic, step-by-step procedures for diagnosing issues in
 **Gym Platform Stack:**
 - Services: Auth, Training, Tracking, Notification (Java 17, Spring Boot 3.x)
 - Persistence: PostgreSQL 15+
-- Messaging: RabbitMQ
-- Monitoring: Prometheus, Grafana, ELK Stack
 - Orchestration: Docker Compose
 
 ---
@@ -43,7 +41,7 @@ docker-compose ps
 
 2. **Verify database connectivity:**
 ```bash
-docker exec gym-auth curl -s http://localhost:8080/actuator/health | jq .
+curl -s http://localhost:8081/auth/actuator/health | jq .
 # Expected: status = "UP"
 ```
 
@@ -54,9 +52,7 @@ docker-compose logs --tail=50 | grep -i "error\|exception\|fail"
 
 4. **Verify network connectivity:**
 ```bash
-docker exec gym-auth ping gym-training
-docker exec gym-auth ping postgres
-docker exec gym-auth ping rabbitmq
+docker exec auth-service ping postgres
 ```
 
 5. **Monitor resource usage:**
@@ -89,30 +85,30 @@ docker stats --no-stream
 
 1. **Check auth service health:**
 ```bash
-curl -v http://localhost:8080/actuator/health
+curl -v http://localhost:8081/auth/actuator/health
 # Expected: 200 OK, status: "UP"
 ```
 
 2. **Check liveness probe:**
 ```bash
-curl http://localhost:8080/actuator/health/liveness
+curl http://localhost:8081/auth/actuator/health/liveness
 # Expected: 200 OK
 ```
 
 3. **Check readiness probe:**
 ```bash
-curl http://localhost:8080/actuator/health/readiness
+curl http://localhost:8081/auth/actuator/health/readiness
 # Expected: 200 OK when service is ready
 ```
 
 4. **Get detailed health info:**
 ```bash
-curl http://localhost:8080/actuator/health/live -s | jq '.components'
+curl http://localhost:8081/auth/actuator/health -s | jq '.components'
 ```
 
 5. **Check all registered health indicators:**
 ```bash
-curl http://localhost:8080/actuator/health -s | jq '.'
+curl http://localhost:8081/auth/actuator/health -s | jq '.'
 ```
 
 **Success Criteria:**
@@ -139,43 +135,40 @@ curl http://localhost:8080/actuator/health -s | jq '.'
 
 1. **Stop the problematic service:**
 ```bash
-docker-compose stop gym-auth  # or other service
+docker-compose stop auth-service  # or other service
 ```
 
 2. **View application logs:**
 ```bash
-docker-compose logs -f gym-auth 2>&1 | head -100
+docker-compose logs -f auth-service 2>&1 | head -100
 # Look for: "Tomcat started", errors, exceptions
 ```
 
 3. **Check for port binding errors:**
 ```bash
-docker-compose logs gym-auth | grep -i "bind\|address\|port"
+docker-compose logs auth-service | grep -i "bind\|address\|port"
 ```
 
 4. **Verify service dependencies:**
 ```bash
 # Check if postgres is ready
-docker exec postgres pg_isready -U gym_user
+docker exec postgres pg_isready -U gym_admin
 # Expected: accepting connections
-
-# Check if RabbitMQ is ready
-docker exec rabbitmq rabbitmq-diagnostics ping
 ```
 
 5. **Restart service with verbose logging:**
 ```bash
-SPRING_PROFILES_ACTIVE=debug docker-compose up gym-auth
+SPRING_PROFILES_ACTIVE=debug docker-compose up auth-service
 ```
 
 6. **Check environment variables:**
 ```bash
-docker exec gym-auth env | grep -E "SPRING_|DB_|JAVA_"
+docker exec auth-service env | grep -E "SPRING_|DB_|JAVA_"
 ```
 
 7. **Inspect container logs since last restart:**
 ```bash
-docker inspect gym-auth | jq '.[0].State'
+docker inspect auth-service | jq '.[0].State'
 ```
 
 **Success Criteria:**
@@ -200,40 +193,40 @@ docker inspect gym-auth | jq '.[0].State'
 
 1. **Get recent logs (last 100 lines):**
 ```bash
-docker-compose logs --tail=100 gym-auth | grep -i "error"
+docker-compose logs --tail=100 auth-service | grep -i "error"
 ```
 
 2. **Find logs for specific time period:**
 ```bash
 # Last 5 minutes
-docker-compose logs --since 5m gym-auth
+docker-compose logs --since 5m auth-service
 
 # Between timestamps
-docker logs gym-auth --since 2024-03-21T10:00:00 --until 2024-03-21T10:30:00
+docker logs auth-service --since 2024-03-21T10:00:00 --until 2024-03-21T10:30:00
 ```
 
 3. **Filter logs by severity:**
 ```bash
 # Find all ERROR level
-docker-compose logs gym-auth | grep "\[ERROR\]"
+docker-compose logs auth-service | grep "\[ERROR\]"
 
 # Find all WARN level
-docker-compose logs gym-auth | grep "\[WARN\]"
+docker-compose logs auth-service | grep "\[WARN\]"
 
 # Find exceptions
-docker-compose logs gym-auth | grep -A 10 "Exception"
+docker-compose logs auth-service | grep -A 10 "Exception"
 ```
 
 4. **Trace request flow:**
 ```bash
-# Find all logs for request correlation ID
-REQUEST_ID="a1b2c3d4"
-docker-compose logs gym-auth | grep "$REQUEST_ID"
+# Find all logs for trace ID
+TRACE_ID="a1b2c3d4"
+docker-compose logs auth-service | grep "$TRACE_ID"
 ```
 
 5. **Extract stack traces:**
 ```bash
-docker-compose logs gym-auth > full_logs.txt
+docker-compose logs auth-service > full_logs.txt
 grep -A 20 "Exception" full_logs.txt | head -50
 ```
 
@@ -265,24 +258,23 @@ docker-compose logs gym-auth | grep "took [0-9]*ms" | awk '{print $NF}' | sort -
 
 1. **List all registered beans:**
 ```bash
-curl http://localhost:8080/actuator/beans | jq '.contexts.application.beans | length'
-# Expected: Significant number (100+)
+curl http://localhost:8081/auth/actuator/beans | jq '.contexts.application.beans | length'
 ```
 
 2. **Find specific bean:**
 ```bash
-curl http://localhost:8080/actuator/beans | jq '.contexts.application.beans | keys[]' | grep -i "repository"
+curl http://localhost:8081/auth/actuator/beans | jq '.contexts.application.beans | keys[]' | grep -i "repository"
 ```
 
 3. **Check bean dependencies:**
 ```bash
-curl http://localhost:8080/actuator/beans | jq '.contexts.application.beans."com.gym.service.UserService".dependencies'
+curl http://localhost:8081/auth/actuator/beans | jq '.contexts.application.beans."com.gym.service.UserService".dependencies'
 ```
 
 4. **Verify autowiring:**
 ```bash
 # Enable debug logging temporarily
-docker exec gym-auth curl -X POST http://localhost:8080/actuator/loggers/org.springframework.beans \
+docker exec auth-service curl -X POST http://localhost:8081/auth/actuator/loggers/org.springframework.beans \
   -H "Content-Type: application/json" \
   -d '{"configuredLevel":"DEBUG"}'
 ```
@@ -312,7 +304,7 @@ docker exec gym-auth nc -zv postgres 5432
 
 2. **Test SQL connection:**
 ```bash
-docker exec postgres psql -U gym_user -d gym_db -c "SELECT 1"
+docker exec postgres psql -U gym_admin -d gym_db -c "SELECT 1"
 # Expected: 1 result
 ```
 
@@ -324,12 +316,12 @@ docker exec postgres pg_isready
 
 4. **Verify HikariCP pool status:**
 ```bash
-curl http://localhost:8080/actuator/metrics/hikaricp.connections | jq '.'
+curl http://localhost:8081/auth/actuator/metrics/hikaricp.connections | jq '.'
 ```
 
 5. **Check active connections:**
 ```bash
-docker exec postgres psql -U gym_user -d gym_db -c \
+docker exec postgres psql -U gym_admin -d gym_db -c \
   "SELECT count(*) as connections FROM pg_stat_activity;"
 ```
 
@@ -365,7 +357,7 @@ docker logs postgres | grep "duration:" | awk -F'duration: ' '{print $2}' | sort
 
 3. **Explain query execution plan:**
 ```bash
-docker exec postgres psql -U gym_user -d gym_db << EOF
+docker exec postgres psql -U gym_admin -d gym_db << EOF
 EXPLAIN ANALYZE
 SELECT s.id, u.username, COUNT(e.id) as exercise_count
 FROM training_sessions s
@@ -505,9 +497,11 @@ SELECT slot_name, restart_lsn, confirmed_flush_lsn FROM pg_replication_slots;
 
 ## Network Diagnostics
 
-### Service-to-Service Communication
+**Service-to-Service Communication**
 
-**Objective:** Verify microservices can communicate
+> **Note**: Services do not communicate directly. All requests go through the API Gateway. The steps below verify gateway-to-service connectivity.
+
+**Objective:** Verify services are reachable from the gateway
 
 **Time Required:** 3 minutes
 
@@ -515,21 +509,19 @@ SELECT slot_name, restart_lsn, confirmed_flush_lsn FROM pg_replication_slots;
 
 1. **Test service hostname resolution:**
 ```bash
-docker exec gym-auth nslookup gym-training
-docker exec gym-auth nslookup postgres
-docker exec gym-auth nslookup rabbitmq
+docker exec api-gateway nslookup auth-service
+docker exec api-gateway nslookup postgres
 ```
 
 2. **Test port connectivity:**
 ```bash
-docker exec gym-auth nc -zv gym-training 8080
-docker exec gym-auth nc -zv postgres 5432
-docker exec gym-auth nc -zv rabbitmq 5672
+docker exec api-gateway nc -zv auth-service 8081
+docker exec api-gateway nc -zv postgres 5432
 ```
 
 3. **Test HTTP connectivity:**
 ```bash
-docker exec gym-auth curl -v http://gym-training:8080/actuator/health
+docker exec api-gateway curl -v http://auth-service:8081/auth/actuator/health
 ```
 
 4. **Check Docker network:**
@@ -540,7 +532,7 @@ docker network inspect gym_default
 
 5. **Verify container IPs:**
 ```bash
-docker inspect gym-auth | jq '.[0].NetworkSettings.Networks'
+docker inspect auth-service | jq '.[0].NetworkSettings.Networks'
 ```
 
 **Success Criteria:**
@@ -620,18 +612,18 @@ watch -n 5 'docker stats --no-stream'
 
 3. **Check container limits:**
 ```bash
-docker inspect gym-auth | jq '.[0].HostConfig | {Memory, MemorySwap, CpuShares}'
+docker inspect auth-service | jq '.[0].HostConfig | {Memory, MemorySwap, CpuShares}'
 ```
 
 4. **View process inside container:**
 ```bash
-docker exec gym-auth ps aux
-docker exec gym-auth top -b -n 1 | head -20
+docker exec auth-service ps aux
+docker exec auth-service top -b -n 1 | head -20
 ```
 
 5. **Check disk usage:**
 ```bash
-docker exec gym-auth df -h
+docker exec auth-service df -h
 docker exec postgres du -sh /var/lib/postgresql/data
 ```
 
@@ -702,18 +694,18 @@ docker cp gym-auth:/app/logs/spring.log ./local_logs/
 
 1. **Check JVM memory settings:**
 ```bash
-docker exec gym-auth jps -l -m | grep SpringApplication
+docker exec auth-service jps -l -m | grep SpringApplication
 ```
 
 2. **Get memory usage summary:**
 ```bash
-docker exec gym-auth jcmd <pid> VM.memory_usage
+docker exec auth-service jcmd <pid> VM.memory_usage
 ```
 
 3. **Generate heap dump:**
 ```bash
-docker exec gym-auth jcmd <pid> GC.heap_dump /tmp/heap.hprof
-docker cp gym-auth:/tmp/heap.hprof ./heap.hprof
+docker exec auth-service jcmd <pid> GC.heap_dump /tmp/heap.hprof
+docker cp auth-service:/tmp/heap.hprof ./heap.hprof
 ```
 
 4. **Analyze heap dump with Eclipse MAT:**
@@ -724,15 +716,14 @@ docker cp gym-auth:/tmp/heap.hprof ./heap.hprof
 
 5. **Check garbage collection statistics:**
 ```bash
-docker exec gym-auth jcmd <pid> GC.stat
+docker exec auth-service jcmd <pid> GC.stat
 ```
 
 6. **Monitor GC in real-time:**
 ```bash
-docker exec gym-auth jcmd <pid> JFR.start duration=60s filename=/tmp/recording.jfr
+docker exec auth-service jcmd <pid> JFR.start duration=60s filename=/tmp/recording.jfr
 # Wait 60 seconds
-docker cp gym-auth:/tmp/recording.jfr ./recording.jfr
-# Analyze with JFR viewer
+docker cp auth-service:/tmp/recording.jfr ./recording.jfr
 ```
 
 **Success Criteria:**
@@ -756,7 +747,7 @@ docker cp gym-auth:/tmp/recording.jfr ./recording.jfr
 
 1. **Get thread dump:**
 ```bash
-docker exec gym-auth jcmd <pid> Thread.print > thread_dump.txt
+docker exec auth-service jcmd <pid> Thread.print > thread_dump.txt
 ```
 
 2. **Analyze thread states:**
@@ -771,12 +762,12 @@ grep -A 3 "waiting on lock" thread_dump.txt
 
 4. **Check thread pool status:**
 ```bash
-curl http://localhost:8080/actuator/metrics/executor | jq '.measurements'
+curl http://localhost:8081/auth/actuator/metrics/executor | jq '.measurements'
 ```
 
 5. **List active threads:**
 ```bash
-docker exec gym-auth jcmd <pid> Thread.print | grep "tid" | wc -l
+docker exec auth-service jcmd <pid> Thread.print | grep "tid" | wc -l
 ```
 
 **Success Criteria:**
@@ -796,27 +787,27 @@ docker exec gym-auth jcmd <pid> Thread.print | grep "tid" | wc -l
 
 1. **Get all available metrics:**
 ```bash
-curl http://localhost:8080/actuator/metrics | jq '.names[]' | head -20
+curl http://localhost:8081/auth/actuator/metrics | jq '.names[]' | head -20
 ```
 
 2. **Check HTTP request metrics:**
 ```bash
-curl http://localhost:8080/actuator/metrics/http.server.requests | jq '.measurements'
+curl http://localhost:8081/auth/actuator/metrics/http.server.requests | jq '.measurements'
 ```
 
 3. **Monitor database connection pool:**
 ```bash
-curl http://localhost:8080/actuator/metrics/hikaricp.connections.active | jq '.'
+curl http://localhost:8081/auth/actuator/metrics/hikaricp.connections.active | jq '.'
 ```
 
 4. **Check cache metrics:**
 ```bash
-curl http://localhost:8080/actuator/metrics/cache.gets | jq '.'
+curl http://localhost:8081/auth/actuator/metrics/cache.gets | jq '.'
 ```
 
 5. **Get JVM metrics:**
 ```bash
-curl http://localhost:8080/actuator/metrics/jvm.memory.used | jq '.measurements'
+curl http://localhost:8081/auth/actuator/metrics/jvm.memory.used | jq '.measurements'
 ```
 
 **Success Criteria:**
@@ -838,36 +829,33 @@ curl http://localhost:8080/actuator/metrics/jvm.memory.used | jq '.measurements'
 
 1. **Test unauthenticated request:**
 ```bash
-curl -v http://localhost:8080/api/training/protected
+curl -v http://localhost:8080/training/sessions
 # Expected: 401 Unauthorized
 ```
 
 2. **Obtain valid token:**
 ```bash
-TOKEN=$(curl -X POST http://localhost:8080/api/auth/login \
+TOKEN=$(curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password"}' | jq -r '.token')
+  -d '{"email":"admin@example.com","password":"password"}' | jq -r '.token')
 echo $TOKEN
 ```
 
 3. **Test authenticated request:**
 ```bash
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/training/sessions
-# Expected: 200 OK or 403 Forbidden (based on permissions)
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/training/sessions
+# Expected: 200 OK or 403 Forbidden (based on role)
 ```
 
 4. **Verify JWT token contents:**
 ```bash
-# Decode JWT (first two parts)
-echo $TOKEN | cut -d. -f1,2 | sed 's/\./ /g' | while read a b; do
-  echo "$a" | base64 -d; echo
-  echo "$b" | base64 -d; echo
-done
+# Decode JWT payload
+echo $TOKEN | cut -d. -f2 | base64 -d | jq '.'
 ```
 
 5. **Check authentication provider status:**
 ```bash
-curl http://localhost:8080/actuator/beans | jq '.contexts.application.beans' | grep -i "auth"
+curl http://localhost:8081/auth/actuator/beans | jq '.contexts.application.beans' | grep -i "auth"
 ```
 
 **Success Criteria:**
@@ -937,33 +925,28 @@ openssl s_client -connect localhost:8443 -tls1_3
 1. **Test role-based access:**
 ```bash
 # Get admin token
-ADMIN_TOKEN=$(curl -X POST http://localhost:8080/api/auth/login \
+ADMIN_TOKEN=$(curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin_pass"}' | jq -r '.token')
+  -d '{"email":"admin@example.com","password":"admin_pass"}' | jq -r '.token')
 
 # Test admin endpoint
 curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:8080/api/admin/users
+  http://localhost:8080/admin/users
 
 # Get user token
-USER_TOKEN=$(curl -X POST http://localhost:8080/api/auth/login \
+USER_TOKEN=$(curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"user","password":"user_pass"}' | jq -r '.token')
+  -d '{"email":"user@example.com","password":"user_pass"}' | jq -r '.token')
 
 # Should fail for user
 curl -H "Authorization: Bearer $USER_TOKEN" \
-  http://localhost:8080/api/admin/users
+  http://localhost:8080/admin/users
 # Expected: 403 Forbidden
 ```
 
 2. **Verify authorization annotations:**
 ```bash
-grep -r "@PreAuthorize\|@Secured\|@RolesAllowed" src/ --include="*.java"
-```
-
-3. **Check method-level security enabled:**
-```bash
-docker exec gym-auth env | grep SPRING_SECURITY
+grep -r "@RequiresRole" src/ --include="*.java"
 ```
 
 **Success Criteria:**
@@ -982,9 +965,10 @@ docker-compose ps
 
 # 2. Service health
 curl http://localhost:8080/actuator/health
+curl http://localhost:8081/auth/actuator/health
 
 # 3. Database connectivity
-docker exec gym-auth curl -s http://localhost:8080/actuator/health/db
+docker exec postgres pg_isready -U gym_admin
 
 # 4. Recent errors
 docker-compose logs --tail=20 | grep -i error
@@ -996,21 +980,21 @@ docker stats --no-stream
 ### 15-Minute Deep Diagnostic
 ```bash
 # 1. Application logs
-docker-compose logs gym-auth > /tmp/app_logs.txt
+docker-compose logs auth-service > /tmp/app_logs.txt
 
 # 2. Database status
-docker exec postgres psql -U gym_user -d gym_db -c \
+docker exec postgres psql -U gym_admin -d gym_db -c \
   "SELECT version(); SELECT * FROM pg_stat_activity;"
 
 # 3. Network connectivity
-docker exec gym-auth ping gym-training
-docker exec gym-auth nc -zv postgres 5432
+docker exec api-gateway ping auth-service
+docker exec api-gateway nc -zv postgres 5432
 
 # 4. Memory analysis
-docker exec gym-auth jcmd $(docker exec gym-auth pgrep java) GC.heap_usage
+docker exec auth-service jcmd $(docker exec auth-service pgrep java) GC.heap_usage
 
 # 5. Performance metrics
-curl http://localhost:8080/actuator/metrics/http.server.requests
+curl http://localhost:8081/auth/actuator/metrics/http.server.requests
 ```
 
 ---
