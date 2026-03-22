@@ -102,7 +102,6 @@ See **05-error-handling.md** for:
 ## Integration Examples
 
 See **examples/** directory for:
-- JavaScript/Node.js examples
 - Python examples
 - Java/Spring Boot examples
 - cURL examples
