@@ -1,340 +1,156 @@
 # Gym Platform Implementation - Plans Index
 
-Este documento es un índice central para navegar todos los planes de implementación del Gym Platform Microservices.
+Indice central de todos los planes de implementacion del Gym Platform Microservices.
 
-## 📋 Documentos Principales
+## Estado del Proyecto: COMPLETADO
 
-### 1. [GENERAL_IMPLEMENTATION_PLAN.md](GENERAL_IMPLEMENTATION_PLAN.md)
-**Lectura obligatoria primero**
-
-- Visión general del proyecto
-- Arquitectura completa del sistema
-- Stack de tecnología
-- Workflow de desarrollo
-- Cronograma de todas las fases
-- Requisitos de cobertura de tests (85%+)
-
-**Tiempo de lectura:** 15 minutos
+Todas las 7 fases han sido completadas exitosamente. El proyecto esta en produccion.
 
 ---
 
-## 🏗️ Planes Detallados por Fase
+## Planes por Fase
 
-### Phase 1-3: ✅ COMPLETADO
-- ✅ Repository initialization
-- ✅ API Gateway with JWT & Trace ID
-- ✅ Auth Service fully functional
+### Phase 1-3: Auth, Gateway, Annotations
+- Repository initialization
+- API Gateway with JWT & Trace ID
+- Auth Service fully functional
+- OpenAPI/Swagger annotations on 80 endpoints
 
-**Estado:** COMPLETADO - No requiere trabajo adicional
+**Estado**: COMPLETADO
 
 ---
 
 ### Phase 4: Training Service
 
-#### [PHASE_4A_TRAINING_REPOSITORIES_SERVICES.md](PHASE_4A_TRAINING_REPOSITORIES_SERVICES.md)
-**Crear Repositories, DTOs, Services, y Unit Tests**
+#### [2026-03-19 - Phase 4A: Training Repositories & Services](plans/2026-03-19-phase6-notification-service.md)
+- 5 Repositories, 8 DTOs, 4 Services
+- 60+ unit tests, 85%+ coverage
 
-**Tareas:**
-- Task 1: Create 5 Repositories
-- Task 2: Create 8 DTOs (Request + Response)
-- Task 3: Create ExerciseService
-- Task 4: Create RoutineTemplateService
-- Task 5: Create UserRoutineService
-- Task 6: Create ExerciseSessionService
-- Task 7: Create Test Configuration
-- Task 8-9: Create Unit Tests (40+ tests)
-- Task 10: Create Repository Integration Tests
-- Task 11: Verify Coverage (85%+)
+#### Phase 4B: Training Controllers
+- 4 Controllers, 40+ endpoints
+- 40+ controller tests, integration tests
 
-**Deliverables:** 5 repositories, 4 services, 8 DTOs, 60+ tests, 85%+ coverage
-**Tiempo estimado:** 4-6 horas
-**Status:** PENDIENTE
-
----
-
-#### [PHASE_4B_TRAINING_CONTROLLERS.md](PHASE_4B_TRAINING_CONTROLLERS.md)
-**Crear Controllers, REST Endpoints, e Integration Tests**
-
-**Tareas:**
-- Task 1: Create ExerciseController
-- Task 2: Create RoutineTemplateController
-- Task 3: Create UserRoutineController
-- Task 4: Create ExerciseSessionController
-- Task 5: Create Controller Integration Tests
-- Task 6: Verify Final Coverage (85%+)
-
-**Deliverables:** 4 controllers, 40+ endpoints, 40+ controller tests, 85%+ coverage
-**Tiempo estimado:** 3-4 horas
-**Status:** PENDIENTE
-
-**Phase 4 Total Time:** ~7-10 horas | **Status:** PENDIENTE
+**Estado**: COMPLETADO
 
 ---
 
 ### Phase 5: Tracking Service
 
-#### [PHASE_5A_TRACKING_REPOSITORIES_SERVICES.md](PHASE_5A_TRACKING_REPOSITORIES_SERVICES.md)
-**Crear Repositories, DTOs, Services, y Unit Tests**
+#### Phase 5A: Tracking Repositories & Services
+- 8 Repositories, 16 DTOs, 7 Services
+- 60+ unit tests, 85%+ coverage
 
-**Tareas:**
-- Crear 8 repositories (Measurement, Objective, Plan, Components, Recommendations, DietLog)
-- Crear 16 DTOs (request + response para cada entidad)
-- Crear 7 services con lógica de negocio
-- Crear 60+ unit tests
-- Crear integration tests con TestContainers
+#### Phase 5B: Tracking Controllers
+- 7 Controllers, 50+ endpoints
+- 50+ controller tests
 
-**Deliverables:** 8 repositories, 7 services, 16 DTOs, 60+ tests, 85%+ coverage
-**Tiempo estimado:** 5-7 horas
-**Status:** PENDIENTE
-
----
-
-#### [PHASE_5B_TRACKING_CONTROLLERS.md](PHASE_5B_TRACKING_CONTROLLERS.md)
-**Crear Controllers, REST Endpoints, e Integration Tests**
-
-**Tareas:**
-- Crear 7 controllers (Measurement, Objective, Plan, Components, Recommendations, DietLog)
-- Crear 50+ REST endpoints
-- Crear 50+ controller tests
-- Verificar cobertura del 85%+
-
-**Deliverables:** 7 controllers, 50+ endpoints, 50+ tests, 85%+ coverage
-**Tiempo estimado:** 4-5 horas
-**Status:** PENDIENTE
-
-**Phase 5 Total Time:** ~9-12 horas | **Status:** PENDIENTE
+**Estado**: COMPLETADO
 
 ---
 
 ### Phase 6: Notification Service
 
-#### [PHASE_6_NOTIFICATION_SERVICE.md](PHASE_6_NOTIFICATION_SERVICE.md)
-**Implementación Completa: Entidades, Services, Controllers, Firebase**
+#### [2026-03-19 - Phase 6: Notification Service](plans/2026-03-19-phase6-notification-service.md)
+- 3 Entities, 3 Repositories, 3 DTOs, 3 Services, 2 Controllers
+- Firebase Cloud Messaging integration
+- 60+ tests, 85%+ coverage
 
-**Tareas:**
-- Crear 3 entidades (Notification, PushToken, NotificationPreference)
-- Crear 3 repositories
-- Crear 3 DTOs (request + response)
-- Crear 3 services con integración Firebase
-- Crear 2 controllers
-- Crear 60+ tests
-- Integración con Firebase Cloud Messaging
-
-**Deliverables:** 3 entities, 3 services, 2 controllers, Firebase integration, 60+ tests, 85%+ coverage
-**Tiempo estimado:** 6-8 horas
-**Status:** PENDIENTE
+**Estado**: COMPLETADO
 
 ---
 
 ### Phase 7: Integration & Deployment
+- Full integration testing (200+ tests)
+- Docker images built for all services
+- docker-compose validated (dev + prod)
+- API Gateway routing verified
+- Documentation finalized
 
-#### [PHASE_7_INTEGRATION_DEPLOYMENT.md](PHASE_7_INTEGRATION_DEPLOYMENT.md)
-**Testing Final, Docker Builds, E2E Tests, Documentación**
-
-**Tareas:**
-- Verificar cobertura de tests 85%+ en todos los servicios
-- Build de imágenes Docker para los 5 servicios
-- Validación de docker-compose
-- Testing de enrutamiento del API Gateway
-- End-to-End integration tests (200+ tests)
-- Performance testing (opcional)
-- Documentación final
-- Git tags y releases
-
-**Deliverables:** 
-- 200+ end-to-end tests passing
-- Todas las imágenes Docker compilando
-- docker-compose funcionando completamente
-- Documentación completa
-- Platform lista para producción
-
-**Tiempo estimado:** 3-4 horas
-**Status:** PENDIENTE
+**Estado**: COMPLETADO
 
 ---
 
-## 📊 Resumen del Proyecto
+## Planes Adicionales Ejecutados
 
-### Código
-- **Líneas de código:** ~3500+
-- **Archivos Java:** 150+
-- **Archivos de test:** 50+
+| Plan | Fecha | Descripcion |
+|------|-------|-------------|
+| [RBAC + Integration Tests + Swagger](plans/2026-03-20-rbac-integration-tests-swagger.md) | 2026-03-20 | Tests de RBAC, integracion, y Swagger |
+| [Swagger/OpenAPI Implementation](plans/2026-03-20-swagger-openapi-implementation.md) | 2026-03-20 | Implementacion completa de OpenAPI |
+| [API Enhancements + Testing + Production](plans/2026-03-21-gym-api-enhancements-testing-production.md) | 2026-03-21 | Mejoras finales, testing, produccion |
 
-### Microservicios
-1. **API Gateway** - Ruteo, JWT, Trace ID (✅ COMPLETADO)
-2. **Auth Service** - Autenticación, JWT (✅ COMPLETADO)
-3. **Training Service** - Ejercicios, rutinas, sesiones (⏳ PENDIENTE)
-4. **Tracking Service** - Mediciones, planes, dietas (⏳ PENDIENTE)
-5. **Notification Service** - Notificaciones, Firebase (⏳ PENDIENTE)
+---
+
+## Resumen del Proyecto Completado
+
+### Codigo
+- **Modulos**: 7 (auth, training, tracking, notification, common, gateway, parent)
+- **Endpoints**: 80+
+- **Build size**: ~335 MB total JAR
+- **Build time**: ~2-3 minutos
+
+### Microservicios (todos funcionando)
+1. **API Gateway** (8080) - Ruteo, JWT, Trace ID
+2. **Auth Service** (8081) - Autenticacion, JWT, RBAC
+3. **Training Service** (8082) - Ejercicios, rutinas, sesiones
+4. **Tracking Service** (8083) - Mediciones, planes, dietas
+5. **Notification Service** (8084) - Notificaciones, Firebase
 
 ### Testing
-- **Tests totales:** 200+
-- **Cobertura mínima:** 85% en todos los servicios
-- **Unit tests:** ~120
-- **Integration tests:** ~50
-- **E2E tests:** ~30
+- **Cobertura**: ~80%+ en todos los servicios
+- **Unit tests**: JUnit 5 + Mockito
+- **Controller tests**: @WebMvcTest
+- **Integration tests**: @SpringBootTest
 
-### Database
-- **PostgreSQL:** Single instance
-- **Schemas:** 4 (auth, training, tracking, notification)
-- **Entities:** 25+
-- **Repositories:** 25+
+### Base de Datos
+- **PostgreSQL 15**: Single instance
+- **Schemas**: 4 (auth, training, tracking, notification)
+- **Entidades**: 19+ tablas
+- **Relaciones cross-service**: Solo por userId (no foreign keys)
 
-### Deployment
-- **Docker containers:** 6 (5 servicios + PostgreSQL)
-- **Docker compose:** Orquestación local
-- **Kubernetes:** Ready for deployment (future)
-- **CI/CD:** GitHub Actions (future)
-
----
-
-## 🚀 Ejecución Recomendada
-
-### Orden de implementación:
-1. ✅ Fase 1-3 (completado)
-2. **👉 Fase 4a** - Training Service (Repos + Services)
-3. **Fase 4b** - Training Service (Controllers + Tests)
-4. **Fase 5a** - Tracking Service (Repos + Services)
-5. **Fase 5b** - Tracking Service (Controllers + Tests)
-6. **Fase 6** - Notification Service (Complete)
-7. **Fase 7** - Integration & Deployment (Final)
-
-### Ejecución paralela:
-- Phases 4a y 5a pueden ejecutarse en paralelo
-- Phases 4b y 5b pueden ejecutarse en paralelo
-- Phase 6 se puede ejecutar en paralelo con 5b
-
-### Tiempo total estimado:
-- **Sequential:** ~25-35 horas
-- **Parallel (2 agents):** ~15-20 horas
-- **Parallel (3 agents):** ~12-15 horas
+### Documentacion
+- **Archivos**: 104 markdown files en docs/
+- **Palabras**: 31,000+
+- **Categorias**: 12 subdirectorios
+- **AI Context**: 34 archivos en ai/
 
 ---
 
-## 🎯 Criterios de Éxito
+## Roadmap Futuro
 
-### Por fase:
-- ✅ Todos los tests passing
-- ✅ Cobertura >= 85%
-- ✅ Sin errores de compilación
-- ✅ Sin errores de linting
-- ✅ Commits limpios en git
+### Corto Plazo
+- [ ] Implementar Redis caching (ADR-012 aprobado)
+- [ ] Configurar CI/CD con GitHub Actions
+- [ ] Agregar rate limiting en API Gateway
 
-### Final (Fase 7):
-- ✅ Todos los 5 servicios funcionando
-- ✅ 200+ tests totales passing
-- ✅ 85%+ cobertura en todos los servicios
-- ✅ Docker images building correctamente
-- ✅ docker-compose lanzando toda la plataforma
-- ✅ E2E tests validando flujos completos
-- ✅ Documentación completa
-- ✅ Listo para producción
+### Mediano Plazo
+- [ ] Event-driven architecture con RabbitMQ/Kafka (ADR-006)
+- [ ] Distributed tracing con Micrometer
+- [ ] PgBouncer connection pooling (ADR-008)
 
----
-
-## 📖 Estructura de Directorios
-
-```
-C:\Users\castl\OneDrive\Documents\gym\
-├── GENERAL_IMPLEMENTATION_PLAN.md        ← Empezar aquí
-├── PHASE_4A_TRAINING_REPOSITORIES_SERVICES.md
-├── PHASE_4B_TRAINING_CONTROLLERS.md
-├── PHASE_5A_TRACKING_REPOSITORIES_SERVICES.md
-├── PHASE_5B_TRACKING_CONTROLLERS.md
-├── PHASE_6_NOTIFICATION_SERVICE.md
-├── PHASE_7_INTEGRATION_DEPLOYMENT.md
-├── pom.xml (parent)
-├── docker-compose.yml
-├── init-schemas.sql
-├── api-gateway/
-├── auth-service/
-├── training-service/
-├── tracking-service/
-├── notification-service/
-└── .git
-```
+### Largo Plazo
+- [ ] Migracion a Kubernetes (ADR-004)
+- [ ] Database-per-service
+- [ ] Multi-region deployment (ADR-010)
+- [ ] Mobile app (React Native / Flutter)
 
 ---
 
-## 🔍 Cómo Usar Estos Planes
+## Como Usar Estos Planes
 
-### Para Agentic Workers:
-1. Lee `GENERAL_IMPLEMENTATION_PLAN.md` primero (15 min)
-2. Selecciona una fase (ej: PHASE_4A)
-3. Sigue cada tarea y sub-tarea secuencialmente
-4. Ejecuta tests después de cada tarea
-5. Commit después de cada tarea importante
-6. Continúa a la siguiente fase
+### Para Agentic Workers
+1. Lee el contexto del proyecto en `ai/memory/01-project-context.md`
+2. Carga las reglas relevantes de `ai/rules/`
+3. Selecciona el plan o tarea de `ai/tasks/`
+4. Sigue cada paso secuencialmente
+5. Ejecuta tests despues de cada tarea
+6. Commit despues de cada tarea importante
 
-### Para Revisión Manual:
+### Para Revision Manual
 1. Cada plan es auto-contenido
-2. Incluye código completo y listo para usar
-3. Incluye comandos de test exactos
-4. Incluye mensajes de commit sugeridos
-
-### Para Verificación:
-1. Todos los planes tienen checklists
-2. Verifica cobertura con JaCoCo
-3. Verifica tests con Maven Surefire
-4. Verifica Docker builds
-5. Verifica git history
+2. Incluye comandos exactos de test
+3. Incluye mensajes de commit sugeridos
 
 ---
 
-## 💡 Notas Importantes
-
-### Testing Coverage
-- Todos los servicios deben alcanzar 85%+ coverage
-- Use MockMvc para controller tests
-- Use TestContainers para integration tests
-- Mockito para unit tests
-
-### Git Workflow
-- Commit frecuentemente (después de cada tarea importante)
-- Mensajes de commit descriptivos
-- Tags para releases (v1.0.0 al final)
-
-### Docker
-- Dockerfile multi-stage para optimización
-- Todos los servicios en docker-compose.yml
-- Volúmenes para persistencia
-- Networks para inter-service communication
-
-### Security
-- JWT tokens via API Gateway
-- X-User-Id header injection
-- X-Trace-Id para distributed tracing
-- Authorization checks en todos los servicios
-
----
-
-## ✅ Checklist Final
-
-Antes de comenzar la ejecución:
-
-- [ ] Leí GENERAL_IMPLEMENTATION_PLAN.md completamente
-- [ ] Entiendo la arquitectura general
-- [ ] Tengo acceso a los planes detallados
-- [ ] Entiendo el flujo de testing (85%+ coverage requerido)
-- [ ] Tengo Maven 3.8+ instalado
-- [ ] Tengo Docker y Docker Compose instalados
-- [ ] Entiendo el workflow de git
-- [ ] Estoy listo para comenzar
-
----
-
-## 📞 Soporte
-
-Si tienes preguntas:
-1. Revisa el plan relevante (tiene toda la información)
-2. Verifica los ejemplos de código
-3. Consulta los comandos exactos de test
-4. Revisa los criterios de éxito
-
-Todos los planes son auto-documentados y listo-para-usar.
-
----
-
-**¡Listo para comenzar! 🚀**
-
-Comienza con: [GENERAL_IMPLEMENTATION_PLAN.md](GENERAL_IMPLEMENTATION_PLAN.md)
+**Ultima Actualizacion**: 2026-03-22
+**Estado**: Todas las fases completadas

@@ -6,317 +6,172 @@
 **Status**: 100% Complete - Production Ready
 **Type**: Enterprise Microservices Platform
 **Domain**: Fitness & Training Management
+**Date**: March 2026
 
 ### Vision
 
-The Gym Platform API provides a comprehensive, enterprise-grade API for managing fitness operations including user authentication, training program management, performance tracking, and user notifications.
+Comprehensive, enterprise-grade API for managing fitness operations including user authentication, training program management, performance tracking, and user notifications.
 
 ### Mission
 
 Deliver a scalable, maintainable, and secure microservices architecture that enables fitness facilities to manage members, training programs, and track progress effectively.
 
-## Key Facts
-
-### Build Status
-- **Languages**: Java 17+
-- **Framework**: Spring Boot 3.x
-- **Build Tool**: Maven
-- **Modules**: 7 (auth, training, tracking, notification, common, gateway-foundation, parent)
-- **Build Size**: ~335 MB total JAR
-- **Build Time**: ~2-3 minutes
-
-### Deployment Status
-- **Container Runtime**: Docker
-- **Orchestration**: Docker Compose
-- **Services**: 4 microservices
-- **Database**: PostgreSQL
-- **Running Ports**: 8081-8084 (services), 5432 (database)
-- **Status**: ✅ All services healthy and running
-
-### API Status
-- **Total Endpoints**: 80+
-- **Documentation**: Complete with Swagger/OpenAPI
-- **Authentication**: JWT-based
-- **Authorization**: RBAC (4 roles: ADMIN, MANAGER, USER, TRAINER)
-- **API Version**: v1
-
-### Project Phases Completed
-
-| Phase | Focus | Status |
-|-------|-------|--------|
-| Phase 1 | API Endpoints & Schema Annotations | ✅ Complete |
-| Phase 2 | Testing Infrastructure | ✅ Complete |
-| Phase 3 | Production Documentation | ✅ Complete |
-| Phase 4 | Training Service Implementation | ✅ Complete |
-| Phase 5 | Tracking Service Implementation | ✅ Complete |
-| Phase 6 | Notification Service & Tests | ✅ Complete |
-| Phase 7 | Integration & Deployment | ✅ Complete |
-
-## Architecture Overview
+## Architecture
 
 ### Services
 
-1. **Auth Service** (Port 8081)
-   - User authentication and authorization
-   - JWT token management
-   - Role-based access control
+| Service | Port | Endpoints | Context Path | Swagger UI |
+|---------|------|-----------|--------------|------------|
+| API Gateway | 8080 | Routing | / | N/A |
+| Auth Service | 8081 | 6 | /auth | /auth/swagger-ui.html |
+| Training Service | 8082 | 25 | /training | /training/swagger-ui.html |
+| Tracking Service | 8083 | 39 | /tracking | /tracking/swagger-ui.html |
+| Notification Service | 8084 | 10 | /notifications | /notifications/swagger-ui.html |
 
-2. **Training Service** (Port 8082)
-   - Training program management
-   - Exercise library
-   - Workout creation and scheduling
-
-3. **Tracking Service** (Port 8083)
-   - Performance metrics tracking
-   - Progress analytics
-   - Achievement tracking
-
-4. **Notification Service** (Port 8084)
-   - Multi-channel notifications
-   - Template management
-   - Event-driven notifications
-
-### Database
-
-- **Type**: PostgreSQL
-- **Port**: 5432
-- **Schemas**: 4 (auth_schema, training_schema, tracking_schema, notification_schema)
-- **Tables**: ~20+ across all schemas
+**Total Endpoints**: 80+
+**API Version**: v1 (path prefix: `/api/v1/` for Training, Tracking, Notification)
 
 ### Technology Stack
 
-- **Backend**: Java 17+ with Spring Boot 3.x
-- **Database**: PostgreSQL 14+
+- **Language**: Java 17+
+- **Framework**: Spring Boot 3.x
+- **Build**: Maven
+- **Database**: PostgreSQL 15 (single instance, 4 schemas)
 - **ORM**: Hibernate/JPA
-- **Security**: Spring Security + JWT
+- **Security**: Spring Security + JWT (1hr expiration)
 - **API Docs**: Swagger/OpenAPI (springdoc)
-- **Testing**: JUnit 5, Mockito
-- **Containerization**: Docker, Docker Compose
+- **Testing**: JUnit 5, Mockito, H2 (test profile)
+- **Containerization**: Docker, Docker Compose (dev + prod)
+
+### Database Schemas
+
+| Schema | Tables | Domain |
+|--------|--------|--------|
+| auth_schema | users, user_roles, verifications | Authentication, authorization |
+| training_schema | disciplines, exercises, routine_templates, routine_template_exercises, user_routines, exercise_sessions | Workout programs |
+| tracking_schema | measurement_types, measurement_values, objectives, plans, diet_components, training_components, diet_logs, recommendations | Progress tracking |
+| notification_schema | notifications, push_tokens, notification_preferences | User notifications |
+
+**Total entities**: 19+ tables across 4 schemas.
+**Cross-service links**: By `userId` (Long) only -- no cross-schema foreign keys.
+
+### RBAC Roles
+
+| Role | Description |
+|------|-------------|
+| ROLE_ADMIN | Full system access |
+| ROLE_PROFESSIONAL | Can create exercises, templates, recommendations |
+| ROLE_USER | Standard member access |
+
+### Security Flow
+
+```
+Client → API Gateway (8080) → JWT Validation → Inject X-User-Id + X-User-Roles headers → Route to Service
+```
+
+## Endpoints Quick Reference
+
+### Auth Service (`/auth`)
+- POST `/auth/register` (public) - Register user
+- POST `/auth/login` (public) - Login, get JWT
+- POST `/auth/verify` (public) - Verify email
+- POST `/auth/refresh` (auth) - Refresh token
+- GET `/auth/profile` (auth) - User profile
+
+### Training Service (`/training/api/v1/`)
+- **Exercises**: 7 endpoints (CRUD + system/discipline/my-exercises)
+- **Routine Templates**: 6 endpoints (CRUD + system/my-templates)
+- **User Routines**: 7 endpoints (CRUD + active/assign/deactivate)
+- **Exercise Sessions**: 6 endpoints (CRUD + by-routine/by-date)
+
+### Tracking Service (`/tracking/api/v1/`)
+- **Measurements**: 8 endpoints (CRUD + by-type + types management)
+- **Objectives**: 5 endpoints (CRUD)
+- **Plans**: 5 endpoints (CRUD)
+- **Diet Logs**: 6 endpoints (CRUD + by-date)
+- **Diet Components**: 5 endpoints (CRUD + by-plan)
+- **Training Components**: 5 endpoints (CRUD + by-plan)
+- **Recommendations**: 6 endpoints (CRUD + by-component)
+
+### Notification Service (`/notifications/api/v1/`)
+- **Notifications**: 6 endpoints (list, unread, count, create, mark-read, delete)
+- **Push Tokens**: 4 endpoints (register, list, active, remove)
+
+## Project Phases (All Complete)
+
+| Phase | Focus | Status |
+|-------|-------|--------|
+| Phase 1 | API Endpoints & @Schema Annotations | Complete |
+| Phase 2 | Testing Infrastructure | Complete |
+| Phase 3 | Production Documentation (31,000+ words) | Complete |
+| Phase 4 | Training Service Implementation | Complete |
+| Phase 5 | Tracking Service Implementation | Complete |
+| Phase 6 | Notification Service & Tests | Complete |
+| Phase 7 | Integration & Deployment | Complete |
 
 ## Key Achievements
 
-### Code Quality
-- ✅ 80+ API endpoints
-- ✅ All endpoints documented with @Schema annotations
-- ✅ ~80%+ test coverage
-- ✅ Consistent code structure
-- ✅ SOLID principles followed
+- 80+ API endpoints with full Swagger documentation
+- ~80%+ test coverage across all services
+- 31,000+ words of documentation across 104 files
+- All 4 microservices containerized and running
+- JWT + RBAC security fully implemented
+- Health checks, graceful shutdown, connection pooling configured
 
-### Documentation
-- ✅ 31,000+ words of documentation
-- ✅ Comprehensive API documentation
-- ✅ Architectural documentation
-- ✅ Operations runbooks
-- ✅ Troubleshooting guides
+## Key Patterns
 
-### Security
-- ✅ JWT authentication
-- ✅ RBAC with 4 roles
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Password hashing (BCrypt)
-
-### Testing
-- ✅ Unit tests for all services
-- ✅ Integration tests
-- ✅ API tests via Postman
-- ✅ RBAC verification
-- ✅ Swagger UI verification
-
-### Production Readiness
-- ✅ Docker containerization
-- ✅ Health checks implemented
-- ✅ Graceful shutdown handling
-- ✅ Error handling and logging
-- ✅ Connection pooling optimized
-
-## Current State
-
-### What Works
-- All 4 microservices running
-- All 80+ endpoints accessible
-- Authentication and authorization functional
-- Database initialized with test data
-- Swagger UI documentation available
-- All tests passing
-- Health checks operational
-
-### What's Configured
-- Docker Compose setup (dev + prod)
-- PostgreSQL with 4 schemas
-- JWT authentication
-- RBAC system
-- API versioning (/api/v1)
-- OpenAPI/Swagger documentation
-- Error handling
-- Input validation
-
-### What's Deployed
-- Production-ready Docker images
-- Docker Compose orchestration files
-- Health check endpoints
-- Monitoring-ready structure
-- Logging infrastructure
-
-## Project Structure
-
-```
-gym-platform-api/
-├── auth-service/              # Authentication service
-├── training-service/          # Training management
-├── tracking-service/          # Performance tracking
-├── notification-service/      # Notifications
-├── common/                     # Shared utilities
-├── docs/                       # Documentation hub
-├── ai/                         # AI context
-├── dba/                        # DBA resources
-├── tests/                      # Test resources
-├── scripts/                    # Operational scripts
-├── docker-compose.yml          # Dev environment
-├── docker-compose.prod.yml     # Prod environment
-├── pom.xml                     # Maven parent POM
-└── README.md                   # Project README
-```
-
-## Team Knowledge
-
-### Key Concepts
-- **Microservices Architecture**: Each service independent, RESTful communication
-- **JWT Authentication**: Stateless auth with token-based access
-- **RBAC**: Four-tier role system (ADMIN, MANAGER, USER, TRAINER)
-- **Spring Boot**: Standard enterprise Java framework
-- **PostgreSQL**: Multi-schema database design
-
-### Common Patterns
-- **Repository Pattern**: Data access abstraction
-- **Dependency Injection**: Spring's @Autowired
 - **MVC**: Controller → Service → Repository
-- **Exception Handling**: Custom exceptions with proper HTTP status
-- **Validation**: @Valid annotations for input validation
+- **Repository Pattern**: JpaRepository data access
+- **Dependency Injection**: Spring @Autowired / constructor injection
+- **Exception Handling**: Custom exceptions (com.gym.common.exception) → HTTP status codes
+- **Validation**: @Valid annotations on request DTOs
+- **Stateless**: No server-side sessions, JWT tokens
 
-### Design Principles
-- Single Responsibility: Each service has clear purpose
-- Loose Coupling: Services independent, communicate via REST
-- High Cohesion: Related functionality grouped together
-- Stateless Services: No server-side session storage
-- Security First: JWT tokens on all endpoints
+## Known Limitations & Planned Enhancements
 
-## How Things Work Together
+| Current | Future |
+|---------|--------|
+| Single shared PostgreSQL | Database-per-service |
+| Synchronous REST communication | Event-driven (RabbitMQ/Kafka) |
+| No caching layer | Redis (ADR-012 approved) |
+| Docker Compose | Kubernetes |
+| Manual scaling | Auto-scaling with K8s |
 
-### User Registration Flow
+## Quick Start
+
+```bash
+# Build
+mvn clean install
+
+# Run
+docker-compose up -d
+
+# Access Swagger UI
+http://localhost:8081/auth/swagger-ui.html
+
+# Login
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@test.com","password":"Test123!"}'
+
+# Use token
+curl http://localhost:8080/training/api/v1/exercises/system \
+  -H "Authorization: Bearer {token}"
 ```
-1. User → POST /auth/register
-2. Auth Service validates input
-3. Creates user in auth_schema.users
-4. Returns user confirmation
-5. User can now login
-```
 
-### Training Program Workflow
-```
-1. Trainer → POST /training/programs (requires TRAINER role)
-2. Training Service stores in training_schema.programs
-3. Trainer → POST /training/exercises
-4. Trainer → POST /training/workouts
-5. Users → GET /training/programs (uses stored program)
-```
+## Documentation Map
 
-### Progress Tracking Flow
-```
-1. User completes workout
-2. User → POST /tracking/workouts/log
-3. Tracking Service records in tracking_schema.workout_logs
-4. Service calculates metrics (1RM, volume, etc)
-5. User → GET /tracking/progress (sees analytics)
-```
-
-## Known Limitations & Future Enhancements
-
-### Current Limitations
-- Single database (can scale to database-per-service)
-- Synchronous inter-service communication (extensible to events)
-- No caching layer (Redis-ready)
-- Manual scaling (Kubernetes-ready)
-- Single environment (can add more as needed)
-
-### Planned Enhancements
-- Event-driven architecture (RabbitMQ/Kafka)
-- Distributed caching (Redis)
-- Kubernetes deployment
-- Advanced analytics
-- Mobile app integration
-- Third-party OAuth integration
-
-## Documentation Organization
-
-### For Developers
-- `docs/development/` - Setup and coding
-- `docs/api/` - API reference
-- `docs/stack/` - Technology stack
-- `docs/arquitectura/` - System design
-
-### For Operations
-- `docs/deployment/` - Deployment procedures
-- `docs/operations/` - Runbooks and monitoring
-- `scripts/` - Operational scripts
-
-### For Database
-- `dba/` - DBA resources
-- `docs/database/` - Database documentation
-- `dba/initialization/` - Database setup
-
-### For AI/Automation
-- `ai/memory/` - Project knowledge
-- `ai/rules/` - Standards
-- `ai/prompts/` - Reusable prompts
-- `ai/agents/` - Agent definitions
-
-## Quick Reference
-
-### Getting Started (Developer)
-1. Clone: `git clone ...`
-2. Build: `mvn clean install`
-3. Run: `docker-compose up -d`
-4. Access: `http://localhost:8081/swagger-ui.html`
-
-### Making API Calls
-1. Login: POST `/auth/login`
-2. Get token from response
-3. Use token: `Authorization: Bearer {token}`
-
-### Viewing Logs
-- All services: `docker-compose logs -f`
-- Single service: `docker-compose logs -f auth-service`
-
-### Database Access
-- Connect: `psql -U postgres -d gym_db`
-- Schemas: auth, training, tracking, notification
-
-## Contact & Support
-
-### Key Contacts
-- Team Lead: [See team structure]
-- Architecture: Review ADRs in ai/memory/
-- Database: See dba/
-- DevOps: See docs/operations/
-
-### Documentation
-- Start: docs/README.md
-- Architecture: docs/arquitectura/01-overview.md
-- API: docs/api/01-api-overview.md
-- Development: docs/development/01-getting-started.md
-
-## Maintenance Notes
-
-- Update dependencies quarterly
-- Review logs weekly
-- Backup database daily
-- Test disaster recovery monthly
-- Review security quarterly
-- Update documentation as needed
+| Audience | Location |
+|----------|----------|
+| Developers | `docs/development/`, `docs/api/`, `docs/stack/` |
+| Operations | `docs/deployment/`, `docs/operations/` |
+| DBA | `docs/database/`, `dba/` |
+| Security | `docs/security/` |
+| Architecture | `docs/arquitectura/`, `docs/adr/` |
+| AI/Automation | `ai/` |
 
 ---
 
-**Last Updated**: 2024-03-21
-**Project Status**: Production Ready ✅
-**Documentation Status**: Complete ✅
+**Last Updated**: 2026-03-22
+**Project Status**: Production Ready
+**Documentation Status**: Complete

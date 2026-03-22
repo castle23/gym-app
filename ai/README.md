@@ -1,153 +1,177 @@
 # AI & Automation Context
 
-This section contains structured contexts designed for AI tools, automation, and intelligent systems working with the project.
+Structured context for AI tools, automation, and intelligent systems working with the Gym Platform API project.
+
+## Directory Structure
+
+```
+ai/
+├── README.md              ← You are here
+├── memory/                ← Project knowledge base (4 files)
+├── rules/                 ← Coding, testing, security, documentation, git standards (5 files)
+├── prompts/               ← Reusable prompts for code review, security, architecture (6 files)
+├── agents/                ← AI agent definitions with roles and restrictions (6 files)
+├── skills/                ← Actionable skills for analysis, generation, refactoring (5 files)
+├── tasks/                 ← End-to-end task workflows (6 files)
+└── plans/                 ← Implementation plans and roadmap (5 files)
+```
+
+**Total files**: 38 | **Last updated**: 2026-03-22
+
+---
+
+## Quick Start by Use Case
+
+### Code Review
+```
+1. Load: prompts/code-review.md
+2. Load: rules/coding-standards.md + rules/security-standards.md
+3. Provide: Code to review
+4. Output: Findings table with severity, location, issue, suggestion
+```
+
+### Write New Tests
+```
+1. Load: rules/testing-standards.md (CRITICAL: read the gotchas section)
+2. Load: skills/test-generation.md
+3. Identify: Class to test + test type (unit/controller/integration)
+4. Output: Test file with correct annotations and assertions
+```
+
+### Implement a Feature
+```
+1. Load: tasks/feature-implementation.md
+2. Load: rules/coding-standards.md
+3. Follow: Branch → DTOs → Entity → Repository → Service → Controller → Tests → Commit
+```
+
+### Fix a Bug
+```
+1. Load: prompts/bug-investigation.md
+2. Load: tasks/bug-fix.md
+3. Follow: Reproduce → Failing test → Diagnose → Fix → Verify → Commit
+```
+
+### Deploy
+```
+1. Load: tasks/deployment.md
+2. Follow: Pre-flight → Backup → Build → Health check → Smoke test → Monitor
+```
+
+### Architecture Decision
+```
+1. Load: prompts/architecture-analysis.md
+2. Load: memory/03-decisions.md (12 existing ADRs)
+3. Output: ADR draft following project format
+```
+
+### Security Audit
+```
+1. Load: prompts/security-review.md
+2. Load: rules/security-standards.md
+3. Output: Security findings report with OWASP mapping
+```
+
+---
 
 ## Contents
 
-- **memory/** - Project context, team knowledge, decisions
-- **rules/** - Coding, documentation, and testing rules
-- **prompts/** - Reusable prompts for AI analysis and generation
-- **tasks/** - Common tasks and workflows
-- **agents/** - AI agent configurations and definitions
-- **skills/** - AI skill definitions and implementations
-- **plans/** - Project plans, roadmaps, and sprints
+### memory/ — Project Knowledge Base
+| File | Description |
+|------|-------------|
+| `01-project-context.md` | Architecture, services, endpoints, tech stack, quick start |
+| `02-team-knowledge.md` | Expertise areas, design patterns, troubleshooting knowledge |
+| `03-decisions.md` | 12 Architecture Decision Records (condensed) |
+| `04-lessons-learned.md` | Phase-specific lessons, challenges, recommendations |
 
-## Overview
+### rules/ — Standards & Conventions
+| File | Description |
+|------|-------------|
+| `coding-standards.md` | Naming, SOLID, error handling, logging, package structure |
+| `documentation-standards.md` | Swagger annotations, commit messages, doc templates |
+| `testing-standards.md` | Test types, annotations, 85% coverage, critical gotchas |
+| `security-standards.md` | JWT, RBAC, 5 security layers, input validation |
+| `git-workflow.md` | Branching, semver, changelog, pre-commit checks |
 
-This AI context layer provides:
-1. **Knowledge Base**: Project history, decisions, and lessons
-2. **Rule Set**: Consistent standards for code, docs, testing
-3. **Prompt Library**: Optimized prompts for common tasks
-4. **Task Templates**: Reusable task definitions
-5. **Agent Definitions**: AI agent capabilities and constraints
-6. **Skill Definitions**: Actionable skills for automation
-7. **Plan Documents**: Project plans with AI-readable structure
+### prompts/ — Reusable AI Prompts
+| File | Description |
+|------|-------------|
+| `code-review.md` | Structured code review with severity levels |
+| `documentation-writing.md` | Generate docs from source code |
+| `architecture-analysis.md` | Evaluate and draft architecture decisions |
+| `bug-investigation.md` | Systematic bug diagnosis methodology |
+| `performance-analysis.md` | JVM, DB, and application performance tuning |
+| `security-review.md` | OWASP Top 10 adapted to this project |
 
-## Using AI Context
+### agents/ — AI Agent Definitions
+| File | Role |
+|------|------|
+| `code-agent.md` | Generate and modify Java/Spring Boot code |
+| `docs-agent.md` | Create and update technical documentation |
+| `test-agent.md` | Generate tests with correct annotations |
+| `architect-agent.md` | Evaluate and propose architecture decisions |
+| `review-agent.md` | Review code, docs, and designs |
+| `ops-agent.md` | Deploy, monitor, and troubleshoot |
 
-### For Code Review
-Load `prompts/code-review.md` for consistent feedback.
+### skills/ — Actionable Procedures
+| File | What It Does |
+|------|-------------|
+| `code-analysis.md` | Analyze code quality, generate structured report |
+| `documentation-writing.md` | Generate Markdown docs from source code |
+| `test-generation.md` | Generate tests with correct templates per type |
+| `architecture-design.md` | Design new components within architecture |
+| `refactoring.md` | Safe refactoring guided by tests |
 
-### For Documentation
-Use `rules/documentation.md` to maintain style and quality.
+### tasks/ — End-to-End Workflows
+| File | Workflow For |
+|------|-------------|
+| `code-refactoring.md` | Refactoring with test verification |
+| `feature-implementation.md` | Full feature from branch to merge |
+| `bug-fix.md` | Bug diagnosis and fix with regression test |
+| `documentation-creation.md` | Create docs with correct templates |
+| `testing.md` | Write tests, verify coverage |
+| `deployment.md` | Deploy, verify, rollback if needed |
 
-### For Testing
-Reference `rules/testing.md` for coverage and test quality standards.
+### plans/ — Implementation Plans
+| File | Description |
+|------|-------------|
+| `PLANS_INDEX.md` | Master index of all phases (all complete) |
+| `plans/*.md` | Detailed phase implementation plans |
 
-### For Planning
-Access `plans/` for project status and upcoming work.
+---
 
-## Memory
+## How AI Context Works
 
-Project knowledge stored in `memory/`:
-- **project-context.md** - Project overview and key info
-- **team-knowledge.md** - Team expertise and contacts
-- **decisions.md** - Architecture and design decisions
-- **lessons-learned.md** - Lessons from past phases
+### Loading Context
+1. **Start with memory/**: Load `01-project-context.md` for project overview
+2. **Load relevant rules**: Pick rules for your task domain
+3. **Use a prompt or task**: Follow the structured workflow
+4. **Reference agents**: For role-specific behavior constraints
 
-## Rules
+### Context Priority
+For any AI task, load in this order:
+1. `memory/01-project-context.md` (always — project overview)
+2. Relevant `rules/*.md` (standards to follow)
+3. Relevant `prompts/*.md` or `tasks/*.md` (how to execute)
+4. `memory/03-decisions.md` (if architecture-related)
 
-Standard rules in `rules/`:
-- **coding-standards.md** - Code quality and conventions
-- **documentation-standards.md** - Documentation requirements
-- **testing-standards.md** - Test coverage and quality
-- **security-standards.md** - Security requirements
-- **git-workflow.md** - Git and version control rules
+### Maintaining This Context
+- Update `memory/` when project evolves (new services, decisions, lessons)
+- Update `rules/` when standards change
+- Add new `prompts/` for recurring AI tasks
+- Keep `plans/` updated with project progress
 
-## Prompts
+---
 
-Reusable prompts in `prompts/`:
-- **code-review.md** - Code review guidance
-- **documentation-writing.md** - Documentation generation
-- **architecture-analysis.md** - Architecture evaluation
-- **bug-investigation.md** - Bug diagnosis process
-- **performance-analysis.md** - Performance debugging
-- **security-review.md** - Security analysis
+## Related Documentation
 
-## Tasks
-
-Common task templates in `tasks/`:
-- **code-refactoring.md** - Refactoring workflow
-- **feature-implementation.md** - Feature development process
-- **bug-fix.md** - Bug fix workflow
-- **documentation-creation.md** - Creating documentation
-- **testing.md** - Test implementation
-- **deployment.md** - Deployment procedure
-
-## Agents
-
-AI agent definitions in `agents/`:
-- **code-agent.md** - Code analysis and generation
-- **docs-agent.md** - Documentation creation
-- **test-agent.md** - Test generation and analysis
-- **architect-agent.md** - Architecture design
-- **review-agent.md** - Code and design review
-- **ops-agent.md** - Operations and deployment
-
-## Skills
-
-Actionable skills in `skills/`:
-- **code-analysis.md** - Analyzing code quality
-- **documentation-writing.md** - Creating documentation
-- **test-generation.md** - Generating tests
-- **architecture-design.md** - Designing systems
-- **refactoring.md** - Code refactoring techniques
-
-## Plans
-
-Project plans in `plans/`:
-- **roadmap.md** - Product roadmap
-- **quarterly-plan.md** - Current quarter planning
-- **sprint-plans/** - Individual sprint plans
-- **retrospectives/** - Completed sprint retrospectives
-
-## Context Integration
-
-To use this context with AI:
-
-1. **Load relevant context** - Select appropriate sections
-2. **Provide task** - Give specific task or question
-3. **Reference rules** - Point to applicable standards
-4. **Use memories** - Provide historical context
-5. **Apply prompts** - Use optimized prompts for consistency
-
-## Example Workflows
-
-### Code Review with AI
-```
-1. Load: prompts/code-review.md
-2. Load: rules/coding-standards.md
-3. Provide: Code to review
-4. Get: Feedback using established standards
-```
-
-### Document Generation with AI
-```
-1. Load: rules/documentation-standards.md
-2. Load: prompts/documentation-writing.md
-3. Provide: Topic to document
-4. Get: Generated documentation
-```
-
-### Test Generation with AI
-```
-1. Load: rules/testing-standards.md
-2. Load: prompts/test-generation.md
-3. Provide: Code to test
-4. Get: Generated test suite
-```
-
-## Maintaining AI Context
-
-Keep context current:
-1. Update memory/ as project evolves
-2. Refine rules/ based on experiences
-3. Add new prompts/ as needed
-4. Keep plans/ updated with progress
-5. Document decisions in memory/decisions.md
-
-## For More Information
-
-- **Development**: See [Development Documentation](../docs/development/)
-- **Project Plans**: See [Project Documentation](../docs/project/)
-- **Architecture**: See [Architecture Documentation](../docs/arquitectura/)
+| Area | Location |
+|------|----------|
+| Full project docs | `docs/README.md` |
+| Architecture | `docs/arquitectura/` |
+| API reference | `docs/api/` |
+| ADRs (full) | `docs/adr/` |
+| Development guides | `docs/development/` |
+| Operations | `docs/operations/` |
+| Security | `docs/security/` |
+| Troubleshooting | `docs/troubleshooting/` |
