@@ -50,6 +50,19 @@ public class ExerciseService {
     }
     
     /**
+     * Search exercises by name and/or type with pagination.
+     * Both parameters are optional; omitting them returns all exercises.
+     */
+    public PageResponse<ExerciseDTO> searchExercises(String name, ExerciseType type, Pageable pageable) {
+        log.info("Searching exercises: name='{}', type={}, page={}, size={}",
+                name, type, pageable.getPageNumber(), pageable.getPageSize());
+        // Normalize blank string to null so the JPQL IS NULL check works correctly
+        String normalizedName = (name != null && name.isBlank()) ? null : name;
+        Page<Exercise> page = exerciseRepository.searchByNameAndType(normalizedName, type, pageable);
+        return PageResponse.of(page.map(this::toDTO));
+    }
+
+    /**
      * Get exercises created by a user with pagination
      */
     public PageResponse<ExerciseDTO> getUserExercises(Long userId, Pageable pageable) {

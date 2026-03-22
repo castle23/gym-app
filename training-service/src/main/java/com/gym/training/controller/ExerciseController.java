@@ -4,6 +4,7 @@ import com.gym.common.dto.ErrorResponse;
 import com.gym.common.dto.PageResponse;
 import com.gym.training.dto.ExerciseDTO;
 import com.gym.training.dto.ExerciseRequestDTO;
+import com.gym.training.entity.Exercise.ExerciseType;
 import com.gym.training.service.ExerciseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -64,6 +65,30 @@ public class ExerciseController {
         return ResponseEntity.ok(response);
     }
     
+    /**
+     * GET /api/v1/exercises/search - Search exercises by name and/or type
+     *
+     * Both query parameters are optional. Omitting them returns all exercises.
+     * Example: GET /api/v1/exercises/search?name=push&type=SYSTEM&page=0&size=20
+     */
+    @GetMapping("/search")
+    @Operation(
+            summary = "Search exercises",
+            description = "Search exercises by name (partial, case-insensitive) and/or type. Both parameters are optional.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Search results returned successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid query parameters")
+    })
+    public ResponseEntity<PageResponse<ExerciseDTO>> searchExercises(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) ExerciseType type,
+            @PageableDefault(size = 20, page = 0, sort = "name", direction = Sort.Direction.ASC)
+            Pageable pageable) {
+        log.info("GET /api/v1/exercises/search - name='{}', type={}", name, type);
+        PageResponse<ExerciseDTO> response = exerciseService.searchExercises(name, type, pageable);
+        return ResponseEntity.ok(response);
+    }
+
     /**
      * GET /api/v1/exercises/discipline/{disciplineId} - Get exercises by discipline with pagination
      * 

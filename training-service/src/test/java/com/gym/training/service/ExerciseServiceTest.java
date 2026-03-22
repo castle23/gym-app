@@ -25,6 +25,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.isNull;
 
 @ExtendWith(MockitoExtension.class)
 class ExerciseServiceTest {
@@ -252,5 +253,81 @@ class ExerciseServiceTest {
         assertThrows(IllegalArgumentException.class, () -> {
             exerciseService.deleteExercise(999L, 1L);
         });
+    }
+
+    // --- searchExercises ---
+
+    @Test
+    void shouldReturnMatchingExercisesWhenSearchByName() {
+        // Arrange
+        when(exerciseRepository.searchByNameAndType(eq("push"), isNull(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(pushUp)));
+
+        // Act
+        List<ExerciseDTO> result = exerciseService.searchExercises("push", null, pageable).getData();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Push Up", result.get(0).getName());
+        verify(exerciseRepository, times(1)).searchByNameAndType("push", null, pageable);
+    }
+
+    @Test
+    void shouldReturnMatchingExercisesWhenSearchByType() {
+        // Arrange
+        when(exerciseRepository.searchByNameAndType(isNull(), eq(ExerciseType.SYSTEM), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(pushUp)));
+
+        // Act
+        List<ExerciseDTO> result = exerciseService.searchExercises(null, ExerciseType.SYSTEM, pageable).getData();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(ExerciseType.SYSTEM, result.get(0).getType());
+        verify(exerciseRepository, times(1)).searchByNameAndType(null, ExerciseType.SYSTEM, pageable);
+    }
+
+    @Test
+    void shouldReturnAllExercisesWhenSearchWithNoFilters() {
+        // Arrange
+        when(exerciseRepository.searchByNameAndType(isNull(), isNull(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(pushUp)));
+
+        // Act
+        List<ExerciseDTO> result = exerciseService.searchExercises(null, null, pageable).getData();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(exerciseRepository, times(1)).searchByNameAndType(null, null, pageable);
+    }
+
+    @Test
+    void shouldNormalizeBlankNameToNullWhenSearching() {
+        // Arrange — blank string should be treated the same as null
+        when(exerciseRepository.searchByNameAndType(isNull(), isNull(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(pushUp)));
+
+        // Act
+        exerciseService.searchExercises("   ", null, pageable);
+
+        // Assert — blank name normalized to null
+        verify(exerciseRepository, times(1)).searchByNameAndType(null, null, pageable);
+    }
+
+    @Test
+    void shouldReturnEmptyPageWhenSearchMatchesNothing() {
+        // Arrange
+        when(exerciseRepository.searchByNameAndType(eq("xyz"), isNull(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        // Act
+        List<ExerciseDTO> result = exerciseService.searchExercises("xyz", null, pageable).getData();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(0, result.size());
     }
 }

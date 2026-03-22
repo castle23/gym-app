@@ -6,6 +6,8 @@ import com.gym.training.entity.Discipline;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -16,5 +18,13 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
     Page<Exercise> findByType(ExerciseType type, Pageable pageable);
     Page<Exercise> findByCreatedBy(Long userId, Pageable pageable);
     Optional<Exercise> findByIdAndCreatedBy(Long id, Long userId);
+
+    @Query("SELECT e FROM Exercise e WHERE " +
+           "(:name IS NULL OR LOWER(e.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+           "(:type IS NULL OR e.type = :type)")
+    Page<Exercise> searchByNameAndType(
+            @Param("name") String name,
+            @Param("type") ExerciseType type,
+            Pageable pageable);
 }
 

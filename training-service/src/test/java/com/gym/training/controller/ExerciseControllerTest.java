@@ -27,6 +27,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.isNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -283,6 +284,107 @@ class ExerciseControllerTest {
                 .andDo(print());
     }
     
+    // --- GET /api/v1/exercises/search ---
+
+    @Test
+    void shouldReturnResultsWhenSearchByName() throws Exception {
+        // Arrange
+        Page<ExerciseDTO> page = new PageImpl<>(List.of(exerciseDTO), PageRequest.of(0, 20), 1);
+        PageResponse<ExerciseDTO> pageResponse = PageResponse.of(page);
+
+        when(exerciseService.searchExercises(eq("push"), isNull(), any(Pageable.class)))
+                .thenReturn(pageResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/exercises/search")
+                .param("name", "push")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("Push Up"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andDo(print());
+
+        verify(exerciseService, times(1)).searchExercises(eq("push"), isNull(), any(Pageable.class));
+    }
+
+    @Test
+    void shouldReturnResultsWhenSearchByType() throws Exception {
+        // Arrange
+        Page<ExerciseDTO> page = new PageImpl<>(List.of(exerciseDTO), PageRequest.of(0, 20), 1);
+        PageResponse<ExerciseDTO> pageResponse = PageResponse.of(page);
+
+        when(exerciseService.searchExercises(isNull(), eq(Exercise.ExerciseType.SYSTEM), any(Pageable.class)))
+                .thenReturn(pageResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/exercises/search")
+                .param("type", "SYSTEM")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].type").value("SYSTEM"))
+                .andDo(print());
+
+        verify(exerciseService, times(1)).searchExercises(isNull(), eq(Exercise.ExerciseType.SYSTEM), any(Pageable.class));
+    }
+
+    @Test
+    void shouldReturnResultsWhenSearchWithNameAndType() throws Exception {
+        // Arrange
+        Page<ExerciseDTO> page = new PageImpl<>(List.of(exerciseDTO), PageRequest.of(0, 20), 1);
+        PageResponse<ExerciseDTO> pageResponse = PageResponse.of(page);
+
+        when(exerciseService.searchExercises(eq("push"), eq(Exercise.ExerciseType.SYSTEM), any(Pageable.class)))
+                .thenReturn(pageResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/exercises/search")
+                .param("name", "push")
+                .param("type", "SYSTEM")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("Push Up"))
+                .andDo(print());
+
+        verify(exerciseService, times(1))
+                .searchExercises(eq("push"), eq(Exercise.ExerciseType.SYSTEM), any(Pageable.class));
+    }
+
+    @Test
+    void shouldReturnEmptyPageWhenSearchMatchesNothing() throws Exception {
+        // Arrange
+        Page<ExerciseDTO> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+        PageResponse<ExerciseDTO> pageResponse = PageResponse.of(emptyPage);
+
+        when(exerciseService.searchExercises(eq("xyz"), isNull(), any(Pageable.class)))
+                .thenReturn(pageResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/exercises/search")
+                .param("name", "xyz")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andDo(print());
+    }
+
+    @Test
+    void shouldReturnAllExercisesWhenSearchWithNoParams() throws Exception {
+        // Arrange
+        Page<ExerciseDTO> page = new PageImpl<>(List.of(exerciseDTO), PageRequest.of(0, 20), 1);
+        PageResponse<ExerciseDTO> pageResponse = PageResponse.of(page);
+
+        when(exerciseService.searchExercises(isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(pageResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/exercises/search")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andDo(print());
+    }
+
     // Test pagination with custom parameters
     @Test
     void testGetAllSystemExercises_WithCustomPagination() throws Exception {
