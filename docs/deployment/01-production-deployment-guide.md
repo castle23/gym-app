@@ -26,46 +26,37 @@ The Gym Platform API is a microservices-based architecture consisting of four in
 - **Tracking Service** (Port 8083): Progress and objective tracking
 - **Notification Service** (Port 8084): Email and push notifications
 
-All services share a single PostgreSQL database and communicate via REST APIs. The deployment targets a production environment using Docker containers orchestrated via Docker Compose on a dedicated server.
+All services share a single PostgreSQL database (`gym_db`) with separate schemas per service. JWT authentication is validated centrally by the API Gateway — individual services trust the `X-User-Id` and `X-User-Roles` headers injected by the gateway. The deployment targets a production environment using Docker Compose on a dedicated server.
 
 ### Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Production Environment                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │Auth Service  │  │Training Svc  │  │Tracking Svc  │       │
-│  │  (8081)      │  │   (8082)     │  │   (8083)     │       │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘       │
-│         │                 │                 │                 │
-│         ├─────────────────┼─────────────────┤                 │
-│         │                 │                 │                 │
-│  ┌──────────────┐         │      ┌──────────────────┐        │
-│  │Notification  │         │      │  Notification Svc│        │
-│  │Service       │─────────┼──────│      (8084)      │        │
-│  │(8084)        │         │      └──────────────────┘        │
-│  └──────┬───────┘         │                                   │
-│         │                 │                                   │
-│         └─────────────────┼───────────────────────────────┐   │
-│                           │                               │   │
-│                    ┌──────▼──────────┐                    │   │
-│                    │  PostgreSQL DB  │                    │   │
-│                    │  (Port 5432)    │                    │   │
-│                    └────────────────┘                     │   │
-│                                                            │   │
-│         ┌─────────────────────────────────────────────────┘   │
-│         │                                                      │
-│  ┌──────▼────────────────────────────────────────────┐        │
-│  │           Docker Network (gym-network)            │        │
-│  └──────────────────────────────────────────────────┘        │
-│                                                               │
-└─────────────────────────────────────────────────────────────┘
-
 ┌──────────────────────────────────────────────────────────────┐
 │                    Host Machine                              │
-│  (Ports 8081-8084 exposed for external access)              │
+│  Client → Port 8080 (API Gateway)                           │
+└──────────────────────┬───────────────────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────────────────┐
+│                Docker Network (gym-network)                  │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  API Gateway (8080)                                 │    │
+│  │  - Validates JWT                                    │    │
+│  │  - Injects X-User-Id, X-User-Roles headers          │    │
+│  │  - Routes to downstream services                    │    │
+│  └──────┬──────────┬──────────┬──────────┬─────────────┘    │
+│         │          │          │          │                   │
+│  ┌──────▼──┐ ┌─────▼───┐ ┌───▼─────┐ ┌──▼──────────┐       │
+│  │  Auth   │ │Training │ │Tracking │ │Notification │       │
+│  │  (8081) │ │ (8082)  │ │ (8083)  │ │   (8084)    │       │
+│  └──────┬──┘ └─────┬───┘ └───┬─────┘ └──┬──────────┘       │
+│         └──────────┴──────────┴──────────┘                   │
+│                           │                                  │
+│                  ┌────────▼────────┐                         │
+│                  │  PostgreSQL 15  │                         │
+│                  │  (Port 5432)    │                         │
+│                  │  gym_db         │                         │
+│                  └─────────────────┘                         │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -149,17 +140,20 @@ Before deploying to production, verify the following:
 
 ### Service Communication Pattern
 
-Services communicate through REST APIs with no direct database access:
+All client requests go through the API Gateway. There is no direct service-to-service communication.
 
 ```
 Client Request
       ↓
-   8081 (Auth Service)
+   8080 (API Gateway)
       │
-      ├─→ Validate JWT token
-      ├─→ Authorize request
-      ├─→ Query database
-      └─→ Return response
+      ├─→ Validate JWT (gateway only)
+      ├─→ Inject X-User-Id, X-User-Roles headers
+      └─→ Proxy to target service (auth/training/tracking/notifications)
+            │
+            ├─→ Read X-User-Id / X-User-Roles headers
+            ├─→ Query own schema in gym_db
+            └─→ Return response
 ```
 
 Each service maintains its own connection to the shared database with appropriate schema isolation:
@@ -172,24 +166,29 @@ Each service maintains its own connection to the shared database with appropriat
 ### Service Dependencies
 
 ```
+API Gateway (8080)
+├── Depends on: postgres (healthcheck)
+└── Validates JWT for all downstream services
+
 Auth Service (8081)
-├── No dependencies (foundation service)
-└── Other services depend on: JWT validation
+├── Depends on: postgres (healthcheck)
+└── No inter-service communication
 
 Training Service (8082)
-├── Depends on: Auth Service (JWT validation)
+├── Depends on: postgres (healthcheck)
 └── No inter-service communication
 
 Tracking Service (8083)
-├── Depends on: Auth Service (JWT validation)
-├── Uses: Training Service data (through database joins)
-└── Optional: Calls Notification Service
+├── Depends on: postgres (healthcheck)
+└── No inter-service communication
 
 Notification Service (8084)
-├── Depends on: Auth Service (JWT validation)
-├── Called by: Tracking Service (progress alerts)
-└── Called by: Training Service (program updates)
+├── Depends on: postgres (healthcheck)
+├── Requires: firebase-config.json mounted at /app/firebase-config.json
+└── No inter-service communication
 ```
+
+All services start after postgres passes its healthcheck (`pg_isready -U gym_admin`).
 
 ---
 
@@ -197,28 +196,27 @@ Notification Service (8084)
 
 ### Initial Database Creation
 
+> **Note**: When using Docker Compose, the database is created automatically by the `postgres` container using the `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` environment variables. The initialization scripts in `dba/initialization/` are mounted and executed on first start. Manual setup is only needed if deploying PostgreSQL outside of Docker Compose.
+
 1. **Connect to PostgreSQL**
 
 ```bash
-psql -h localhost -U postgres -d postgres
+psql -h localhost -U gym_admin -d gym_db
 ```
 
-2. **Create Database and User**
+2. **Create Database and User** (manual setup only)
 
 ```sql
 -- Create gym database
-CREATE DATABASE gym_db 
-  OWNER postgres 
-  ENCODING 'UTF8' 
-  LC_COLLATE 'en_US.UTF-8' 
-  LC_CTYPE 'en_US.UTF-8';
+CREATE DATABASE gym_db
+  OWNER gym_admin
+  ENCODING 'UTF8';
 
 -- Create application user
 CREATE USER gym_admin WITH PASSWORD 'your_secure_password_here';
 
 -- Grant privileges
 GRANT CONNECT ON DATABASE gym_db TO gym_admin;
-GRANT USAGE ON SCHEMA public TO gym_admin;
 GRANT CREATE ON DATABASE gym_db TO gym_admin;
 
 --

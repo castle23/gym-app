@@ -46,6 +46,7 @@ Configuration files:
 
 | Service | Port | Role |
 |---------|------|------|
+| API Gateway | 8080 | Central entry point, JWT validation |
 | Auth Service | 8081 | Authentication & Authorization |
 | Training Service | 8082 | Training Program Management |
 | Tracking Service | 8083 | Progress Tracking & Analytics |

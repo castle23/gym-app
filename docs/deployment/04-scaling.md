@@ -1,5 +1,7 @@
 # Scaling Guide
 
+> **Note**: This document describes scaling strategies for future reference. The current setup is a single-server Docker Compose deployment with no load balancer, Redis, or read replicas. Kubernetes HPA, PgBouncer, and multi-region configurations are not currently implemented.
+
 ## Overview
 
 Horizontal and vertical scaling strategies, load balancing, and capacity planning for Gym Platform microservices to handle growth and maintain performance.

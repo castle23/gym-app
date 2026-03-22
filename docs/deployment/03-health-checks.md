@@ -349,22 +349,22 @@ global:
 
 scrape_configs:
   - job_name: 'auth-service'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/auth/actuator/prometheus'
     static_configs:
       - targets: ['localhost:8081']
 
   - job_name: 'training-service'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/training/actuator/prometheus'
     static_configs:
       - targets: ['localhost:8082']
 
   - job_name: 'tracking-service'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/tracking/actuator/prometheus'
     static_configs:
       - targets: ['localhost:8083']
 
   - job_name: 'notification-service'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/notifications/actuator/prometheus'
     static_configs:
       - targets: ['localhost:8084']
 ```
