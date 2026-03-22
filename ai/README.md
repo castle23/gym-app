@@ -174,4 +174,5 @@ For any AI task, load in this order:
 | Development guides | `docs/development/` |
 | Operations | `docs/operations/` |
 | Security | `docs/security/` |
+| Database | `docs/database/` |
 | Troubleshooting | `docs/troubleshooting/` |

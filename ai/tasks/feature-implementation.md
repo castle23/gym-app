@@ -83,6 +83,7 @@ mvn jacoco:report -pl [service]
 
 ### 12. Documentation & Test Synchronization (MANDATORY)
 - Update `docs/api/` endpoint references.
+- Update `docs/database/` schema details if affected.
 - Update `ai/memory/` project context.
 - Update test registry or add new test files to `testing-standards.md` if necessary.
 - Run `ai/agents/docs-agent.md` to ensure docs reflect changes.
@@ -115,7 +116,7 @@ com.gym.[service]/
 - [ ] Integration tests passing (SpringBootTest)
 - [ ] Coverage >= 85%
 - [ ] Flyway migration included if schema changed
-- [ ] Documentation updated (`docs/api/`, `ai/memory/`)
+- [ ] Documentation updated (`docs/api/`, `docs/database/`, `ai/memory/`)
 - [ ] Test registry/docs updated
 - [ ] Commit follows `feat(scope): description` format
 
