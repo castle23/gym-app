@@ -24,11 +24,11 @@ Deliver a scalable, maintainable, and secure microservices architecture that ena
 |---------|------|-----------|--------------|------------|
 | API Gateway | 8080 | Routing | / | N/A |
 | Auth Service | 8081 | 6 | /auth | /auth/swagger-ui.html |
-| Training Service | 8082 | 25 | /training | /training/swagger-ui.html |
+| Training Service | 8082 | 26 | /training | /training/swagger-ui.html |
 | Tracking Service | 8083 | 39 | /tracking | /tracking/swagger-ui.html |
 | Notification Service | 8084 | 10 | /notifications | /notifications/swagger-ui.html |
 
-**Total Endpoints**: 80+
+**Total Endpoints**: 81+
 **API Version**: v1 (path prefix: `/api/v1/` for Training, Tracking, Notification)
 
 ### Technology Stack
@@ -79,7 +79,8 @@ Client → API Gateway (8080) → JWT Validation → Inject X-User-Id + X-User-R
 - GET `/auth/profile` (auth) - User profile
 
 ### Training Service (`/training/api/v1/`)
-- **Exercises**: 7 endpoints (CRUD + system/discipline/my-exercises)
+- **Exercises**: 8 endpoints (CRUD + system/discipline/my-exercises + search)
+  - `GET /exercises/search?name=&type=` (public) - Search by name (partial, case-insensitive) and/or type
 - **Routine Templates**: 6 endpoints (CRUD + system/my-templates)
 - **User Routines**: 7 endpoints (CRUD + active/assign/deactivate)
 - **Exercise Sessions**: 6 endpoints (CRUD + by-routine/by-date)

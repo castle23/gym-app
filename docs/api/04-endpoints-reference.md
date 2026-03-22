@@ -18,6 +18,7 @@ All endpoints are accessible via the API Gateway at `http://localhost:8080`. Eac
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/training/api/v1/exercises/system` | No | List system exercises |
+| GET | `/training/api/v1/exercises/search?name=&type=` | No | Search by name (partial) and/or type |
 | GET | `/training/api/v1/exercises/discipline/{id}` | No | Exercises by discipline |
 | GET | `/training/api/v1/exercises/my-exercises` | Yes | User's exercises |
 | GET | `/training/api/v1/exercises/{id}` | Yes | Get exercise |
