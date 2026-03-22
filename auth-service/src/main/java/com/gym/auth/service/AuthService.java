@@ -10,6 +10,10 @@ import com.gym.auth.entity.User;
 import com.gym.auth.entity.Verification;
 import com.gym.auth.repository.UserRepository;
 import com.gym.auth.repository.VerificationRepository;
+import com.gym.common.exception.AuthenticationException;
+import com.gym.common.exception.InvalidDataException;
+import com.gym.common.exception.ResourceNotFoundException;
+import com.gym.common.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,10 +39,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("Registration failed: email {} already exists", request.getEmail());
-            return AuthResponse.builder()
-                    .success(false)
-                    .message("Email already registered")
-                    .build();
+            throw new InvalidDataException("Email already registered");
         }
 
         User user = User.builder()
@@ -70,7 +71,6 @@ public class AuthService {
 
         log.info("User registered successfully: {}", user.getEmail());
         return AuthResponse.builder()
-                .success(true)
                 .message("Registration successful. Please check your email to verify.")
                 .userId(user.getId().toString())
                 .email(user.getEmail())
@@ -82,28 +82,14 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElse(null);
 
-        if (user == null) {
-            log.warn("Login failed: user not found {}", request.getEmail());
-            return AuthResponse.builder()
-                    .success(false)
-                    .message("Invalid email or password")
-                    .build();
-        }
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("Login failed: invalid password for {}", request.getEmail());
-            return AuthResponse.builder()
-                    .success(false)
-                    .message("Invalid email or password")
-                    .build();
+        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            log.warn("Login failed: invalid credentials for {}", request.getEmail());
+            throw new AuthenticationException("Invalid email or password");
         }
 
         if (user.getAccountStatus() != User.AccountStatus.ACTIVE) {
             log.warn("Login failed: account not active for {}", request.getEmail());
-            return AuthResponse.builder()
-                    .success(false)
-                    .message("Account is not verified. Please verify your email.")
-                    .build();
+            throw new AuthenticationException("Account is not verified. Please verify your email.");
         }
 
         String roles = String.join(",", user.getRoles());
@@ -112,7 +98,6 @@ public class AuthService {
 
         log.info("User logged in successfully: {}", user.getEmail());
         return AuthResponse.builder()
-                .success(true)
                 .token(token)
                 .refreshToken(refreshToken)
                 .userId(user.getId().toString())
@@ -130,22 +115,16 @@ public class AuthService {
 
         if (refreshToken == null || !jwtService.isRefreshTokenValid(refreshToken)) {
             log.warn("Token refresh failed: invalid or expired refresh token");
-            return TokenRefreshResponse.builder()
-                    .success(false)
-                    .message("Invalid or expired refresh token")
-                    .build();
+            throw new AuthenticationException("Invalid or expired refresh token");
         }
 
         String userId = jwtService.extractSubject(refreshToken);
         User user = userRepository.findById(Long.parseLong(userId))
-                .orElse(null);
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (user == null || user.getAccountStatus() != User.AccountStatus.ACTIVE) {
-            log.warn("Token refresh failed: user not found or account inactive");
-            return TokenRefreshResponse.builder()
-                    .success(false)
-                    .message("User not found or account inactive")
-                    .build();
+        if (user.getAccountStatus() != User.AccountStatus.ACTIVE) {
+            log.warn("Token refresh failed: account inactive for user {}", userId);
+            throw new AuthenticationException("Account is inactive");
         }
 
         String roles = String.join(",", user.getRoles());
@@ -155,11 +134,9 @@ public class AuthService {
 
         log.info("Token refreshed successfully for user: {}", userId);
         return TokenRefreshResponse.builder()
-                .success(true)
                 .token(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .expiresIn(expiresIn)
-                .message("Token refreshed successfully")
                 .build();
     }
 
@@ -170,30 +147,16 @@ public class AuthService {
 
         if (user == null) {
             log.warn("Verification failed: user not found {}", request.getEmail());
-            return AuthResponse.builder()
-                    .success(false)
-                    .message("User not found")
-                    .build();
+            throw new ResourceNotFoundException("User not found");
         }
 
         Verification verification = verificationRepository
                 .findByUserAndCode(user, request.getCode())
-                .orElse(null);
-
-        if (verification == null) {
-            log.warn("Verification failed: invalid code for {}", request.getEmail());
-            return AuthResponse.builder()
-                    .success(false)
-                    .message("Invalid verification code")
-                    .build();
-        }
+                .orElseThrow(() -> new InvalidDataException("Invalid verification code"));
 
         if (LocalDateTime.now().isAfter(verification.getExpiresAt())) {
             log.warn("Verification failed: code expired for {}", request.getEmail());
-            return AuthResponse.builder()
-                    .success(false)
-                    .message("Verification code has expired")
-                    .build();
+            throw new InvalidDataException("Verification code has expired");
         }
 
         verification.setVerified(true);
@@ -211,7 +174,6 @@ public class AuthService {
 
         log.info("Email verified successfully: {}", user.getEmail());
         return AuthResponse.builder()
-                .success(true)
                 .message("Email verified successfully. You can now login.")
                 .userId(user.getId().toString())
                 .email(user.getEmail())

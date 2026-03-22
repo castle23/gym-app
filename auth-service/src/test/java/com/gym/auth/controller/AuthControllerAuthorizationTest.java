@@ -1,7 +1,7 @@
 package com.gym.auth.controller;
 
+import com.gym.auth.dto.AuthResponse;
 import com.gym.auth.service.AuthService;
-import com.gym.auth.service.EmailService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,6 +11,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -26,6 +28,9 @@ public class AuthControllerAuthorizationTest {
 
     @MockBean
     private JavaMailSender javaMailSender;
+
+    private final AuthResponse stubResponse = AuthResponse.builder()
+            .userId("1").email("test@example.com").message("ok").build();
 
     @Test
     void testGetProfileWithoutAuthentication() throws Exception {
@@ -49,6 +54,7 @@ public class AuthControllerAuthorizationTest {
 
     @Test
     void testRegisterEndpointIsPublic() throws Exception {
+        when(authService.register(any())).thenReturn(stubResponse);
         mockMvc.perform(post("/register")
                 .contentType("application/json")
                 .content("{\"email\":\"test@example.com\",\"password\":\"Pass123!\",\"userType\":\"USER\"}"))

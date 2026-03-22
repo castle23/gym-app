@@ -1,6 +1,7 @@
 package com.gym.common.config;
 
 import com.gym.common.dto.ErrorResponse;
+import com.gym.common.exception.AuthenticationException;
 import com.gym.common.exception.InvalidDataException;
 import com.gym.common.exception.ResourceNotFoundException;
 import com.gym.common.exception.UnauthorizedException;
@@ -34,6 +35,12 @@ public class GymExceptionHandlerAutoConfiguration {
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException e) {
         log.warn("Unauthorized: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error("FORBIDDEN", e.getMessage()));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException e) {
+        log.warn("Authentication failed: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error("UNAUTHORIZED", e.getMessage()));
     }
 
     @ExceptionHandler(InvalidDataException.class)

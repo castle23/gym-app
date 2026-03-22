@@ -24,7 +24,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
 @Slf4j
 @RestController
 @RequestMapping("/")
@@ -58,8 +57,7 @@ public class AuthController {
         )
         @org.springframework.web.bind.annotation.RequestBody RegisterRequest request) {
         log.info("Registration attempt for email: {}", request.getEmail());
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
     @PostMapping("/login")
@@ -86,8 +84,7 @@ public class AuthController {
         )
         @org.springframework.web.bind.annotation.RequestBody LoginRequest request) {
         log.info("Login attempt for email: {}", request.getEmail());
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/verify")
@@ -101,8 +98,7 @@ public class AuthController {
     })
     public ResponseEntity<AuthResponse> verify(@RequestBody VerifyEmailRequest request) {
         log.info("Verification attempt for email: {}", request.getEmail());
-        AuthResponse response = authService.verifyEmail(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authService.verifyEmail(request));
     }
 
     @PostMapping("/refresh")
@@ -118,12 +114,7 @@ public class AuthController {
     })
     public ResponseEntity<TokenRefreshResponse> refresh(@RequestBody RefreshTokenRequest request) {
         log.info("Token refresh attempt");
-        TokenRefreshResponse response = authService.refreshToken(request);
-        if (response.getSuccess()) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
+        return ResponseEntity.ok(authService.refreshToken(request));
     }
 
     @GetMapping("/profile")
@@ -145,7 +136,6 @@ public class AuthController {
         return ResponseEntity.ok(AuthResponse.builder()
                 .userId(userId)
                 .message("Profile retrieved")
-                .success(true)
                 .build());
     }
 }

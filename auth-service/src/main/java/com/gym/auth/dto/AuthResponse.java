@@ -30,7 +30,4 @@ public class AuthResponse {
 
     @Schema(description = "Response message with details about the operation", example = "Authentication successful")
     private String message;
-
-    @Schema(description = "Whether the operation was successful", example = "true")
-    private Boolean success;
 }
