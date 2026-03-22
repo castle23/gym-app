@@ -28,324 +28,63 @@ Role-Based Access Control (RBAC) implementation in the Gym Platform: role defini
 
 | Role | Description | Permissions |
 |------|-------------|-------------|
-| **ADMIN** | System administrator | All permissions |
-| **MANAGER** | Gym manager | User management, session management, reports |
-| **TRAINER** | Fitness trainer | Create sessions, manage assignments, view member progress |
-| **USER** | Regular member | View own profile, join sessions, track progress |
-| **GUEST** | Unauthenticated user | View public content only |
+| **ROLE_ADMIN** | System administrator | All permissions |
+| **ROLE_PROFESSIONAL** | Fitness professional/trainer | Professional-level operations |
+| **ROLE_USER** | Regular member | Own data access, standard operations |
 
-### Role Hierarchy
+### Role Assignment
 
-```
-ADMIN
-├── MANAGER
-│   ├── TRAINER
-│   │   └── USER
-```
+Roles are assigned at registration and stored in the `auth_schema`. The API Gateway reads roles from the JWT and injects them as the `X-User-Roles` header. Services read this header via `GymRoleInterceptor` and enforce access control using `@RequiresRole`.
 
 ### Role Configuration
 
 ```java
-@Entity
-@Table(name = "roles")
-public class Role {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(nullable = false, unique = true)
-    private String name;  // ROLE_ADMIN, ROLE_TRAINER, etc.
-    
-    private String description;
-    
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "role_permissions",
-        joinColumns = @JoinColumn(name = "role_id"),
-        inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
-    private Set<Permission> permissions;
-    
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-}
-
-@Entity
-@Table(name = "user_roles")
-public class UserRole {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-    
-    @ManyToOne
-    @JoinColumn(name = "role_id", nullable = false)
-    private Role role;
-    
-    @Column(nullable = false)
-    private LocalDateTime assignedAt;
+// Roles are stored as strings in the User entity
+// Values: ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN
+public enum Role {
+    ROLE_USER,
+    ROLE_PROFESSIONAL,
+    ROLE_ADMIN
 }
 ```
 
----
+## Authorization Implementation
 
-## Permission Model
+### How Authorization Works
 
-### Permission Types
+Services do **not** use Spring Security or validate JWT. Authorization is enforced via the `gym-common` library:
+
+1. API Gateway validates JWT and injects `X-User-Id` and `X-User-Roles` headers
+2. `GymRoleInterceptor` (from `gym-common`) reads these headers and stores them in `GymSecurityContext`
+3. `@RequiresRole` annotation on controller methods enforces role checks
 
 ```java
-@Entity
-@Table(name = "permissions")
-public class Permission {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(nullable = false, unique = true)
-    private String name;  // FORMAT: resource:action
-    
-    private String description;
-    
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
+// From gym-common: annotation for role-based access control
+@RequiresRole({"ROLE_ADMIN"})
+@GetMapping("/admin/users")
+public ResponseEntity<List<UserDTO>> getAllUsers() {
+    return ResponseEntity.ok(userService.getAllUsers());
 }
+
+// Access current user in service layer
+Long userId = GymSecurityContext.getCurrentUserId();  // from X-User-Id header
+List<String> roles = GymSecurityContext.getCurrentRoles();  // from X-User-Roles header
 ```
 
-### Permission Naming Convention
-
-```
-resource:action
-
-Examples:
-- user:create          # Create new users
-- user:read            # View user details
-- user:update          # Edit user information
-- user:delete          # Remove users
-- session:create       # Create training sessions
-- session:manage       # Manage session assignments
-- report:view          # Access reports
-- admin:configure      # System configuration
-```
-
-### Permission Definition
+### Resource Ownership Verification
 
 ```java
-public class PermissionProvider {
+@GetMapping("/{userId}")
+public ResponseEntity<UserDTO> getUserProfile(@PathVariable Long userId) {
+    Long currentUserId = GymSecurityContext.getCurrentUserId();
+    List<String> roles = GymSecurityContext.getCurrentRoles();
     
-    // User permissions
-    public static final String USER_CREATE = "user:create";
-    public static final String USER_READ = "user:read";
-    public static final String USER_UPDATE = "user:update";
-    public static final String USER_DELETE = "user:delete";
-    
-    // Session permissions
-    public static final String SESSION_CREATE = "session:create";
-    public static final String SESSION_READ = "session:read";
-    public static final String SESSION_UPDATE = "session:update";
-    public static final String SESSION_DELETE = "session:delete";
-    
-    // Reporting permissions
-    public static final String REPORT_VIEW = "report:view";
-    public static final String REPORT_EXPORT = "report:export";
-    
-    // Admin permissions
-    public static final String ADMIN_CONFIG = "admin:configure";
-    public static final String ADMIN_AUDIT = "admin:audit";
-}
-```
-
-### Role-Permission Mapping
-
-```sql
--- Role: ADMIN (all permissions)
-INSERT INTO roles (name, description) VALUES ('ROLE_ADMIN', 'Administrator');
-
-INSERT INTO permissions (name, description) VALUES
-    ('user:create', 'Create new users'),
-    ('user:read', 'View user details'),
-    ('user:update', 'Edit user information'),
-    ('user:delete', 'Remove users'),
-    ('session:create', 'Create training sessions'),
-    ('session:manage', 'Manage session assignments'),
-    ('report:view', 'Access reports'),
-    ('admin:configure', 'System configuration');
-
--- Assign all permissions to ADMIN
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = 'ROLE_ADMIN';
-
--- Role: TRAINER
-INSERT INTO roles (name, description) VALUES ('ROLE_TRAINER', 'Fitness Trainer');
-
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.name = 'ROLE_TRAINER' AND p.name IN ('session:create', 'session:manage', 'report:view');
-
--- Role: USER (minimal permissions)
-INSERT INTO roles (name, description) VALUES ('ROLE_USER', 'Regular User');
-
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.name = 'ROLE_USER' AND p.name IN ('user:read', 'session:read', 'report:view');
-```
-
----
-
-## Implementation
-
-### Spring Security Configuration
-
-```java
-@Configuration
-@EnableGlobalMethodSecurity(
-    prePostEnabled = true,
-    securedEnabled = true,
-    jsr250Enabled = true
-)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-            .csrf().disable()
-            .exceptionHandling()
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                .accessDeniedHandler(jwtAccessDeniedHandler)
-            .and()
-            .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .authorizeRequests()
-                .antMatchers("/api/auth/**").permitAll()
-                .antMatchers("/api/public/**").permitAll()
-                .antMatchers("/actuator/health").permitAll()
-                .antMatchers("/api/admin/**").hasRole("ADMIN")
-                .antMatchers("/api/trainer/**").hasRole("TRAINER")
-                .anyRequest().authenticated()
-            .and()
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+    // User can access own data; admin can access any
+    if (!userId.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+        throw new UnauthorizedException("Cannot access other users' profiles");
     }
     
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
-}
-```
-
-### Method-Level Authorization
-
-```java
-@RestController
-@RequestMapping("/api/users")
-public class UserController {
-    
-    // Only ADMIN can view all users
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
-    public ResponseEntity<List<UserDTO>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
-    }
-    
-    // Admin or user can view own profile
-    @PreAuthorize("#userId == authentication.principal.id or hasRole('ADMIN')")
-    @GetMapping("/{userId}")
-    public ResponseEntity<UserDTO> getUserProfile(@PathVariable Long userId) {
-        return ResponseEntity.ok(userService.getUserProfile(userId));
-    }
-    
-    // Only ADMIN can create users
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
-    public ResponseEntity<UserDTO> createUser(@Valid @RequestBody CreateUserRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(userService.createUser(request));
-    }
-    
-    // User can update own profile, ADMIN can update any
-    @PreAuthorize("#userId == authentication.principal.id or hasRole('ADMIN')")
-    @PutMapping("/{userId}")
-    public ResponseEntity<UserDTO> updateUser(
-            @PathVariable Long userId,
-            @Valid @RequestBody UpdateUserRequest request) {
-        return ResponseEntity.ok(userService.updateUser(userId, request));
-    }
-    
-    // Only ADMIN can delete users
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
-        userService.deleteUser(userId);
-        return ResponseEntity.noContent().build();
-    }
-}
-
-@RestController
-@RequestMapping("/api/sessions")
-public class SessionController {
-    
-    // TRAINER and ADMIN can create sessions
-    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
-    @PostMapping
-    public ResponseEntity<SessionDTO> createSession(@Valid @RequestBody CreateSessionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(sessionService.createSession(request));
-    }
-    
-    // Session creator or ADMIN can update session
-    @PreAuthorize("@sessionService.isSessionCreator(#sessionId, authentication.principal.id) or hasRole('ADMIN')")
-    @PutMapping("/{sessionId}")
-    public ResponseEntity<SessionDTO> updateSession(
-            @PathVariable Long sessionId,
-            @Valid @RequestBody UpdateSessionRequest request) {
-        return ResponseEntity.ok(sessionService.updateSession(sessionId, request));
-    }
-    
-    // Only ADMIN can delete sessions
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{sessionId}")
-    public ResponseEntity<Void> deleteSession(@PathVariable Long sessionId) {
-        sessionService.deleteSession(sessionId);
-        return ResponseEntity.noContent().build();
-    }
-}
-```
-
-### Custom Authorization Expressions
-
-```java
-@Component("sessionService")
-public class SessionService {
-    
-    // Check if user is session creator
-    public boolean isSessionCreator(Long sessionId, Long userId) {
-        Session session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new SessionNotFoundException(sessionId));
-        
-        return session.getTrainerId().equals(userId);
-    }
-    
-    // Check if user can access session
-    public boolean canAccessSession(Long sessionId, Long userId) {
-        Session session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new SessionNotFoundException(sessionId));
-        
-        // Trainer can access their own session
-        if (session.getTrainerId().equals(userId)) {
-            return true;
-        }
-        
-        // User can access if they're a participant
-        return session.getParticipants()
-            .stream()
-            .anyMatch(p -> p.getUser().getId().equals(userId));
-    }
+    return ResponseEntity.ok(userService.getUserProfile(userId));
 }
 ```
 
@@ -359,20 +98,22 @@ public class SessionService {
 @Service
 public class UserService {
     
-    public UserDTO getUserProfile(Long userId, Long currentUserId, Set<String> roles) {
+    public UserDTO getUserProfile(Long userId) {
+        Long currentUserId = GymSecurityContext.getCurrentUserId();
+        List<String> roles = GymSecurityContext.getCurrentRoles();
+        
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException(userId));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
         // Check authorization
         if (!userId.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
-            throw new AccessDeniedException("Cannot access other users' profiles");
+            throw new UnauthorizedException("Cannot access other users' profiles");
         }
         
         // Filter sensitive data based on role
         UserDTO dto = new UserDTO(user);
         if (!roles.contains("ROLE_ADMIN") && !userId.equals(currentUserId)) {
-            dto.setEmail(null);  // Hide email from other users
-            dto.setPhoneNumber(null);  // Hide phone number
+            dto.setEmail(null);
         }
         
         return dto;
@@ -458,13 +199,13 @@ public class AuthorizationAuditListener {
 
 ```java
 // Before: Too permissive
-@PreAuthorize("isAuthenticated()")  // Any logged-in user
+@RequiresRole({"ROLE_USER"})  // Any logged-in user
 public List<User> getUsers() {
     return userRepository.findAll();
 }
 
 // After: Least privilege
-@PreAuthorize("hasRole('ADMIN')")  // Only admins
+@RequiresRole({"ROLE_ADMIN"})  // Only admins
 public List<User> getUsers() {
     return userRepository.findAll();
 }
@@ -476,64 +217,31 @@ public List<User> getUsers() {
 // Before: Trusts client (WRONG!)
 @GetMapping("/users/{userId}")
 public ResponseEntity<UserDTO> getUser(@PathVariable Long userId) {
-    // Doesn't verify authorization - anyone can access any user!
     return ResponseEntity.ok(userService.getUser(userId));
 }
 
-// After: Server-side authorization check
+// After: Server-side authorization check using injected headers
 @GetMapping("/users/{userId}")
-public ResponseEntity<UserDTO> getUser(@PathVariable Long userId, @CurrentUser User currentUser) {
-    // Verify user owns this data
-    if (!userId.equals(currentUser.getId()) && !currentUser.isAdmin()) {
-        throw new AccessDeniedException("Cannot access other users' data");
+public ResponseEntity<UserDTO> getUser(@PathVariable Long userId) {
+    Long currentUserId = GymSecurityContext.getCurrentUserId();
+    List<String> roles = GymSecurityContext.getCurrentRoles();
+    
+    if (!userId.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+        throw new UnauthorizedException("Cannot access other users' data");
     }
     
     return ResponseEntity.ok(userService.getUser(userId));
 }
 ```
 
-### 3. Use Immutable Roles in JWT
+### 3. Use Immutable Roles from Gateway Headers
 
 ```java
-// Immutable roles stored in JWT - can't be modified client-side
-Claims claims = Jwts.parser()
-    .setSigningKey(secret)
-    .parseClaimsJws(token)
-    .getBody();
-
-List<String> roles = (List<String>) claims.get("roles");
-// Even if client tries to modify JWT, signature won't match
+// Roles come from X-User-Roles header injected by API Gateway
+// The gateway extracted them from the JWT signature — they cannot be forged
+// by the client since the gateway validates the JWT signature first
+List<String> roles = GymSecurityContext.getCurrentRoles();
 ```
-
-### 4. Implement Role Hierarchy
-
-```java
-@Configuration
-public class SecurityConfig {
-    
-    @Bean
-    public RoleHierarchy roleHierarchy() {
-        RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
-        hierarchy.setHierarchy("ROLE_ADMIN > ROLE_MANAGER > ROLE_TRAINER > ROLE_USER");
-        return hierarchy;
-    }
-    
-    @Bean
-    public DefaultWebSecurityExpressionHandler webSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
-        DefaultWebSecurityExpressionHandler handler = new DefaultWebSecurityExpressionHandler();
-        handler.setRoleHierarchy(roleHierarchy);
-        return handler;
-    }
-}
-
-// ADMIN automatically has all MANAGER permissions
-@PreAuthorize("hasRole('MANAGER')")
-public void managerAction() {
-    // ADMIN can also call this method
-}
-```
-
-### 5. Audit All Authorization Decisions
 
 ```java
 @Aspect

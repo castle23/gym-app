@@ -4,6 +4,8 @@
 
 The Gym Platform operates in compliance with data protection regulations including GDPR (General Data Protection Regulation), CCPA (California Consumer Privacy Act), and other regional privacy laws. This guide covers compliance requirements, data retention policies, audit logging, privacy-by-design principles, data processing agreements, and breach notification procedures for the Gym Platform's microservices architecture.
 
+> **Note**: This document describes compliance aspirations and patterns. GDPR compliance measures, data retention automation, breach notification procedures, and DPA management are target practices not fully implemented in the current deployment.
+
 Compliance is a shared responsibility across development, operations, and legal teams. The Gym Platform enforces compliance controls at the application, database, and infrastructure levels.
 
 ## Table of Contents

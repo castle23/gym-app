@@ -4,12 +4,12 @@
 
 API security is the foundational layer protecting the Gym Platform's microservices from unauthorized access, injection attacks, brute force attempts, and data exfiltration. This guide covers authentication mechanisms, rate limiting, input validation, CORS configuration, and request/response security for REST APIs built with Spring Boot 3.x.
 
+> **Note**: This document describes API security patterns and aspirational features. Rate limiting with Redis, request signing, API versioning, and OAuth2 resource server are not currently implemented. The JWT authentication section reflects the actual API Gateway implementation.
+
 The Gym Platform implements defense-in-depth at the API layer:
-- **Authentication:** JWT tokens with Spring Security filters
-- **Rate Limiting:** Token bucket algorithm with Redis backing
+- **Authentication:** JWT tokens validated at the API Gateway only
 - **Input Validation:** Bean Validation (Jakarta Validation) annotations
-- **CORS:** Fine-grained cross-origin resource sharing policies
-- **Request Signing:** HMAC-SHA256 for sensitive endpoints
+- **CORS:** Cross-origin resource sharing policies
 - **Output Encoding:** Automatic JSON serialization with XSS prevention
 
 ## Table of Contents
@@ -79,147 +79,32 @@ public class JwtProvider {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration.access:900}") // 15 minutes
+    @Value("${jwt.expiration.access:86400000}") // 24 hours
     private long accessTokenExpiration;
 
-    @Value("${jwt.expiration.refresh:604800}") // 7 days
-    private long refreshTokenExpiration;
-
-    private static final String AUTHORITIES_KEY = "roles";
-
-    /**
-     * Generate JWT access token
-     */
     public String generateAccessToken(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         return Jwts.builder()
-            .setSubject(userDetails.getUsername())
-            .claim(AUTHORITIES_KEY, getAuthoritiesFromAuthentication(authentication))
+            .setSubject(userDetails.getUsername())  // userId as string
+            .claim("roles", getAuthoritiesFromAuthentication(authentication))
             .setIssuedAt(new Date())
-            .setExpiration(Date.from(Instant.now().plusSeconds(accessTokenExpiration)))
+            .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
             .signWith(SignatureAlgorithm.HS256, jwtSecret)
             .compact();
     }
-
-    /**
-     * Generate JWT refresh token
-     */
-    public String generateRefreshToken(String username) {
-        return Jwts.builder()
-            .setSubject(username)
-            .setIssuedAt(new Date())
-            .setExpiration(Date.from(Instant.now().plusSeconds(refreshTokenExpiration)))
-            .signWith(SignatureAlgorithm.HS256, jwtSecret)
-            .compact();
-    }
-
-    /**
-     * Validate JWT token
-     */
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token);
-            return true;
-        } catch (SecurityException e) {
-            log.error("Invalid JWT signature: {}", e.getMessage());
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            log.error("Expired JWT token: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            log.error("Unsupported JWT token: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
-        }
-        return false;
-    }
-
-    /**
-     * Get username from token
-     */
-    public String getUsernameFromToken(String token) {
-        return Jwts.parser()
-            .setSigningKey(jwtSecret)
-            .parseClaimsJws(token)
-            .getBody()
-            .getSubject();
-    }
-
-    /**
-     * Get authorities from token
-     */
-    @SuppressWarnings("unchecked")
-    public Collection<? extends GrantedAuthority> getAuthoritiesFromToken(String token) {
-        List<String> roles = (List<String>) Jwts.parser()
-            .setSigningKey(jwtSecret)
-            .parseClaimsJws(token)
-            .getBody()
-            .get(AUTHORITIES_KEY);
-        
-        return roles.stream()
-            .map(SimpleGrantedAuthority::new)
-            .collect(Collectors.toList());
-    }
-
-    private List<String> getAuthoritiesFromAuthentication(Authentication authentication) {
-        return authentication.getAuthorities().stream()
-            .map(GrantedAuthority::getAuthority)
-            .collect(Collectors.toList());
-    }
-}
 ```
 
-#### JWT Filter
+#### JWT Filter (API Gateway only)
 
-Implement a filter to validate tokens on each request (`auth-service/src/main/java/com/gym/auth/security/JwtAuthenticationFilter.java`):
+JWT validation happens exclusively in the API Gateway. Downstream services receive `X-User-Id` and `X-User-Roles` headers — they do **not** run a JWT filter.
 
 ```java
-@Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+// API Gateway: JwtAuthFilter validates token and injects headers
+// X-User-Id: 123
+// X-User-Roles: ROLE_USER
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
-
-    @Autowired
-    private JwtProvider jwtProvider;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        try {
-            String jwt = extractJwtFromRequest(request);
-
-            if (jwt != null && jwtProvider.validateToken(jwt)) {
-                String username = jwtProvider.getUsernameFromToken(jwt);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
-        } catch (Exception e) {
-            log.error("Could not set user authentication in security context", e);
-        }
-
-        filterChain.doFilter(request, response);
-    }
-
-    private String extractJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
-        if (bearerToken != null && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length());
-        }
-        return null;
-    }
-}
+// Downstream services: GymRoleInterceptor reads injected headers
+// No JWT validation in training-service, tracking-service, etc.
 ```
 
 #### Configuration
@@ -227,12 +112,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 **application.yml:**
 ```yaml
 jwt:
-  secret: ${JWT_SECRET:your-256-bit-base64-encoded-secret-key-minimum-43-characters}
-  expiration:
-    access: 900      # 15 minutes
-    refresh: 604800  # 7 days
-    # Access tokens: short-lived for security
-    # Refresh tokens: long-lived, can be revoked
+  secret: ${JWT_SECRET}
+  expiration: 86400000  # 24 hours in milliseconds
 ```
 
 **Security Configuration:**
@@ -272,103 +153,17 @@ public class SecurityConfig {
 
 ### OAuth2 Integration
 
-For third-party integrations, the Auth Service supports OAuth2 authorization code flow.
-
-**Application Configuration:**
-```yaml
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://your-auth-provider.com
-          jwk-set-uri: https://your-auth-provider.com/.well-known/jwks.json
-```
-
-**OAuth2 Resource Server Configuration:**
-```java
-@Configuration
-@EnableResourceServer
-public class OAuth2ResourceServerConfig {
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .authorizeRequests()
-                .antMatchers("/public/**").permitAll()
-                .anyRequest().authenticated()
-                .and()
-            .oauth2ResourceServer()
-                .jwt()
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter());
-        
-        return http.build();
-    }
-
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthoritiesClaimName("roles");
-        authoritiesConverter.setAuthorityPrefix("ROLE_");
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        return converter;
-    }
-}
-```
+> **Note**: OAuth2 integration is not currently implemented.
 
 ### API Key Authentication
 
-For service-to-service communication, the Gym Platform supports API key authentication.
-
-**Implementation:**
-```java
-@Component
-public class ApiKeyValidator {
-
-    @Autowired
-    private ApiKeyRepository apiKeyRepository;
-
-    public boolean validateApiKey(String apiKey) {
-        ApiKeyEntity keyEntity = apiKeyRepository.findByKeyAndActiveTrue(apiKey);
-        if (keyEntity == null) {
-            return false;
-        }
-        // Check rate limit, expiration, IP whitelist
-        return !keyEntity.isExpired() && isIpWhitelisted(keyEntity);
-    }
-
-    private boolean isIpWhitelisted(ApiKeyEntity keyEntity) {
-        // Implementation for IP whitelist validation
-        return true;
-    }
-}
-
-@Component
-public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
-
-    @Autowired
-    private ApiKeyValidator apiKeyValidator;
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        String apiKey = request.getHeader("X-API-Key");
-
-        if (apiKey != null && apiKeyValidator.validateApiKey(apiKey)) {
-            ApiKeyAuthenticationToken authToken = new ApiKeyAuthenticationToken(apiKey);
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-        }
-
-        filterChain.doFilter(request, response);
-    }
-}
-```
+> **Note**: API key authentication for service-to-service communication is not currently implemented. There is no service-to-service communication in this platform.
 
 ---
 
 ## Rate Limiting and Throttling
+
+> **Note**: Rate limiting with Redis/Bucket4j is not currently implemented. The patterns below describe a target implementation.
 
 ### Token Bucket Algorithm
 
@@ -468,7 +263,7 @@ public class RateLimitingAspect {
 
 ```java
 @RestController
-@RequestMapping("/api/v1/workouts")
+@RequestMapping("/workouts")
 public class WorkoutController {
 
     @PostMapping
@@ -571,11 +366,12 @@ public class TieredRateLimiter {
             return "anonymous";
         }
         
-        Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
-        if (authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_PREMIUM"))) {
-            return "premium";
-        } else if (authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_SERVICE"))) {
+        // Roles come from X-User-Roles header via GymSecurityContext
+        List<String> roles = GymSecurityContext.getCurrentRoles();
+        if (roles.contains("ROLE_ADMIN")) {
             return "service-account";
+        } else if (roles.contains("ROLE_PROFESSIONAL")) {
+            return "premium";
         }
         
         return "authenticated";
@@ -897,172 +693,11 @@ public class CorsFilter extends OncePerRequestFilter {
 
 ## Request Signing
 
-### HMAC-SHA256 Request Signing
-
-For sensitive operations, require HMAC-SHA256 signatures:
-
-**Implementation:**
-```java
-@Component
-public class RequestSigningService {
-
-    @Value("${api.signing.secret}")
-    private String signingSecret;
-
-    public String generateSignature(String method, String path, String body, long timestamp) {
-        String message = method + "\n" + path + "\n" + body + "\n" + timestamp;
-        return hmacSha256(message, signingSecret);
-    }
-
-    public boolean validateSignature(String method, String path, String body,
-                                     long timestamp, String signature) {
-        String expectedSignature = generateSignature(method, path, body, timestamp);
-        return MessageDigest.isEqual(
-            signature.getBytes(StandardCharsets.UTF_8),
-            expectedSignature.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private String hmacSha256(String message, String secret) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secretKey = new SecretKeySpec(
-                secret.getBytes(StandardCharsets.UTF_8), 0,
-                secret.getBytes(StandardCharsets.UTF_8).length, "HmacSHA256");
-            mac.init(secretKey);
-            byte[] hash = mac.doFinal(message.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate HMAC signature", e);
-        }
-    }
-}
-
-@Component
-public class RequestSigningFilter extends OncePerRequestFilter {
-
-    @Autowired
-    private RequestSigningService signingService;
-
-    private static final long MAX_TIMESTAMP_DIFF = 300; // 5 minutes
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        
-        // Skip for public endpoints
-        if (request.getRequestURI().startsWith("/api/v1/auth/")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String signature = request.getHeader("X-Signature");
-        String timestamp = request.getHeader("X-Timestamp");
-
-        if (signature != null && timestamp != null) {
-            try {
-                long requestTimestamp = Long.parseLong(timestamp);
-                long currentTimestamp = Instant.now().getEpochSecond();
-
-                // Prevent replay attacks
-                if (Math.abs(currentTimestamp - requestTimestamp) > MAX_TIMESTAMP_DIFF) {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Request timestamp too old");
-                    return;
-                }
-
-                // Validate signature
-                String body = getRequestBody(request);
-                boolean isValid = signingService.validateSignature(
-                    request.getMethod(),
-                    request.getRequestURI(),
-                    body,
-                    requestTimestamp,
-                    signature);
-
-                if (!isValid) {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Invalid signature");
-                    return;
-                }
-            } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Signature validation failed");
-                return;
-            }
-        }
-
-        filterChain.doFilter(request, response);
-    }
-
-    private String getRequestBody(HttpServletRequest request) throws IOException {
-        // Implement request body reading without consuming the stream
-        return "";
-    }
-}
-```
-
----
+> **Note**: Request signing is not currently implemented.
 
 ## API Versioning
 
-### URL-Based Versioning
-
-The Gym Platform uses URL-based API versioning for backward compatibility:
-
-```
-/api/v1/workouts     # Current stable version
-/api/v2/workouts     # New version with breaking changes
-```
-
-**Implementation:**
-```java
-@RestController
-@RequestMapping("/api/v1")
-public class WorkoutControllerV1 {
-
-    @GetMapping("/workouts")
-    public ResponseEntity<List<WorkoutDtoV1>> getWorkouts() {
-        // V1 response format
-    }
-}
-
-@RestController
-@RequestMapping("/api/v2")
-public class WorkoutControllerV2 {
-
-    @GetMapping("/workouts")
-    public ResponseEntity<List<WorkoutDtoV2>> getWorkouts() {
-        // V2 response format with new fields
-    }
-}
-```
-
-### Version Deprecation
-
-```java
-@Component
-public class VersionDeprecationFilter extends OncePerRequestFilter {
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        
-        String requestPath = request.getRequestURI();
-        
-        if (requestPath.contains("/api/v1/")) {
-            response.setHeader("Deprecation", "true");
-            response.setHeader("Sunset", "Sun, 01 Dec 2025 00:00:00 GMT");
-            response.setHeader("Link", "</api/v2>; rel=\"successor-version\"");
-        }
-
-        filterChain.doFilter(request, response);
-    }
-}
-```
-
----
+> **Note**: The Gym Platform does not use API versioning (`/api/v1/`). Endpoints are accessed via context-paths: `/auth/...`, `/training/...`, `/tracking/...`, `/notifications/...`.
 
 ## Security Headers
 
@@ -1337,14 +972,15 @@ public class ApiSecurityTest {
 
     @Test
     public void testUnauthorizedAccessDenied() throws Exception {
-        mockMvc.perform(get("/api/v1/workouts"))
+        mockMvc.perform(get("/workouts"))
             .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @WithMockUser(roles = "USER")
     public void testAuthorizedAccessAllowed() throws Exception {
-        mockMvc.perform(get("/api/v1/workouts"))
+        mockMvc.perform(get("/workouts")
+            .header("X-User-Id", "1")
+            .header("X-User-Roles", "ROLE_USER"))
             .andExpect(status().isOk());
     }
 

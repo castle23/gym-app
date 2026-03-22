@@ -4,11 +4,12 @@
 
 This guide covers user authentication mechanisms in the Gym Platform: JWT token implementation, password security, credential management, and session handling. Authentication is the foundation of security - if this fails, all other controls are bypassed.
 
+> **Note**: This document describes the implemented JWT/password authentication. Sections on OAuth2 and MFA describe future/aspirational features not currently implemented.
+
 **Authentication Methods:**
-- JWT (JSON Web Tokens) - Primary method for API access
+- JWT (JSON Web Tokens) - validated at API Gateway only
 - Password-based login with bcrypt hashing
-- Optional: OAuth2, LDAP, SAML for enterprise
-- Optional: Multi-factor authentication (MFA)
+- Optional (not implemented): OAuth2, MFA
 
 ---
 
@@ -36,9 +37,9 @@ Header: {
 }
 
 Payload: {
-  "sub": "user123",
+  "sub": "123",           // userId as string (Long)
   "username": "john.doe",
-  "roles": ["ROLE_USER", "ROLE_TRAINER"],
+  "roles": ["ROLE_USER"],  // ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN
   "exp": 1680456000,
   "iat": 1680369600
 }
@@ -141,9 +142,10 @@ jwt.refresh.expiration=604800000  # 7 days
 
 ### Login Endpoint
 
+The auth service context-path is `/auth`, so the login endpoint is accessible at `/auth/login` via the API Gateway.
+
 ```java
 @RestController
-@RequestMapping("/api/auth")
 public class AuthController {
     
     @PostMapping("/login")
@@ -191,47 +193,17 @@ class JwtResponse {
 }
 ```
 
-### Token Validation Filter
+### Token Validation Filter (API Gateway only)
+
+JWT validation happens exclusively in the API Gateway (`JwtAuthFilter`). Downstream services do **not** validate JWT — they read the `X-User-Id` and `X-User-Roles` headers injected by the gateway.
 
 ```java
-@Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    
-    @Autowired
-    private JwtProvider jwtProvider;
-    
-    @Autowired
-    private UserDetailsService userDetailsService;
-    
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, 
-                                   HttpServletResponse response, 
-                                   FilterChain filterChain) throws ServletException, IOException {
-        
-        String token = extractTokenFromRequest(request);
-        
-        if (token != null && jwtProvider.validateToken(token)) {
-            Long userId = jwtProvider.getUserIdFromToken(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userId.toString());
-            
-            UsernamePasswordAuthenticationToken authentication = 
-                new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
-            
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
-        
-        filterChain.doFilter(request, response);
-    }
-    
-    private String extractTokenFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
-    }
-}
+// In API Gateway: JwtAuthFilter validates token and injects headers
+// X-User-Id: 123
+// X-User-Roles: ROLE_USER
+
+// In downstream services: GymRoleInterceptor reads injected headers
+// No JWT validation occurs in auth-service, training-service, etc.
 ```
 
 ---
@@ -421,6 +393,8 @@ public class TokenBlacklist {
 
 ## OAuth2 Integration
 
+> **Note**: OAuth2 integration is not currently implemented. The section below describes a potential future implementation.
+
 ### OAuth2 with Google
 
 ```yaml
@@ -477,6 +451,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 ---
 
 ## MFA Implementation
+
+> **Note**: MFA is not currently implemented. The section below describes a potential future implementation.
 
 ### Time-based One-Time Password (TOTP)
 

@@ -71,7 +71,6 @@ The Security Checklist provides comprehensive pre-deployment, production deploym
 
 **API Design:**
 
-- [ ] API versioning is implemented (/api/v1, /api/v2)
 - [ ] CORS is properly configured (not * for production)
 - [ ] API endpoints return appropriate HTTP status codes
 - [ ] API documentation is complete and security requirements are noted
@@ -103,9 +102,8 @@ The Security Checklist provides comprehensive pre-deployment, production deploym
 
 **Integration Testing:**
 
-- [ ] Service-to-service communication is encrypted (mutual TLS)
-- [ ] API key authentication works correctly
-- [ ] Secrets are accessible only to authenticated services
+- [ ] `X-User-Id` and `X-User-Roles` headers are injected correctly by the gateway
+- [ ] Services reject requests missing required headers
 - [ ] Database queries don't expose sensitive data
 - [ ] Logging doesn't contain sensitive information
 
@@ -115,18 +113,14 @@ The Security Checklist provides comprehensive pre-deployment, production deploym
 
 ### Infrastructure Preparation
 
-**Kubernetes Configuration:**
+**Docker Compose Configuration:**
 
-- [ ] Namespace is created with network policies
-- [ ] RBAC is configured (least privilege service accounts)
-- [ ] Pod security policies are enforced
-- [ ] Resource quotas are set
-- [ ] Container security context is hardened:
-  - [ ] runAsNonRoot: true
-  - [ ] readOnlyRootFilesystem: true
-  - [ ] allowPrivilegeEscalation: false
-- [ ] Liveness and readiness probes are configured
-- [ ] Graceful shutdown is configured (terminationGracePeriodSeconds)
+- [ ] Services run as non-root users in containers
+- [ ] PostgreSQL port is not exposed externally in production (`docker-compose.prod.yml`)
+- [ ] Environment variables use `.env` file (not hardcoded in compose file)
+- [ ] `restart: always` is set for production services
+- [ ] Health checks are configured for all services
+- [ ] `SPRING_PROFILES_ACTIVE: production` is set
 
 **Network Configuration:**
 
@@ -310,11 +304,9 @@ The Security Checklist provides comprehensive pre-deployment, production deploym
 
 **Service Health:**
 
-- [ ] Application responds to health check endpoint
-- [ ] All critical services are reachable
+- [ ] All services respond to health check endpoints (`/<context-path>/actuator/health`)
+- [ ] API Gateway (8080), Auth (8081), Training (8082), Tracking (8083), Notification (8084) are reachable
 - [ ] Database connectivity verified
-- [ ] External service dependencies verified
-- [ ] Message queue/event streaming verified
 
 **Functional Tests:**
 
@@ -326,12 +318,9 @@ The Security Checklist provides comprehensive pre-deployment, production deploym
 
 **Security Tests:**
 
-- [ ] Unauthorized requests are rejected (401)
-- [ ] Forbidden requests are rejected (403)
-- [ ] Invalid requests are rejected (400/422)
-- [ ] Rate limiting is enforced
-- [ ] Security headers are present in responses
-- [ ] HTTPS redirection works
+- [ ] Unauthenticated requests to protected endpoints are rejected (401)
+- [ ] Requests with insufficient role are rejected (403)
+- [ ] Invalid requests are rejected (400)
 - [ ] CORS headers are correct
 
 ### Detailed Verification (1-4 hours post-deployment)
@@ -659,33 +648,25 @@ pipeline {
 
 echo "=== Security Checklist Automation ==="
 
-# 1. Check TLS configuration
-echo "Checking TLS configuration..."
-openssl s_client -connect gym-platform.example.com:443 -tls1_2 </dev/null
+# 1. Check health endpoints (actual context-paths)
+echo "Checking service health..."
+curl -f http://localhost:8080/actuator/health
+curl -f http://localhost:8081/auth/actuator/health
+curl -f http://localhost:8082/training/actuator/health
+curl -f http://localhost:8083/tracking/actuator/health
+curl -f http://localhost:8084/notifications/actuator/health
 
-# 2. Check security headers
-echo "Checking security headers..."
-curl -I https://gym-platform.example.com | grep -i "strict-transport-security"
-curl -I https://gym-platform.example.com | grep -i "x-content-type-options"
-curl -I https://gym-platform.example.com | grep -i "x-frame-options"
+# 2. Check authentication enforcement
+echo "Checking authentication..."
+curl -v http://localhost:8080/training/routines 2>&1 | grep "401"
 
 # 3. Check CORS configuration
 echo "Checking CORS configuration..."
-curl -H "Origin: https://evil.com" https://gym-platform.example.com
+curl -H "Origin: https://evil.com" http://localhost:8080/auth/login
 
-# 4. Check rate limiting
-echo "Checking rate limiting..."
-for i in {1..101}; do
-    curl -s https://gym-platform.example.com/api/v1/endpoint
-done
-
-# 5. Check authentication
-echo "Checking authentication..."
-curl -v https://gym-platform.example.com/api/v1/protected 2>&1 | grep 401
-
-# 6. Check encryption
-echo "Checking encryption..."
-curl -k https://gym-platform.example.com 2>&1 | grep "subject="
+# 4. Check JWT_SECRET is set
+echo "Checking secrets..."
+[ -z "$JWT_SECRET" ] && echo "WARNING: JWT_SECRET not set" || echo "JWT_SECRET is set"
 
 echo "=== Checklist Complete ==="
 ```

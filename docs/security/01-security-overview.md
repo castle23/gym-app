@@ -70,9 +70,14 @@ The Gym Platform implements a comprehensive, defense-in-depth security architect
 
 **Auth Service:**
 - User registration and login
-- JWT token generation and validation
+- JWT token generation
 - Password reset and recovery
 - Multi-factor authentication (future)
+
+**API Gateway:**
+- JWT token validation for all incoming requests
+- Injection of `X-User-Id` and `X-User-Roles` headers
+- Central authentication enforcement
 
 **Training Service:**
 - Training data access control
@@ -290,9 +295,8 @@ Default configuration is secure:
 
 ```properties
 # application.properties - Secure defaults
-server.ssl.enabled=true
-server.port=8443
-spring.jpa.hibernate.ddl-auto=validate  # No auto-create
+server.ssl.enabled=false  # TLS terminated at reverse proxy/load balancer
+spring.jpa.hibernate.ddl-auto=update
 spring.datasource.hikari.maximum-pool-size=10
 logging.level.org=WARN  # Don't log everything
 ```
@@ -349,24 +353,21 @@ Layer 8: User notification email
                     (TLS + API Gateway)
                             ↓
 ┌────────────────────────────────────────────────────────┐
-│        Auth Service  │  Training  │  Tracking  │        │
-│      (JWT issuer)    │  Tracking  │ Notification        │
-│                                                        │
-│  (Internal Network - Trusted)                          │
+│  API Gateway (8080) — JWT validation, header injection │
+│  Auth Service (8081) │ Training (8082) │ Tracking (8083)│
+│  Notification (8084)                                   │
+│  (Internal Docker Network — Trusted)                   │
 └────────────────────────────────────────────────────────┘
                             ↓
 ┌────────────────────────────────────────────────────────┐
-│  PostgreSQL (Encrypted, no external access)            │
-│  RabbitMQ (Internal messaging only)                    │
+│  PostgreSQL (single instance, 4 schemas, no external   │
+│  access)                                               │
 └────────────────────────────────────────────────────────┘
 ```
 
 ### Cross-Service Communication
 
-- Services authenticate with JWT
-- Service-to-service calls use internal network
-- No service should trust another service implicitly
-- All inter-service communication logged
+There is no service-to-service communication. All requests flow through the API Gateway, which validates JWT and injects `X-User-Id` and `X-User-Roles` headers. Services trust these headers and apply RBAC locally.
 
 ---
 

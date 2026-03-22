@@ -16,8 +16,19 @@ This section contains security guidelines, procedures, and best practices for th
 
 ## Subdirectories
 
-- **procedures/** - Security procedures and runbooks
+- **sops/** - Standard operating procedures
+- **checklists/** - Security checklists
 - **faqs/** - Security FAQs and best practices
+- **decisions/** - Architecture decision records
+- **diagrams/** - Security diagrams
+- **environments/** - Environment-specific security configs
+- **examples/** - Code examples
+- **maintenance/** - Maintenance procedures
+- **queries/** - Security queries
+- **services/** - Per-service security docs
+- **debug/** - Debugging guides
+- **diagnostic-tools/** - Diagnostic tools
+- **completion-reports/** - Completion reports
 
 ## Key Security Features
 
@@ -32,10 +43,9 @@ This section contains security guidelines, procedures, and best practices for th
 
 ### Available Roles
 
-- **ADMIN** - Full system access
-- **MANAGER** - Training program management
-- **USER** - Standard user access
-- **TRAINER** - Trainer-specific operations
+- **ROLE_ADMIN** - Full system access
+- **ROLE_PROFESSIONAL** - Professional/trainer access
+- **ROLE_USER** - Standard user access
 
 See **03-authorization-rbac.md** for detailed role definitions.
 
@@ -51,11 +61,11 @@ See **02-authentication.md** for detailed flow.
 
 ### Authorization Checks
 
-All endpoints implement authorization checks:
-1. Verify JWT token validity
-2. Extract user information from token
-3. Check user role and permissions
-4. Allow/deny request based on permissions
+JWT validation occurs at the API Gateway only. Services receive pre-validated identity via injected headers:
+1. API Gateway validates JWT token
+2. Gateway injects `X-User-Id` and `X-User-Roles` headers
+3. Services read headers and apply role-based access control
+4. No service-to-service communication exists
 
 See **03-authorization-rbac.md** for implementation details.
 

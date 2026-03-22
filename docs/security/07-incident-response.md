@@ -4,6 +4,8 @@
 
 The Gym Platform's security incident response procedure provides a structured approach to detecting, investigating, containing, and remediating security incidents. This guide covers incident classification, severity levels, escalation procedures, communication templates, forensics procedures, post-incident reviews, and recovery steps for the Gym Platform's microservices architecture.
 
+> **Note**: This document describes incident response procedures and aspirational tooling. PagerDuty, Slack webhooks, Kubernetes-based containment, and 24/7 on-call infrastructure are not currently configured. The current deployment uses Docker Compose.
+
 Incident response is critical to minimizing damage, meeting compliance obligations (GDPR 72-hour breach notification), and maintaining user trust. The Gym Platform maintains 24/7 incident response capabilities with defined roles, responsibilities, and communication protocols.
 
 ## Table of Contents
@@ -642,30 +644,18 @@ public class IncidentContainmentService {
         log.info("Revoking compromised credentials for incident {}", 
             incident.getId());
         
-        // 1. Revoke API keys
-        apiKeyService.revokeAllKeys();
-
-        // 2. Revoke JWT tokens (issue new secret)
-        tokenService.rotateSigningKeys();
-
-        // 3. Reset database passwords
-        databaseService.rotateCredentials();
-
-        // 4. Rotate cloud credentials
-        cloudCredentialService.rotateAllCredentials();
+        // 1. Rotate JWT secret (requires restarting auth-service with new JWT_SECRET env var)
+        // 2. Reset database passwords (update DB_PASSWORD and restart services)
+        // 3. Rotate any other secrets in .env file
     }
 
     private void isolateAffectedSystems(Incident incident) {
         log.info("Isolating affected systems for incident {}", 
             incident.getId());
         
-        // 1. Cut network connections from compromised system
-        if (incident.getSourceIp() != null) {
-            networkService.blockIp(incident.getSourceIp());
-        }
-
-        // 2. Remove compromised nodes from cluster
-        // kubernetesService.quarantineNode(nodeName);
+        // Docker Compose: stop compromised container
+        // docker compose stop <service-name>
+        // Block IP at firewall/network level if applicable
     }
 
     private void enableEnhancedMonitoring(Incident incident) {
@@ -1171,104 +1161,13 @@ public class IncidentRecoveryService {
     public void initiateRecovery(Incident incident) {
         log.info("Initiating recovery for incident {}", incident.getId());
 
-        // 1. Restore from clean backup
-        restoreFromBackup(incident);
-
+        // 1. Restore from clean backup (see operations/04-backup-recovery.md)
         // 2. Verify system integrity
-        verifySystemIntegrity(incident);
-
-        // 3. Rebuild compromised systems
-        rebuildCompromisedSystems(incident);
-
-        // 4. Restore normal operations
-        restoreNormalOperations(incident);
-
-        // 5. Continuous monitoring
-        enableContinuousMonitoring(incident);
+        // 3. Restart services via Docker Compose with updated credentials
+        // docker compose down && docker compose up -d
+        // 4. Verify service health
+        // 5. Enable enhanced monitoring
     }
-
-    private void restoreFromBackup(Incident incident) {
-        log.info("Restoring from backup for incident {}", incident.getId());
-
-        // 1. Find appropriate backup point (before compromise)
-        Backup backup = backupService.findLatestCleanBackup(
-            incident.getDiscoveryTime().minusHours(24));
-
-        // 2. Verify backup integrity
-        if (!backupService.verifyIntegrity(backup)) {
-            throw new BackupIntegrityException(
-                "Backup integrity verification failed");
-        }
-
-        // 3. Restore database
-        databaseService.restore(backup);
-
-        // 4. Restore application state
-        restoreApplicationState(backup);
-    }
-
-    private void verifySystemIntegrity(Incident incident) {
-        log.info("Verifying system integrity for incident {}", incident.getId());
-
-        // 1. Verify file checksums
-        verifyFileIntegrity();
-
-        // 2. Check for unauthorized changes
-        checkForUnauthorizedModifications();
-
-        // 3. Verify configuration files
-        verifyConfigurationFiles();
-    }
-
-    private void rebuildCompromisedSystems(Incident incident) {
-        log.info("Rebuilding compromised systems for incident {}", incident.getId());
-
-        // 1. Rebuild Kubernetes nodes
-        kubernetesService.rebuildNodes();
-
-        // 2. Deploy fresh containers
-        kubernetesService.redeploy();
-
-        // 3. Verify connectivity
-        kubernetesService.verifyConnectivity();
-    }
-
-    private void restoreNormalOperations(Incident incident) {
-        log.info("Restoring normal operations for incident {}", incident.getId());
-
-        // 1. Resume normal traffic routing
-        loadBalancerService.resumeNormalRouting();
-
-        // 2. Re-enable user access
-        userAccessService.restoreAccess();
-
-        // 3. Verify service health
-        healthCheckService.verifyAllServicesHealthy();
-    }
-
-    private void enableContinuousMonitoring(Incident incident) {
-        log.info("Enabling continuous monitoring for incident {}", incident.getId());
-
-        // Keep enhanced monitoring in place for 24-48 hours
-        monitoringService.enableExtendedMonitoring(Duration.ofHours(48));
-    }
-
-    private void restoreApplicationState(Backup backup) {
-        // Restore application configuration and state
-    }
-
-    private void verifyFileIntegrity() {
-        // Verify file checksums against known good hashes
-    }
-
-    private void checkForUnauthorizedModifications() {
-        // Check for unauthorized system modifications
-    }
-
-    private void verifyConfigurationFiles() {
-        // Verify configuration files are secure
-    }
-}
 ```
 
 ---

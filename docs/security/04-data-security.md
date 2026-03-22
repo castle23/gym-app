@@ -4,6 +4,8 @@
 
 Data protection mechanisms in the Gym Platform: encryption at rest, encryption in transit, PII handling, data classification, and secure data disposal. Protecting user data is critical for compliance and user trust.
 
+> **Note**: This document describes data security patterns and aspirational features. Field-level encryption with JPA converters, pgcrypto, and HTTPS/TLS configuration are target practices. The current deployment uses Docker Compose without TLS termination at the application layer.
+
 **Data Security Approach:**
 - Encryption at rest for sensitive data
 - Encryption in transit (TLS 1.2+)
