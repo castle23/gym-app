@@ -176,6 +176,7 @@ public void shouldCreateUserWithValidEmail() {
 ```java
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 public class AuthControllerIntegrationTest {
     
     @Autowired
@@ -183,9 +184,9 @@ public class AuthControllerIntegrationTest {
     
     @Test
     public void shouldAuthenticateWithValidCredentials() throws Exception {
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/login")  // path relative to context-path
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"email\":\"user@example.com\",\"password\":\"password\"}"))
+            .content("{\"email\":\"user@example.com\",\"password\":\"Test123!\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isNotEmpty());
     }

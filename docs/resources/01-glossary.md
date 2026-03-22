@@ -22,15 +22,15 @@ Complete glossary of technical terms, acronyms, and concepts used throughout the
 
 **API Gateway**
 - Entry point for all client requests
+- Validates JWT tokens and injects `X-User-Id` / `X-User-Roles` headers
 - Routes requests to appropriate microservices
-- Handles request/response transformation
 - Implements rate limiting and request validation
-- In Gym Platform: Spring Cloud Gateway or Kong
+- In Gym Platform: Spring Boot service with custom `JwtAuthFilter`
 
 **Microservices**
 - Independent, loosely-coupled services
-- Each service owns its data and database
-- Communicates via REST API or message queues
+- Each service owns its data and database schema
+- Communicates via REST API (no message queues)
 - Deployed and scaled independently
 - Gym Platform services: Auth Service, Training Service, Tracking Service, Notification Service
 
@@ -69,7 +69,7 @@ Complete glossary of technical terms, acronyms, and concepts used throughout the
 - Synchronous: Primary waits for replica to confirm
 - Asynchronous: Primary doesn't wait for replica
 - Used for high availability and read scaling
-- Gym Platform uses synchronous replication for critical data
+- Gym Platform: not currently configured (single PostgreSQL instance)
 
 **Write-Ahead Logging (WAL)**
 - PostgreSQL writes changes to log before applying to data files
@@ -187,24 +187,23 @@ Complete glossary of technical terms, acronyms, and concepts used throughout the
 
 **Auth Service**
 - Handles user authentication and authorization
-- Manages user accounts, roles, permissions
+- Manages user accounts, roles, email verification
 - Issues JWT tokens for API access
 - Validates credentials and enforces access control
 - Gym Platform service responsible for identity
+- Roles: `ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`
 
 **Training Service**
-- Manages workout plans and exercise information
-- Handles training plan creation and updates
-- Stores exercise library and workout templates
-- Tracks plan-exercise relationships
+- Manages exercises, disciplines, and routines
+- Handles exercise library and routine creation
+- Stores routine-exercise relationships
 - Gym Platform service for training data
 
 **Tracking Service**
-- Records user workout completions and metrics
-- Tracks exercises performed in workouts
-- Records performance metrics (weight, reps, duration)
-- Maintains personal records for exercises
-- Gym Platform service for workout history
+- Records body measurements and weight logs
+- Manages nutrition objectives and diet logs
+- Tracks progress plans and recommendations
+- Gym Platform service for health tracking data
 
 **Notification Service**
 - Sends notifications to users
@@ -290,9 +289,10 @@ Complete glossary of technical terms, acronyms, and concepts used throughout the
 
 **RBAC (Role-Based Access Control)**
 - Authorization model based on user roles
-- User assigned to role (admin, user, trainer)
-- Role has permissions (read, write, delete)
-- Permissions checked before allowing operations
+- User assigned to role
+- Gym Platform roles: `ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`
+- Role has permissions checked before allowing operations
+- Enforced via `@RequiresRole` annotation in each service
 
 **TLS/SSL**
 - Protocols for encrypted communication
@@ -335,8 +335,8 @@ Complete glossary of technical terms, acronyms, and concepts used throughout the
 **Schema**
 - Structure and organization of database
 - Defines tables, columns, relationships
-- Gym Platform uses 4 schemas: auth, training, tracking, common
-- Different schemas for logical separation
+- Gym Platform uses 4 schemas: `auth_schema`, `training_schema`, `tracking_schema`, `notification_schema`
+- Different schemas for logical separation within a single `gym_db` database
 
 **Soft Delete**
 - Marking record as deleted instead of removing
@@ -425,7 +425,7 @@ Complete glossary of technical terms, acronyms, and concepts used throughout the
 - Rolling: Replace instances one at a time
 - Blue-green: Run two complete environments
 - Canary: Route small percentage to new version
-- Gym Platform uses rolling deployments
+- Gym Platform: Docker Compose (`docker-compose up -d --build`)
 
 ---
 

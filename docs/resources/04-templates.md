@@ -45,7 +45,7 @@ METHOD /api/v1/resource/{id}
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| id | UUID | Yes | Resource identifier |
+| id | Long | Yes | Resource identifier (BIGSERIAL) |
 
 ### Query Parameters
 
@@ -71,11 +71,11 @@ METHOD /api/v1/resource/{id}
 
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "id": 1,
   "field1": "value1",
   "field2": "value2",
-  "created_at": "2026-03-21T10:00:00Z",
-  "updated_at": "2026-03-21T10:00:00Z"
+  "createdAt": "2026-03-21T10:00:00Z",
+  "updatedAt": "2026-03-21T10:00:00Z"
 }
 ```
 
@@ -100,7 +100,7 @@ METHOD /api/v1/resource/{id}
 ### cURL Example
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/resource/123 \
+curl -X GET http://localhost:8080/training/resource/1 \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -H "Content-Type: application/json"
 ```
@@ -520,69 +520,55 @@ Link to similar incidents and lessons learned.
 ## Pre-Deployment
 
 - [ ] Code reviewed and approved
-- [ ] All tests passing
-- [ ] Change advisory created
+- [ ] All tests passing (`mvn test`)
+- [ ] Database backup created
 - [ ] Rollback plan documented
-- [ ] Database migrations tested (if applicable)
-- [ ] Configuration reviewed
 
 ## Deployment Steps
 
-### 1. Pre-deployment Checks (5 min)
+### 1. Pre-deployment Checks
 
 ```bash
 # Verify current state
-kubectl get nodes
-kubectl get pods -n gym-platform
-kubectl logs -f deployment/gym-service -n gym-platform
+docker-compose ps
+docker-compose logs --since=1h | grep -i error
 ```
 
-### 2. Deploy to Staging (10 min)
+### 2. Build and Deploy
 
 ```bash
-# Deploy to staging
-kubectl set image deployment/gym-service-staging \
-  gym-service=gym-service:v[version] \
-  -n gym-staging --record
+git pull origin main
+docker-compose up -d --build
 ```
 
-### 3. Test in Staging (15 min)
-
-- [ ] Health checks pass
-- [ ] API endpoints responsive
-- [ ] Database queries working
-- [ ] Integration tests pass
-
-### 4. Deploy to Production (10 min)
+### 3. Verification
 
 ```bash
-# Deploy to production
-kubectl set image deployment/gym-service \
-  gym-service=gym-service:v[version] \
-  -n gym-production --record
+# Check all containers healthy
+docker-compose ps
+
+# Check health endpoints
+curl http://localhost:8081/auth/actuator/health
+curl http://localhost:8082/training/actuator/health
+curl http://localhost:8083/tracking/actuator/health
+curl http://localhost:8084/notifications/actuator/health
 ```
 
-### 5. Verification (10 min)
-
-- [ ] Pods starting successfully
-- [ ] Health checks passing
-- [ ] Metrics showing normal behavior
+- [ ] All containers in "Up (healthy)" state
 - [ ] No errors in logs
-- [ ] Users reporting normal operation
+- [ ] API endpoints responding
 
 ## Rollback
 
-If issues detected, rollback immediately:
-
 ```bash
-kubectl rollout undo deployment/gym-service -n gym-production
+git checkout <previous-commit>
+docker-compose up -d --build
 ```
 
 ## Post-Deployment
 
-- [ ] Monitor metrics for 1 hour
-- [ ] Check user feedback
-- [ ] Update deployment log
+- [ ] Monitor logs for 15 minutes
+- [ ] Verify smoke test passes
 - [ ] Document any issues
 ```
 
@@ -738,44 +724,44 @@ app:
 
 # Database Configuration
 database:
-  url: jdbc:postgresql://db-host:5432/gym_db
-  username: gym_user
+  url: jdbc:postgresql://postgres:5432/gym_db
+  username: gym_admin
   password: ${DB_PASSWORD}
   pool:
     size: 20
     max_lifetime: 1800000
-  ssl: true
 
 # Server Configuration
 server:
-  port: 8080
+  port: 8081
   servlet:
-    context_path: /api/v1
+    context-path: /auth   # /auth | /training | /tracking | /notifications
 
 # Spring Boot Settings
 spring:
   application:
     name: gym-service
   profiles:
-    active: production
+    active: docker
   jpa:
     hibernate:
-      ddl_auto: validate
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: auth_schema
 
 # Logging Configuration
 logging:
   level:
     root: INFO
     com.gym: DEBUG
-  file: /var/log/gym-service.log
 
 # Monitoring
-monitoring:
-  enabled: true
-  metrics:
-    export:
-      prometheus:
-        enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
 ```
 
 ---
