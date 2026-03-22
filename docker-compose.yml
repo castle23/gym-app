@@ -41,6 +41,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./logs/api-gateway:/app/logs
     networks:
       - gym-network
     healthcheck:
@@ -72,6 +74,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./logs/auth-service:/app/logs
     networks:
       - gym-network
     healthcheck:
@@ -98,6 +102,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./logs/training-service:/app/logs
     networks:
       - gym-network
     healthcheck:
@@ -124,6 +130,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./logs/tracking-service:/app/logs
     networks:
       - gym-network
     healthcheck:
@@ -153,6 +161,7 @@ services:
         condition: service_healthy
     volumes:
       - ./firebase-config.json:/app/firebase-config.json:ro
+      - ./logs/notification-service:/app/logs
     networks:
       - gym-network
     healthcheck:

@@ -30,6 +30,7 @@ Thumbs.db
 
 # Application
 *.log
+logs/
 .env
 .env.local
 

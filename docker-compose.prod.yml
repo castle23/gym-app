@@ -44,6 +44,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - auth_logs:/app/logs
     networks:
       - gym-network
     restart: always
@@ -71,6 +73,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - training_logs:/app/logs
     networks:
       - gym-network
     restart: always
@@ -98,6 +102,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - tracking_logs:/app/logs
     networks:
       - gym-network
     restart: always
@@ -125,6 +131,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - notification_logs:/app/logs
     networks:
       - gym-network
     restart: always
@@ -137,6 +145,10 @@ services:
 
 volumes:
   gym_db_data_prod:
+  auth_logs:
+  training_logs:
+  tracking_logs:
+  notification_logs:
 
 networks:
   gym-network:
