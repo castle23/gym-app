@@ -4,12 +4,8 @@ This section contains project overview, completion reports, and roadmap document
 
 ## Contents
 
-- **01-project-overview.md** - Project description, goals, and status
-- **02-roadmap.md** - Product roadmap and future plans
-- **03-phases.md** - Phase breakdown and completion tracking
-
-## Subdirectories
-
+- **GENERAL_IMPLEMENTATION_PLAN.md** - Architecture, phases, and tech stack
+- **FINAL_EXECUTION_PLAN.md** - Swagger/OpenAPI execution plan
 - **completion-reports/** - Phase completion reports and verification results
 
 ## Project Status
@@ -28,10 +24,9 @@ This section contains project overview, completion reports, and roadmap document
 
 ### Build & Deployment Status
 
-- **Build**: ✅ All 7 modules compile successfully (335MB total JAR size)
-- **Deployment**: ✅ 4 services running on ports 8081-8084
+- **Build**: ✅ All modules compile successfully
+- **Deployment**: ✅ 6 services running (API Gateway 8080, Auth 8081, Training 8082, Tracking 8083, Notification 8084, PostgreSQL 5432)
 - **Database**: ✅ PostgreSQL running on port 5432
-- **API Documentation**: ✅ Swagger UI enabled and verified
 
 ## Key Achievements
 

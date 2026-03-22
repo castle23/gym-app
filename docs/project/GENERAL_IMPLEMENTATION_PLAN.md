@@ -35,7 +35,7 @@ Build a complete **microservices-based gym management platform** with:
     ┌────────────▼─┐ ┌──────▼──────┐ ┌─▼──────────────┐
     │ Auth Service │ │ Training    │ │ Tracking       │
     │              │ │ Service     │ │ Service        │
-    │ (Port 8001)  │ │ (Port 8002) │ │ (Port 8003)    │
+    │ (Port 8081)  │ │ (Port 8082) │ │ (Port 8083)    │
     │              │ │             │ │                │
     │ - Register   │ │ - Exercises │ │ - Measurements │
     │ - Login      │ │ - Routines  │ │ - Plans        │
@@ -72,7 +72,6 @@ Build a complete **microservices-based gym management platform** with:
    - X-Trace-Id: Generated at API Gateway, propagated through all requests
    - X-Span-Id: Generated per service, identifies individual operation
    - MDC logging: Each service logs with trace context
-   - Manual propagation: Services add headers when making downstream calls
 
 4. **Professional Component Relationship:**
    - Professionals linked at **component level** (not plan level)
@@ -122,7 +121,7 @@ Build a complete **microservices-based gym management platform** with:
 
 ---
 
-### Phase 4: 🔄 IN PROGRESS - Training Service
+### Phase 4: ✅ COMPLETE - Training Service
 
 **Sub-phases:**
 - Phase 4a: Repositories, DTOs, Services (70% of work)
@@ -139,7 +138,7 @@ Build a complete **microservices-based gym management platform** with:
 
 ---
 
-### Phase 5: 🔄 IN PROGRESS - Tracking Service
+### Phase 5: ✅ COMPLETE - Tracking Service
 
 **Sub-phases:**
 - Phase 5a: Repositories, DTOs, Services (70% of work)
@@ -156,14 +155,7 @@ Build a complete **microservices-based gym management platform** with:
 
 ---
 
-### Phase 6: ⏳ NOT STARTED - Notification Service
-
-**Target:** Complete all layers + Firebase integration + 85%+ test coverage
-
-**Files to create:**
-- Entities, Repositories, DTOs, Services, Controllers
-- Firebase Cloud Messaging integration
-- Complete test suite
+### Phase 6: ✅ COMPLETE - Notification Service
 
 ---
 
@@ -285,7 +277,7 @@ docker-compose up
 ```properties
 DB_HOST=postgres
 DB_PORT=5432
-DB_USER=gym_user
+DB_USER=gym_admin
 DB_PASSWORD=gym_password
 JWT_SECRET=your-secret-key-here-min-256-bits
 MAIL_HOST=smtp.gmail.com

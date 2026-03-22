@@ -118,12 +118,12 @@ Successfully completed comprehensive OpenAPI 3.0 (Swagger) documentation for the
 ### Container Status: ✅ ALL RUNNING
 
 ```
-gym-postgres               Up (healthy)  5432
-gym-auth-service           Up            8081
-gym-training-service       Up            8082
-gym-tracking-service       Up            8083
-gym-notification-service   Up            8084
-gym-api-gateway            Up            8080
+postgres                   Up (healthy)  5432
+api-gateway                Up            8080
+auth-service               Up            8081
+training-service           Up            8082
+tracking-service           Up            8083
+notification-service       Up            8084
 ```
 
 ### Startup Time
@@ -140,7 +140,7 @@ gym-api-gateway            Up            8080
 
 | Service | URL |
 |---------|-----|
-| Auth | http://localhost:8081/swagger-ui.html |
+| Auth | http://localhost:8081/auth/swagger-ui.html |
 | Training | http://localhost:8082/training/swagger-ui.html |
 | Tracking | http://localhost:8083/tracking/swagger-ui.html |
 | Notification | http://localhost:8084/notifications/swagger-ui.html |
@@ -149,7 +149,7 @@ gym-api-gateway            Up            8080
 
 | Service | URL |
 |---------|-----|
-| Auth | http://localhost:8081/v3/api-docs |
+| Auth | http://localhost:8081/auth/v3/api-docs |
 | Training | http://localhost:8082/training/v3/api-docs |
 | Tracking | http://localhost:8083/tracking/v3/api-docs |
 | Notification | http://localhost:8084/notifications/v3/api-docs |
@@ -204,7 +204,7 @@ c54857e docs: Add @Operation and @ApiResponse to tracking service controllers (p
 - ✅ All services initialized successfully
 - ✅ No startup errors in logs
 - ✅ All ports properly exposed
-- ✅ Service-to-service communication working
+- ✅ All services accessible via API Gateway
 
 ### Documentation
 - ✅ Swagger UIs fully accessible

@@ -80,7 +80,7 @@ Expected: All images build without errors
       image: postgres:15
       environment:
         POSTGRES_DB: gym_db
-        POSTGRES_USER: ${DB_USER:-gym_user}
+        POSTGRES_USER: ${DB_USER:-gym_admin}
         POSTGRES_PASSWORD: ${DB_PASSWORD:-gym_password}
       ports:
         - "5432:5432"
@@ -103,10 +103,10 @@ Expected: All images build without errors
     auth-service:
       image: gym-auth-service:latest
       ports:
-        - "8001:8001"
+        - "8081:8081"
       environment:
         SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
-        SPRING_DATASOURCE_USERNAME: ${DB_USER:-gym_user}
+        SPRING_DATASOURCE_USERNAME: ${DB_USER:-gym_admin}
         SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-gym_password}
         SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: auth_schema
         JWT_SECRET: ${JWT_SECRET}
@@ -114,30 +114,30 @@ Expected: All images build without errors
     training-service:
       image: gym-training-service:latest
       ports:
-        - "8002:8002"
+        - "8082:8082"
       environment:
         SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
-        SPRING_DATASOURCE_USERNAME: ${DB_USER:-gym_user}
+        SPRING_DATASOURCE_USERNAME: ${DB_USER:-gym_admin}
         SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-gym_password}
         SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: training_schema
     
     tracking-service:
       image: gym-tracking-service:latest
       ports:
-        - "8003:8003"
+        - "8083:8083"
       environment:
         SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
-        SPRING_DATASOURCE_USERNAME: ${DB_USER:-gym_user}
+        SPRING_DATASOURCE_USERNAME: ${DB_USER:-gym_admin}
         SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-gym_password}
         SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: tracking_schema
     
     notification-service:
       image: gym-notification-service:latest
       ports:
-        - "8004:8004"
+        - "8084:8084"
       environment:
         SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
-        SPRING_DATASOURCE_USERNAME: ${DB_USER:-gym_user}
+        SPRING_DATASOURCE_USERNAME: ${DB_USER:-gym_admin}
         SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-gym_password}
         SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: notification_schema
         FIREBASE_CONFIG_PATH: /app/firebase-config.json
@@ -170,13 +170,13 @@ Expected: All images build without errors
 
 - [ ] Connect to PostgreSQL and verify schemas
   ```bash
-  docker exec -it gym-postgres psql -U gym_user -d gym_db -c "\dn"
+  docker exec -it postgres psql -U gym_admin -d gym_db -c "\dn"
   # Expected: 4 schemas visible (auth_schema, training_schema, tracking_schema, notification_schema)
   ```
 
 - [ ] Verify tables created in each schema
   ```bash
-  docker exec -it gym-postgres psql -U gym_user -d gym_db -c "\dt auth_schema.*"
+  docker exec -it postgres psql -U gym_admin -d gym_db -c "\dt auth_schema.*"
   # Expected: user, verification, professional_request tables
   ```
 
@@ -190,7 +190,7 @@ Expected: All images build without errors
 
 - [ ] Test public endpoint (no auth required)
   ```bash
-  curl -X POST http://localhost:8080/api/v1/auth/register \
+  curl -X POST http://localhost:8080/auth/register \
     -H "Content-Type: application/json" \
     -d '{
       "email": "test@example.com",
@@ -203,7 +203,7 @@ Expected: All images build without errors
 
 - [ ] Test trace ID propagation
   ```bash
-  curl -v http://localhost:8080/api/v1/exercises/system
+  curl -v http://localhost:8080/training/exercises/system
   Expected: Response headers include X-Trace-Id
   ```
 
@@ -232,7 +232,7 @@ class E2ETests {
                 .build();
         
         ResponseEntity<AuthResponse> registerResponse = restTemplate.postForEntity(
-                "/api/v1/auth/register",
+                "/auth/register",
                 registerRequest,
                 AuthResponse.class
         );
@@ -257,7 +257,7 @@ class E2ETests {
         HttpEntity<ExerciseRequestDTO> entity = new HttpEntity<>(exerciseRequest, headers);
         
         ResponseEntity<ExerciseDTO> exerciseResponse = restTemplate.exchange(
-                "/api/v1/exercises",
+                "/training/exercises",
                 HttpMethod.POST,
                 entity,
                 ExerciseDTO.class
@@ -265,17 +265,12 @@ class E2ETests {
         
         assertEquals(HttpStatus.CREATED, exerciseResponse.getStatusCode());
         assertNotNull(exerciseResponse.getBody().getId());
-        
-        // 3. Create a user routine
-        // 4. Log exercise sessions
-        // 5. Get measurements
-        // ... continue testing full workflow
     }
     
     @Test
     void testUnauthorizedAccess() {
         ResponseEntity<String> response = restTemplate.getForEntity(
-                "/api/v1/exercises/my-exercises",
+                "/training/exercises/my-exercises",
                 String.class
         );
         
@@ -289,7 +284,7 @@ class E2ETests {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         
         ResponseEntity<Void> response = restTemplate.exchange(
-                "/api/v1/exercises/system",
+                "/training/exercises/system",
                 HttpMethod.GET,
                 entity,
                 Void.class
@@ -329,10 +324,10 @@ Expected: All end-to-end tests PASS
   
   ### Services
   - API Gateway (8080): Route requests, JWT auth, trace ID injection
-  - Auth Service (8001): User registration, login, email verification
-  - Training Service (8002): Exercises, routines, workout sessions
-  - Tracking Service (8003): Measurements, plans, diet logs
-  - Notification Service (8004): Push notifications via Firebase
+  - Auth Service (8081): User registration, login, email verification
+  - Training Service (8082): Exercises, routines, workout sessions
+  - Tracking Service (8083): Measurements, plans, diet logs
+  - Notification Service (8084): Push notifications via Firebase
   
   ### API Documentation
   - [Auth Endpoints](docs/AUTH.md)
@@ -435,29 +430,17 @@ docker push myregistry/gym-auth-service:1.0.0
 ```
 
 ### Kubernetes (Future)
+
+> **Note**: Kubernetes deployment is aspirational and not part of the current setup (Docker Compose only).
+
 - Create Helm charts for each service
 - Set up ConfigMaps for environment variables
-- Set up Secrets for sensitive data (JWT secret, Firebase config)
+- Set up Secrets for sensitive data
 - Deploy with kubectl
 
-### CI/CD Pipeline (GitHub Actions)
-```yaml
-name: Test & Build
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run tests
-        run: mvn clean test jacoco:report
-      - name: Build Docker images
-        run: |
-          mvn clean package -DskipTests
-          for service in auth-service training-service tracking-service notification-service; do
-            docker build -t gym-$service:latest $service/
-          done
-```
+### CI/CD Pipeline (Future)
+
+> **Note**: CI/CD pipeline is aspirational and not currently configured.
 
 ---
 
