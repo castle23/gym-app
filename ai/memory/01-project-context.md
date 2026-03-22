@@ -76,6 +76,10 @@ Client → API Gateway (8080) → JWT Validation → Inject X-User-Id + X-User-R
 - POST `/auth/login` (public) - Login, get JWT
 - POST `/auth/verify` (public) - Verify email
 - POST `/auth/refresh` (auth) - Refresh token
+- POST `/auth/professional/request` (auth) - Request professional status
+- GET `/auth/admin/professional-requests` (admin) - Get pending professional requests
+- POST `/auth/admin/professional-requests/{id}/approve` (admin) - Approve professional request
+- POST `/auth/admin/professional-requests/{id}/reject` (admin) - Reject professional request
 - GET `/auth/profile` (auth) - User profile
 
 ### Training Service (`/training/api/v1/`)

@@ -9,6 +9,12 @@ All endpoints are accessible via the API Gateway at `http://localhost:8080`. Eac
 | POST | `/auth/register` | No | Register new user |
 | POST | `/auth/login` | No | Authenticate user |
 | POST | `/auth/verify` | No | Verify email |
+| POST | `/auth/password/request-reset` | No | Request password reset link |
+| POST | `/auth/password/reset` | No | Confirm password reset |
+| POST | `/auth/professional/request` | Yes | Request professional status |
+| GET | `/auth/admin/professional-requests` | Yes | Get pending professional requests |
+| POST | `/auth/admin/professional-requests/{id}/approve` | Yes | Approve professional request |
+| POST | `/auth/admin/professional-requests/{id}/reject` | Yes | Reject professional request |
 | POST | `/auth/refresh` | Yes | Refresh access token |
 | GET | `/auth/profile` | Yes | Get current user profile |
 

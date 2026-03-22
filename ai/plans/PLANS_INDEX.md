@@ -77,6 +77,8 @@ Todas las 7 fases han sido completadas exitosamente. El proyecto esta en producc
 | [RBAC + Integration Tests + Swagger](plans/2026-03-20-rbac-integration-tests-swagger.md) | 2026-03-20 | Tests de RBAC, integracion, y Swagger |
 | [Swagger/OpenAPI Implementation](plans/2026-03-20-swagger-openapi-implementation.md) | 2026-03-20 | Implementacion completa de OpenAPI |
 | [API Enhancements + Testing + Production](plans/2026-03-21-gym-api-enhancements-testing-production.md) | 2026-03-21 | Mejoras finales, testing, produccion |
+| [Password Reset](plans/2026-03-22-password-reset.md) | 2026-03-22 | Password reset request and confirmation |
+| [Professional Registration & Approval](plans/2026-03-22-professional-registration.md) | 2026-03-22 | Request professional status & admin approval flow |
 
 ---
 
