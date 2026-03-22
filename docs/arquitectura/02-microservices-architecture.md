@@ -88,68 +88,44 @@ Central authentication and authorization service providing secure access control
 
 | Method | Endpoint | Purpose | Auth |
 |--------|----------|---------|------|
-| POST | `/api/v1/auth/login` | Authenticate user | No |
-| POST | `/api/v1/auth/register` | Create new user | No |
-| POST | `/api/v1/auth/refresh` | Refresh JWT token | Yes |
-| POST | `/api/v1/auth/logout` | Invalidate token | Yes |
-| GET | `/api/v1/auth/verify` | Verify token validity | Yes |
-| GET | `/api/v1/auth/user` | Get current user info | Yes |
-| GET | `/api/v1/auth/users` | List all users | Admin |
-| POST | `/api/v1/auth/roles` | Create role | Admin |
-| GET | `/api/v1/auth/roles` | List roles | Admin |
-| POST | `/api/v1/auth/permissions` | Assign permission | Admin |
+| POST | `/register` | Register new user | No |
+| POST | `/login` | Authenticate user | No |
+| POST | `/verify` | Verify email address | No |
+| POST | `/refresh` | Refresh JWT token | Yes |
+| GET | `/profile` | Get authenticated user profile | Yes |
+
+> Note: Auth service has context-path `/auth`. Via gateway: `/auth/register`, `/auth/login`, etc.
 
 ### Authentication Flow
 
 ```
-1. Client sends credentials (email, password)
-   └─► POST /api/v1/auth/login
-
-2. Auth Service validates credentials
-   └─► Query auth_schema.users
-   └─► Compare hashed password
-
-3. If valid, generate JWT token
-   └─► Create token with user claims
-   └─► Sign with private key
-   └─► Set expiration (default: 1 hour)
-
-4. Return token to client
-   └─► Response: { token: "jwt...", expiresIn: 3600 }
-
-5. Client includes token in subsequent requests
-   └─► Header: Authorization: Bearer jwt...
-
-6. Auth Service validates token on each request
-   └─► Verify signature
-   └─► Check expiration
-   └─► Extract user claims
-   └─► Allow/deny based on permissions
+1. Client → POST /auth/login  { email, password }
+2. Auth Service validates credentials, hashes password
+3. Returns { accessToken, refreshToken, userId, success }
+4. Client includes token: Authorization: Bearer <token>
+5. API Gateway validates JWT, injects X-User-Id + X-User-Roles
+6. Downstream services read headers via GymRoleInterceptor
 ```
 
 ### Database Schema (auth_schema)
 
 **Core Tables**:
 - `users` - User accounts and credentials
-- `roles` - Role definitions (ADMIN, MANAGER, USER, TRAINER)
-- `permissions` - Granular permissions
+- `roles` - Role definitions (`ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`)
 - `user_roles` - User-to-role mappings
-- `role_permissions` - Role-to-permission mappings
-- `login_history` - Audit log of logins
 
 ### JWT Token Structure
 
 ```json
 {
-  "sub": "user@example.com",
-  "userId": 123,
-  "roles": ["MANAGER", "USER"],
-  "permissions": ["CREATE_PROGRAM", "VIEW_TRACKING"],
+  "sub": "<userId>",
+  "roles": "ROLE_USER",
   "iat": 1647900000,
-  "exp": 1647903600,
-  "iss": "gym-platform-api"
+  "exp": 1647986400
 }
 ```
+
+Token expiration: 24h (access), 7d (refresh). Configured via `jwt.expiration-ms` / `jwt.refresh-expiration-ms`.
 
 ---
 
@@ -188,29 +164,33 @@ Manages all training programs, exercises, workouts, and training plans. Provides
 
 ### API Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/v1/training/programs` | List programs |
-| POST | `/api/v1/training/programs` | Create program |
-| GET | `/api/v1/training/programs/{id}` | Get program details |
-| PUT | `/api/v1/training/programs/{id}` | Update program |
-| GET | `/api/v1/training/exercises` | List exercises |
-| POST | `/api/v1/training/exercises` | Add exercise |
-| GET | `/api/v1/training/workouts` | List workouts |
-| POST | `/api/v1/training/workouts` | Create workout |
-| GET | `/api/v1/training/plans` | List training plans |
-| POST | `/api/v1/training/plans` | Create plan |
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|----- |
+| GET | `/api/v1/exercises/system` | List system exercises | No |
+| GET | `/api/v1/exercises/discipline/{id}` | Exercises by discipline | No |
+| GET | `/api/v1/exercises/my-exercises` | User's exercises | Yes |
+| GET | `/api/v1/exercises/{id}` | Get exercise | Yes |
+| POST | `/api/v1/exercises` | Create exercise | Yes |
+| PUT | `/api/v1/exercises/{id}` | Update exercise | Yes |
+| DELETE | `/api/v1/exercises/{id}` | Delete exercise | Yes |
+| GET | `/api/v1/routine-templates/system` | System templates | No |
+| GET | `/api/v1/routine-templates/my-templates` | User templates | Yes |
+| POST | `/api/v1/routine-templates` | Create template | Yes |
+| GET | `/api/v1/user-routines` | List user routines | Yes |
+| POST | `/api/v1/user-routines/assign` | Assign routine | Yes |
+| PATCH | `/api/v1/user-routines/{id}/deactivate` | Deactivate routine | Yes |
+| GET | `/api/v1/exercise-sessions/routine/{id}` | Sessions by routine | Yes |
+| POST | `/api/v1/exercise-sessions` | Log session | Yes |
+
+> Context-path: `/training`. Via gateway prefix: `/training/api/v1/...`
 
 ### Database Schema (training_schema)
 
 **Core Tables**:
-- `programs` - Training program definitions
 - `exercises` - Exercise catalog
-- `exercise_categories` - Exercise categorization
-- `workouts` - Workout templates
-- `workout_sets` - Sets within workouts
-- `training_plans` - Multi-week schedules
-- `plan_workouts` - Workout assignments to plans
+- `routine_templates` - Routine template definitions
+- `user_routines` - User-assigned routines
+- `exercise_sessions` - Logged exercise sessions
 
 ---
 
@@ -247,26 +227,38 @@ Records and analyzes user performance data. Provides metrics, progress tracking,
 
 ### API Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/api/v1/tracking/workouts/log` | Log workout completion |
-| GET | `/api/v1/tracking/workouts` | Get logged workouts |
-| GET | `/api/v1/tracking/metrics` | Get performance metrics |
-| GET | `/api/v1/tracking/progress` | Get progress analytics |
-| GET | `/api/v1/tracking/reports` | Generate reports |
-| GET | `/api/v1/tracking/achievements` | List achievements |
-| POST | `/api/v1/tracking/goals` | Set goals |
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|----- |
+| GET | `/api/v1/measurements` | List measurements | Yes |
+| POST | `/api/v1/measurements` | Record measurement | Yes |
+| GET | `/api/v1/measurements/by-type/{id}` | By measurement type | Yes |
+| POST | `/api/v1/measurements/types` | Create measurement type | Yes |
+| GET | `/api/v1/objectives` | List objectives | No |
+| POST | `/api/v1/objectives` | Create objective | Yes |
+| GET | `/api/v1/plans` | List plans | No |
+| POST | `/api/v1/plans` | Create plan | Yes |
+| GET | `/api/v1/diet-logs` | List diet logs | No |
+| POST | `/api/v1/diet-logs` | Create diet log | Yes |
+| GET | `/api/v1/diet-components/{id}` | Get diet component | Yes |
+| POST | `/api/v1/diet-components` | Create diet component | Yes |
+| GET | `/api/v1/training-components/{id}` | Get training component | Yes |
+| POST | `/api/v1/training-components` | Create training component | Yes |
+| GET | `/api/v1/recommendations/{id}` | Get recommendation | Yes |
+| POST | `/api/v1/recommendations` | Create recommendation | Yes |
+
+> Context-path: `/tracking`. Via gateway prefix: `/tracking/api/v1/...`
 
 ### Database Schema (tracking_schema)
 
 **Core Tables**:
-- `workout_logs` - Logged workout sessions
-- `exercise_logs` - Individual exercise records
-- `set_logs` - Set-level performance data
-- `performance_metrics` - Calculated metrics
-- `progress_analytics` - Aggregated analytics
-- `reports` - Generated reports
-- `achievements` - User achievements and milestones
+- `measurements` - Body measurements
+- `measurement_types` - Measurement type definitions
+- `objectives` - User objectives
+- `plans` - Tracking plans
+- `diet_logs` - Daily diet logs
+- `diet_components` - Diet plan components
+- `training_components` - Training plan components
+- `recommendations` - System recommendations
 
 ---
 
@@ -303,77 +295,47 @@ Delivers notifications to users via multiple channels (email, SMS, push notifica
 
 ### API Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/api/v1/notification/send` | Send notification |
-| GET | `/api/v1/notification/history` | Get notification history |
-| GET | `/api/v1/notification/preferences` | Get user preferences |
-| PUT | `/api/v1/notification/preferences` | Update preferences |
-| GET | `/api/v1/notification/templates` | List templates |
-| POST | `/api/v1/notification/templates` | Create template |
-| GET | `/api/v1/notification/queue` | View notification queue |
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|----- |
+| GET | `/api/v1/notifications` | List notifications | No |
+| GET | `/api/v1/notifications/unread` | Unread notifications | Yes |
+| GET | `/api/v1/notifications/unread/count` | Unread count | Yes |
+| POST | `/api/v1/notifications` | Create notification | Yes |
+| PUT | `/api/v1/notifications/{id}/read` | Mark as read | Yes |
+| DELETE | `/api/v1/notifications/{id}` | Delete notification | Yes |
+| POST | `/api/v1/push-tokens` | Register push token | Yes |
+| GET | `/api/v1/push-tokens` | List push tokens | Yes |
+| GET | `/api/v1/push-tokens/active` | Active push tokens | Yes |
+| DELETE | `/api/v1/push-tokens` | Remove push token | Yes |
+
+> Context-path: `/notifications`. Via gateway prefix: `/notifications/api/v1/...`
 
 ### Database Schema (notification_schema)
 
 **Core Tables**:
-- `notifications` - Sent notifications
-- `notification_queue` - Pending notifications
-- `notification_history` - Archive of sent notifications
-- `templates` - Notification templates
-- `template_versions` - Template version history
-- `user_preferences` - User notification settings
-- `delivery_logs` - Delivery attempt tracking
+- `notifications` - User notifications
+- `push_tokens` - FCM push token registrations
+- `notification_preferences` - User notification preferences
 
 ---
 
 ## Inter-Service Communication
 
-### Service-to-Service Calls
+Services do **not** call each other directly. The API Gateway handles JWT validation and injects user context headers before forwarding requests:
 
-Services communicate synchronously via RESTful HTTP calls when immediate responses are needed:
+```
+Client → API Gateway (JwtAuthFilter)
+  → validates JWT
+  → injects X-User-Id, X-User-Roles
+  → forwards to downstream service
 
-```java
-// Example: Training Service calling Auth Service
-RestTemplate restTemplate = new RestTemplate();
-String token = request.getHeader("Authorization");
-ResponseEntity<UserDto> response = restTemplate.exchange(
-  "http://auth-service:8081/api/v1/auth/verify",
-  HttpMethod.GET,
-  new HttpEntity<>(new HttpHeaders() {{ set("Authorization", token); }}),
-  UserDto.class
-);
+Downstream service (GymRoleInterceptor)
+  → reads X-User-Id, X-User-Roles
+  → populates UserContextHolder
+  → @PreAuthorize enforces RBAC
 ```
 
-### Common Patterns
-
-1. **Authentication Check**
-   - Each service verifies JWT token with Auth Service
-   - Auth Service caches validation results
-   - Token claims trusted after validation
-
-2. **Authorization Check**
-   - Services check user roles/permissions locally
-   - Auth Service provides role claims in JWT
-   - No need for second Auth Service call
-
-3. **Data Queries**
-   - Services query their own schema only
-   - Cross-schema queries only when necessary
-   - Minimize coupling between services
-
-### Error Handling
-
-Services handle communication failures gracefully:
-
-```java
-try {
-  // Call Auth Service
-} catch (RestClientException e) {
-  // Log error
-  // Return 503 Service Unavailable
-  // Or use cached/default response
-}
-```
+No service-to-service REST calls exist in the current implementation.
 
 ---
 

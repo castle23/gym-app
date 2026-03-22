@@ -13,10 +13,12 @@
 
 | Service | Port | Base URL | Health Check |
 |---------|------|----------|--------------|
-| Auth Service | 8081 | http://localhost:8081/api/v1 | http://localhost:8081/health |
-| Training Service | 8082 | http://localhost:8082/api/v1 | http://localhost:8082/health |
-| Tracking Service | 8083 | http://localhost:8083/api/v1 | http://localhost:8083/health |
-| Notification Service | 8084 | http://localhost:8084/api/v1 | http://localhost:8084/health |
+| Auth Service | 8081 | http://localhost:8081/auth | http://localhost:8081/auth/actuator/health |
+| Training Service | 8082 | http://localhost:8082/training | http://localhost:8082/training/actuator/health |
+| Tracking Service | 8083 | http://localhost:8083/tracking | http://localhost:8083/tracking/actuator/health |
+| Notification Service | 8084 | http://localhost:8084/notifications | http://localhost:8084/notifications/actuator/health |
+
+Via API Gateway (port 8080): prefix each URL with `http://localhost:8080`.
 
 ## Authentication
 
@@ -30,7 +32,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 ### Getting a Token
 
-**Endpoint**: `POST /api/v1/auth/login`
+**Endpoint**: `POST /auth/login`
 
 ```json
 {
@@ -42,27 +44,23 @@ Authorization: Bearer <JWT_TOKEN>
 **Response**:
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiaWF0IjoxNTI4NDYzODAwLCJleHAiOjE1Mjg0Njc0MDB9.signature",
-  "expiresIn": 3600,
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "roles": ["USER"]
-  }
+  "userId": "<uuid>",
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "success": true,
+  "message": "Login successful"
 }
 ```
 
 ### Token Expiration & Refresh
 
-Tokens expire after 1 hour by default. To extend your session:
+Access tokens expire after 24h, refresh tokens after 7d.
 
-**Endpoint**: `POST /api/v1/auth/refresh`
+**Endpoint**: `POST /auth/refresh`
 
 ```json
 {
-  "token": "your-current-token"
+  "refreshToken": "your-refresh-token"
 }
 ```
 
@@ -237,10 +235,17 @@ X-RateLimit-Retry-After: 3600
 Each service provides interactive API documentation via Swagger UI:
 
 ```
-http://localhost:8081/swagger-ui.html    # Auth Service
-http://localhost:8082/swagger-ui.html    # Training Service
-http://localhost:8083/swagger-ui.html    # Tracking Service
-http://localhost:8084/swagger-ui.html    # Notification Service
+http://localhost:8081/auth/swagger-ui/index.html        # Auth Service
+http://localhost:8082/training/swagger-ui/index.html    # Training Service
+http://localhost:8083/tracking/swagger-ui/index.html    # Tracking Service
+http://localhost:8084/notifications/swagger-ui/index.html  # Notification Service
+```
+
+Also accessible via gateway:
+```
+http://localhost:8080/auth/swagger-ui/index.html
+http://localhost:8080/training/swagger-ui/index.html
+...
 ```
 
 ### OpenAPI Specification
@@ -248,10 +253,10 @@ http://localhost:8084/swagger-ui.html    # Notification Service
 Machine-readable API specification at:
 
 ```
-http://localhost:8081/v3/api-docs        # Auth Service
-http://localhost:8082/v3/api-docs        # Training Service
-http://localhost:8083/v3/api-docs        # Tracking Service
-http://localhost:8084/v3/api-docs        # Notification Service
+http://localhost:8081/auth/v3/api-docs
+http://localhost:8082/training/v3/api-docs
+http://localhost:8083/tracking/v3/api-docs
+http://localhost:8084/notifications/v3/api-docs
 ```
 
 ## Versioning Strategy
@@ -279,26 +284,18 @@ Future:   /api/v2/training/programs
 
 ```bash
 # 1. Register
-curl -X POST http://localhost:8081/api/v1/auth/register \
+curl -X POST http://localhost:8080/auth/register \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "SecurePassword123!",
-    "firstName": "John",
-    "lastName": "Doe"
-  }'
+  -d '{"firstName": "John", "lastName": "Doe", "email": "user@example.com", "password": "SecurePassword123!"}'
 
 # 2. Login
-curl -X POST http://localhost:8081/api/v1/auth/login \
+curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "SecurePassword123!"
-  }'
+  -d '{"email": "user@example.com", "password": "SecurePassword123!"}'
 
 # 3. Use token for authenticated requests
-TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-curl http://localhost:8082/api/v1/training/programs \
+TOKEN="eyJhbGciOiJIUzI1NiJ9..."
+curl http://localhost:8080/training/api/v1/exercises/my-exercises \
   -H "Authorization: Bearer $TOKEN"
 ```
 

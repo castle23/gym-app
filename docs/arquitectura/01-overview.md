@@ -77,14 +77,14 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 - OAuth 2.0 support (extensible)
 
 **Key Endpoints**:
-- `POST /api/v1/auth/login` - Authenticate user
-- `POST /api/v1/auth/register` - Create new user
-- `POST /api/v1/auth/refresh` - Refresh JWT token
-- `GET /api/v1/auth/verify` - Verify token validity
-- `GET /api/v1/auth/users` - List users (admin only)
+- `POST /auth/register` - Register new user
+- `POST /auth/login` - Authenticate user
+- `POST /auth/verify` - Verify email
+- `POST /auth/refresh` - Refresh JWT token
+- `GET /auth/profile` - Get authenticated user profile
 
 **Database Schema**: `auth_schema`
-- users, roles, permissions, user_roles, role_permissions
+- users, roles, user_roles
 
 ### 2. Training Service (Port 8082)
 
@@ -99,14 +99,15 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 - Generate training recommendations
 
 **Key Endpoints**:
-- `GET /api/v1/training/programs` - List training programs
-- `POST /api/v1/training/programs` - Create program
-- `GET /api/v1/training/exercises` - List exercises
-- `GET /api/v1/training/workouts` - List workouts
-- `POST /api/v1/training/workouts` - Create workout
+- `GET /training/api/v1/exercises/system` - List system exercises (public)
+- `GET /training/api/v1/exercises/discipline/{id}` - Exercises by discipline (public)
+- `GET /training/api/v1/exercises/my-exercises` - User exercises
+- `GET /training/api/v1/routine-templates/system` - System templates (public)
+- `GET /training/api/v1/user-routines` - User routines
+- `POST /training/api/v1/exercise-sessions` - Log exercise session
 
 **Database Schema**: `training_schema`
-- programs, exercises, workouts, sets, exercise_progressions, training_plans
+- exercises, routine_templates, user_routines, exercise_sessions
 
 ### 3. Tracking Service (Port 8083)
 
@@ -121,14 +122,15 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 - Provide analytics and insights
 
 **Key Endpoints**:
-- `POST /api/v1/tracking/workouts/log` - Log completed workout
-- `GET /api/v1/tracking/metrics` - Get performance metrics
-- `GET /api/v1/tracking/progress` - View progress analytics
-- `GET /api/v1/tracking/reports` - Generate reports
-- `GET /api/v1/tracking/charts` - Get chart data
+- `GET /tracking/api/v1/measurements` - Get measurements
+- `POST /tracking/api/v1/measurements` - Record measurement
+- `GET /tracking/api/v1/objectives` - Get objectives (public)
+- `GET /tracking/api/v1/plans` - Get plans (public)
+- `GET /tracking/api/v1/diet-logs` - Get diet logs
+- `GET /tracking/api/v1/recommendations` - Get recommendations
 
 **Database Schema**: `tracking_schema`
-- workout_logs, performance_metrics, progress_analytics, reports, achievements
+- measurements, objectives, plans, diet_logs, diet_components, training_components, recommendations
 
 ### 4. Notification Service (Port 8084)
 
@@ -143,14 +145,15 @@ The Gym Platform API is an enterprise-grade, microservices-based platform design
 - Event-driven notifications
 
 **Key Endpoints**:
-- `POST /api/v1/notification/send` - Send notification
-- `GET /api/v1/notification/preferences` - Get user preferences
-- `PUT /api/v1/notification/preferences` - Update preferences
-- `GET /api/v1/notification/history` - View notification history
-- `GET /api/v1/notification/templates` - List templates
+- `GET /notifications/api/v1/notifications` - List notifications (public)
+- `GET /notifications/api/v1/notifications/unread` - Unread notifications
+- `GET /notifications/api/v1/notifications/unread/count` - Unread count
+- `POST /notifications/api/v1/notifications` - Create notification
+- `PUT /notifications/api/v1/notifications/{id}/read` - Mark as read
+- `POST /notifications/api/v1/push-tokens` - Register push token
 
 **Database Schema**: `notification_schema`
-- notifications, notification_queue, notification_history, templates, user_preferences
+- notifications, push_tokens, notification_preferences
 
 ## Technology Stack
 
@@ -219,10 +222,11 @@ Production-ready configuration with:
 
 | Service | Port | Health Check | Swagger UI |
 |---------|------|--------------|-----------|
-| Auth Service | 8081 | :8081/health | :8081/swagger-ui.html |
-| Training Service | 8082 | :8082/health | :8082/swagger-ui.html |
-| Tracking Service | 8083 | :8083/health | :8083/swagger-ui.html |
-| Notification Service | 8084 | :8084/health | :8084/swagger-ui.html |
+| API Gateway | 8080 | :8080/actuator/health | N/A |
+| Auth Service | 8081 | :8081/auth/actuator/health | :8081/auth/swagger-ui/index.html |
+| Training Service | 8082 | :8082/training/actuator/health | :8082/training/swagger-ui/index.html |
+| Tracking Service | 8083 | :8083/tracking/actuator/health | :8083/tracking/swagger-ui/index.html |
+| Notification Service | 8084 | :8084/notifications/actuator/health | :8084/notifications/swagger-ui/index.html |
 | PostgreSQL | 5432 | N/A | N/A |
 
 ## Key Design Decisions
@@ -247,9 +251,9 @@ Production-ready configuration with:
 
 ### 4. RBAC (Role-Based Access Control)
 **Why**: Flexible, maintainable permission management
-- Roles: ADMIN, MANAGER, USER, TRAINER
-- Permissions: Granular control at endpoint level
-- Easily extensible for new use cases
+- Roles: `ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`
+- Enforced via `@PreAuthorize` at controller level
+- JWT claims carry roles, validated by each service
 
 ### 5. Spring Boot 3.x with Java 17+
 **Why**: Latest stable LTS version with modern features
