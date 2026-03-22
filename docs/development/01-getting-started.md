@@ -19,16 +19,17 @@ git --version         # Git
 # Clone and start
 git clone https://github.com/your-org/gym-platform-api.git
 cd gym-platform-api
+cp .env.example .env   # configure JWT_SECRET, SMTP_*, etc.
 docker-compose up -d
 
-# Wait 30 seconds for services to start
-sleep 30
+# Wait ~40 seconds for services to start
+sleep 40
 
-# Verify services
-curl http://localhost:8081/swagger-ui.html
-curl http://localhost:8082/swagger-ui.html
-curl http://localhost:8083/swagger-ui.html
-curl http://localhost:8084/swagger-ui.html
+# Verify services via Swagger UI
+curl http://localhost:8081/swagger-ui.html                    # Auth
+curl http://localhost:8082/training/swagger-ui.html           # Training
+curl http://localhost:8083/tracking/swagger-ui.html           # Tracking
+curl http://localhost:8084/notifications/swagger-ui.html      # Notification
 ```
 
 That's it! All services running ✅
@@ -140,51 +141,53 @@ docker-compose logs -f
 
 ```bash
 # Check Docker containers
-docker ps
+docker-compose ps
 
 # Expected:
-# CONTAINER ID | IMAGE | PORTS
-# abc123 | gym:auth-service | 0.0.0.0:8081->8081/tcp
-# def456 | gym:training-service | 0.0.0.0:8082->8082/tcp
-# ghi789 | gym:tracking-service | 0.0.0.0:8083->8083/tcp
-# jkl012 | gym:notification-service | 0.0.0.0:8084->8084/tcp
-# mno345 | postgres:15 | 0.0.0.0:5432->5432/tcp
+# NAME                      STATUS          PORTS
+# gym-postgres              Up (healthy)    0.0.0.0:5432->5432/tcp
+# gym-api-gateway           Up (healthy)    0.0.0.0:8080->8080/tcp
+# gym-auth-service          Up (healthy)    0.0.0.0:8081->8081/tcp
+# gym-training-service      Up (healthy)    0.0.0.0:8082->8082/tcp
+# gym-tracking-service      Up (healthy)    0.0.0.0:8083->8083/tcp
+# gym-notification-service  Up (healthy)    0.0.0.0:8084->8084/tcp
 
-# Test services with curl
-curl -s http://localhost:8081/swagger-ui.html | head -20
-# Should return HTML (Swagger UI)
-
-# Or use health endpoints
-for port in 8081 8082 8083 8084; do
-  echo "Port $port: $(curl -s http://localhost:$port/health | jq .status)"
+# Check health endpoints
+for entry in "auth:8081:auth" "training:8082:training" "tracking:8083:tracking" "notification:8084:notifications"; do
+  IFS=':' read -r name port prefix <<< "$entry"
+  echo "$name: $(curl -s http://localhost:$port/$prefix/actuator/health | grep -o '"status":"[^"]*"')"
 done
 ```
 
 ### Step 6: Access Services
 
-**Auth Service**:
-- API: http://localhost:8081
+**API Gateway** (single entry point for all requests):
+- http://localhost:8080
+
+**Auth Service** (direct access):
 - Swagger UI: http://localhost:8081/swagger-ui.html
 - API Docs: http://localhost:8081/v3/api-docs
+- Health: http://localhost:8081/auth/actuator/health
 
-**Training Service**:
-- API: http://localhost:8082
-- Swagger UI: http://localhost:8082/swagger-ui.html
+**Training Service** (direct access):
+- Swagger UI: http://localhost:8082/training/swagger-ui.html
+- API Docs: http://localhost:8082/training/v3/api-docs
+- Health: http://localhost:8082/training/actuator/health
 
-**Tracking Service**:
-- API: http://localhost:8083
-- Swagger UI: http://localhost:8083/swagger-ui.html
+**Tracking Service** (direct access):
+- Swagger UI: http://localhost:8083/tracking/swagger-ui.html
+- Health: http://localhost:8083/tracking/actuator/health
 
-**Notification Service**:
-- API: http://localhost:8084
-- Swagger UI: http://localhost:8084/swagger-ui.html
+**Notification Service** (direct access):
+- Swagger UI: http://localhost:8084/notifications/swagger-ui.html
+- Health: http://localhost:8084/notifications/actuator/health
 
 **Database**:
 - Host: localhost
 - Port: 5432
 - Database: gym_db
-- Username: postgres
-- Password: postgres (see `.env`)
+- Username: gym_admin
+- Password: gym_password (see `.env`)
 
 ---
 
@@ -193,40 +196,41 @@ done
 ### Step 1: Register a User
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/auth/register \
+curl -X POST http://localhost:8080/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
     "password": "SecurePassword123!",
     "firstName": "John",
-    "lastName": "Doe"
+    "lastName": "Doe",
+    "role": "ROLE_USER"
   }'
 
-# Response:
+# Response 201:
 # {
-#   "id": 1,
+#   "userId": 1,
 #   "email": "user@example.com",
-#   "firstName": "John",
-#   "lastName": "Doe",
-#   "roles": ["USER"]
+#   "message": "User registered successfully"
 # }
 ```
 
 ### Step 2: Login
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/auth/login \
+curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
     "password": "SecurePassword123!"
   }'
 
-# Response:
+# Response 200:
 # {
 #   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-#   "expiresIn": 3600,
-#   "user": { "id": 1, "email": "user@example.com", ... }
+#   "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+#   "userId": 1,
+#   "email": "user@example.com",
+#   "message": "Login successful"
 # }
 
 # Save token
@@ -236,15 +240,17 @@ TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ### Step 3: Make Authenticated Request
 
 ```bash
-# Get training programs
-curl -X GET http://localhost:8082/api/v1/training/programs \
+# Get exercises (via API Gateway)
+curl -X GET http://localhost:8080/training/exercises \
   -H "Authorization: Bearer $TOKEN"
 
-# Response:
-# [
-#   { "id": 1, "name": "Beginner Strength", "duration": 12, ... },
-#   { "id": 2, "name": "Advanced Cardio", "duration": 8, ... }
-# ]
+# Response 200:
+# {
+#   "content": [...],
+#   "totalElements": 10,
+#   "totalPages": 1,
+#   "number": 0
+# }
 ```
 
 ---
@@ -348,13 +354,16 @@ docker push docker.io/yourorg/gym-auth:latest
 
 ```bash
 # Connect to database
-psql -U postgres -d gym_db -h localhost
+psql -U gym_admin -d gym_db -h localhost
+
+# Or via Docker
+docker exec -it gym-postgres psql -U gym_admin -d gym_db
 
 # Backup database
-pg_dump -U postgres -d gym_db > backup.sql
+pg_dump -U gym_admin -d gym_db > backup.sql
 
 # Restore database
-psql -U postgres -d gym_db < backup.sql
+psql -U gym_admin -d gym_db < backup.sql
 ```
 
 ### View Logs

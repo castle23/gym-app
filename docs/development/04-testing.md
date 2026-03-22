@@ -83,6 +83,7 @@ class AuthControllerAuthorizationTest {
 
 | Exception | HTTP Status |
 |-----------|-------------|
+| `AuthenticationException` | 401 Unauthorized |
 | `ResourceNotFoundException` | 404 Not Found |
 | `UnauthorizedException` | 403 Forbidden |
 | `InvalidDataException` | 400 Bad Request |

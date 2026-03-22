@@ -62,7 +62,7 @@ The project uses a microservices structure:
 ├── tracking-service/
 ├── notification-service/
 ├── common/              # Shared utilities
-└── api-gateway/         # (Optional) API Gateway
+└── api-gateway/         # API Gateway (central entry point)
 ```
 
 For architecture details, see [Architecture Documentation](../arquitectura/).

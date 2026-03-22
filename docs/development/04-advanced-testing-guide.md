@@ -1,5 +1,7 @@
 # Advanced Testing Guide
 
+> **Note**: This document describes advanced testing strategies for future reference. None of these tools (k6, Chaos Mesh, Kubernetes, Pact, OWASP ZAP) are currently configured in the project. The current test setup uses JUnit 5 + Mockito + H2. See [04-testing.md](04-testing.md) for the actual test reference.
+
 > **Target Audience:** QA Engineers, DevOps, Performance Engineers, Security Team
 
 This guide covers advanced testing strategies beyond unit and integration testing. These techniques ensure the Gym Platform API maintains high performance, security, and reliability under real-world conditions.
