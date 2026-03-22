@@ -55,7 +55,7 @@ public enum Role {
 Services do **not** use Spring Security or validate JWT. Authorization is enforced via the `gym-common` library:
 
 1. API Gateway validates JWT and injects `X-User-Id` and `X-User-Roles` headers
-2. `GymRoleInterceptor` (from `gym-common`) reads these headers and stores them in `GymSecurityContext`
+2. `GymRoleInterceptor` (from `gym-common`) reads these headers and stores them in `UserContextHolder`
 3. `@RequiresRole` annotation on controller methods enforces role checks
 
 ```java
@@ -67,8 +67,8 @@ public ResponseEntity<List<UserDTO>> getAllUsers() {
 }
 
 // Access current user in service layer
-Long userId = GymSecurityContext.getCurrentUserId();  // from X-User-Id header
-List<String> roles = GymSecurityContext.getCurrentRoles();  // from X-User-Roles header
+String userId = UserContextHolder.getUserId();    // from X-User-Id header
+Set<String> roles = UserContextHolder.getRoles(); // from X-User-Roles header
 ```
 
 ### Resource Ownership Verification
@@ -76,11 +76,11 @@ List<String> roles = GymSecurityContext.getCurrentRoles();  // from X-User-Roles
 ```java
 @GetMapping("/{userId}")
 public ResponseEntity<UserDTO> getUserProfile(@PathVariable Long userId) {
-    Long currentUserId = GymSecurityContext.getCurrentUserId();
-    List<String> roles = GymSecurityContext.getCurrentRoles();
+    String currentUserId = UserContextHolder.getUserId();
+    Set<String> roles = UserContextHolder.getRoles();
     
     // User can access own data; admin can access any
-    if (!userId.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+    if (!userId.toString().equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
         throw new UnauthorizedException("Cannot access other users' profiles");
     }
     
@@ -99,20 +99,20 @@ public ResponseEntity<UserDTO> getUserProfile(@PathVariable Long userId) {
 public class UserService {
     
     public UserDTO getUserProfile(Long userId) {
-        Long currentUserId = GymSecurityContext.getCurrentUserId();
-        List<String> roles = GymSecurityContext.getCurrentRoles();
+        String currentUserId = UserContextHolder.getUserId();
+        Set<String> roles = UserContextHolder.getRoles();
         
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
         // Check authorization
-        if (!userId.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+        if (!userId.toString().equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
             throw new UnauthorizedException("Cannot access other users' profiles");
         }
         
         // Filter sensitive data based on role
         UserDTO dto = new UserDTO(user);
-        if (!roles.contains("ROLE_ADMIN") && !userId.equals(currentUserId)) {
+        if (!roles.contains("ROLE_ADMIN") && !userId.toString().equals(currentUserId)) {
             dto.setEmail(null);
         }
         
@@ -223,10 +223,10 @@ public ResponseEntity<UserDTO> getUser(@PathVariable Long userId) {
 // After: Server-side authorization check using injected headers
 @GetMapping("/users/{userId}")
 public ResponseEntity<UserDTO> getUser(@PathVariable Long userId) {
-    Long currentUserId = GymSecurityContext.getCurrentUserId();
-    List<String> roles = GymSecurityContext.getCurrentRoles();
+    String currentUserId = UserContextHolder.getUserId();
+    Set<String> roles = UserContextHolder.getRoles();
     
-    if (!userId.equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
+    if (!userId.toString().equals(currentUserId) && !roles.contains("ROLE_ADMIN")) {
         throw new UnauthorizedException("Cannot access other users' data");
     }
     
@@ -240,7 +240,7 @@ public ResponseEntity<UserDTO> getUser(@PathVariable Long userId) {
 // Roles come from X-User-Roles header injected by API Gateway
 // The gateway extracted them from the JWT signature — they cannot be forged
 // by the client since the gateway validates the JWT signature first
-List<String> roles = GymSecurityContext.getCurrentRoles();
+Set<String> roles = UserContextHolder.getRoles();
 ```
 
 ```java

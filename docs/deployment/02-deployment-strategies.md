@@ -4,6 +4,8 @@
 
 This document covers different deployment approaches for Gym Platform microservices, including CI/CD pipeline strategies, blue-green deployments, rolling updates, and canary releases.
 
+> **Note**: Blue-green, canary, rolling, and CI/CD pipeline strategies described in this document are aspirational/future deployment patterns. The current setup uses a single Docker Compose file (`docker-compose.yml`). See [01-deployment-runbook.md](01-deployment-runbook.md) for the actual deployment procedure.
+
 ## Deployment Strategies Comparison
 
 | Strategy | Downtime | Rollback Speed | Complexity | Best For |
@@ -481,7 +483,7 @@ Before deploying:
 
 ```bash
 # Monitor service health
-watch -n 2 'curl -s http://localhost:8081/actuator/health | jq'
+watch -n 2 'curl -s http://localhost:8081/auth/actuator/health | jq'
 
 # Monitor logs
 docker-compose logs -f auth-service
@@ -493,19 +495,17 @@ docker stats --no-stream
 curl http://localhost:9090/api/v1/metrics | jq '.errorRate'
 ```
 
-## Rollback Procedures
+### Rollback Procedures
 
-### Immediate Rollback (Blue-Green)
+### Immediate Rollback
 
 ```bash
-# Switch traffic back to Blue
-docker exec gym-nginx nginx -s reload
-
-# Mark Blue as current environment
-echo "blue" > /var/run/gym/current_env
+# Checkout previous version and rebuild
+git checkout <previous-commit-hash>
+docker-compose up -d --build
 
 # Verify services are responding
-curl http://localhost:8081/actuator/health
+curl http://localhost:8080/actuator/health
 ```
 
 ### Database Rollback
@@ -515,7 +515,7 @@ curl http://localhost:8081/actuator/health
 ls -lah /backups/
 
 # Restore from backup
-docker exec gym-postgres pg_restore -U postgres -d gym_db /backups/backup_timestamp.dump
+docker exec gym-postgres pg_restore -U gym_admin -d gym_db /backups/backup_timestamp.dump
 ```
 
 ## Key References

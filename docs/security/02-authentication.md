@@ -38,8 +38,7 @@ Header: {
 
 Payload: {
   "sub": "123",           // userId as string (Long)
-  "username": "john.doe",
-  "roles": ["ROLE_USER"],  // ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN
+  "roles": "ROLE_USER",   // ROLE_USER, ROLE_PROFESSIONAL, ROLE_ADMIN (comma-separated string)
   "exp": 1680456000,
   "iat": 1680369600
 }
@@ -51,145 +50,33 @@ Signature: HMACSHA256(
 )
 ```
 
-### Spring Boot JWT Configuration
-
-```java
-@Configuration
-public class JwtConfig {
-    
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-    
-    @Value("${jwt.expiration:86400000}")  // 24 hours default
-    private long jwtExpiration;
-    
-    @Bean
-    public JwtProvider jwtProvider() {
-        return new JwtProvider(jwtSecret, jwtExpiration);
-    }
-}
-
-@Component
-public class JwtProvider {
-    
-    private final String jwtSecret;
-    private final long jwtExpiration;
-    
-    public JwtProvider(String jwtSecret, long jwtExpiration) {
-        this.jwtSecret = jwtSecret;
-        this.jwtExpiration = jwtExpiration;
-    }
-    
-    // Generate token from authentication
-    public String generateToken(Authentication authentication) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        
-        return Jwts.builder()
-            .setSubject(userPrincipal.getId().toString())
-            .claim("username", userPrincipal.getUsername())
-            .claim("email", userPrincipal.getEmail())
-            .claim("roles", userPrincipal.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList()))
-            .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
-            .signWith(SignatureAlgorithm.HS512, jwtSecret)
-            .compact();
-    }
-    
-    // Extract user ID from token
-    public Long getUserIdFromToken(String token) {
-        Claims claims = Jwts.parser()
-            .setSigningKey(jwtSecret)
-            .parseClaimsJws(token)
-            .getBody();
-        
-        return Long.parseLong(claims.getSubject());
-    }
-    
-    // Validate token
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser()
-                .setSigningKey(jwtSecret)
-                .parseClaimsJws(token);
-            return true;
-        } catch (SignatureException ex) {
-            log.error("Invalid JWT signature");
-        } catch (MalformedJwtException ex) {
-            log.error("Invalid JWT token");
-        } catch (ExpiredJwtException ex) {
-            log.error("Expired JWT token");
-        } catch (UnsupportedJwtException ex) {
-            log.error("Unsupported JWT token");
-        } catch (IllegalArgumentException ex) {
-            log.error("JWT claims string is empty");
-        }
-        return false;
-    }
-}
-```
-
 ### JWT Configuration
 
-```properties
-# application.properties
-jwt.secret=${JWT_SECRET:default-secret-change-in-production}
-jwt.expiration=86400000  # 24 hours in milliseconds
-jwt.refresh.expiration=604800000  # 7 days
+JWT is generated and validated in the auth-service (`JwtService`) and validated at the API Gateway (`JwtAuthFilter`). Downstream services do not validate JWT — they trust the `X-User-Id` and `X-User-Roles` headers injected by the gateway.
+
+```yaml
+# auth-service application.yml
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-change-in-production}
+  expiration-ms: 86400000       # 24h
+  refresh-expiration-ms: 604800000  # 7d
 ```
 
 ### Login Endpoint
 
 The auth service context-path is `/auth`, so the login endpoint is accessible at `/auth/login` via the API Gateway.
 
-```java
-@RestController
-public class AuthController {
-    
-    @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    request.getUsername(),
-                    request.getPassword()
-                )
-            );
-            
-            String jwt = jwtProvider.generateToken(authentication);
-            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-            
-            return ResponseEntity.ok(new JwtResponse(
-                jwt,
-                userPrincipal.getId(),
-                userPrincipal.getUsername(),
-                userPrincipal.getEmail()
-            ));
-        } catch (AuthenticationException e) {
-            log.warn("Failed login attempt for user: {}", request.getUsername());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new JwtResponse("Invalid credentials"));
-        }
-    }
-}
+```
+POST /auth/login
+Body: { "email": "user@example.com", "password": "SecurePassword123!" }
 
-@Data
-class LoginRequest {
-    @NotBlank
-    private String username;
-    
-    @NotBlank
-    private String password;
-}
-
-@Data
-class JwtResponse {
-    private String token;
-    private Long id;
-    private String username;
-    private String email;
+Response 200:
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "userId": 1,
+  "email": "user@example.com",
+  "message": "Login successful"
 }
 ```
 
@@ -203,7 +90,7 @@ JWT validation happens exclusively in the API Gateway (`JwtAuthFilter`). Downstr
 // X-User-Roles: ROLE_USER
 
 // In downstream services: GymRoleInterceptor reads injected headers
-// No JWT validation occurs in auth-service, training-service, etc.
+// No JWT validation occurs in training-service, tracking-service, etc.
 ```
 
 ---

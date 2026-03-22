@@ -26,10 +26,10 @@ docker-compose up -d
 sleep 40
 
 # Verify services via Swagger UI
-curl http://localhost:8081/swagger-ui.html                    # Auth
-curl http://localhost:8082/training/swagger-ui.html           # Training
-curl http://localhost:8083/tracking/swagger-ui.html           # Tracking
-curl http://localhost:8084/notifications/swagger-ui.html      # Notification
+curl http://localhost:8081/auth/swagger-ui/index.html        # Auth
+curl http://localhost:8082/training/swagger-ui/index.html    # Training
+curl http://localhost:8083/tracking/swagger-ui/index.html    # Tracking
+curl http://localhost:8084/notifications/swagger-ui/index.html  # Notification
 ```
 
 That's it! All services running ✅
@@ -165,8 +165,8 @@ done
 - http://localhost:8080
 
 **Auth Service** (direct access):
-- Swagger UI: http://localhost:8081/swagger-ui.html
-- API Docs: http://localhost:8081/v3/api-docs
+- Swagger UI: http://localhost:8081/auth/swagger-ui/index.html
+- API Docs: http://localhost:8081/auth/v3/api-docs
 - Health: http://localhost:8081/auth/actuator/health
 
 **Training Service** (direct access):
@@ -241,7 +241,7 @@ TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 ```bash
 # Get exercises (via API Gateway)
-curl -X GET http://localhost:8080/training/exercises \
+curl -X GET http://localhost:8080/training/api/v1/exercises/system \
   -H "Authorization: Bearer $TOKEN"
 
 # Response 200:
@@ -436,7 +436,7 @@ environment:
 
 ## Next Steps
 
-1. **Explore APIs**: Open Swagger UI at `http://localhost:8081/swagger-ui.html`
+1. **Explore APIs**: Open Swagger UI at `http://localhost:8081/auth/swagger-ui/index.html`
 2. **Read Code**: Start with `auth-service/src/main/java`
 3. **Run Tests**: `mvn test`
 4. **Make Changes**: Edit code and see hot reload

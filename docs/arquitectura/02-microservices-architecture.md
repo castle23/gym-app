@@ -25,12 +25,12 @@ The Gym Platform API implements a **microservices architecture** where each serv
         ┌──────────────┴──────────────┐
         ▼                             ▼
    ┌─────────────┐            ┌──────────────────┐
-   │   Auth      │◄──────────►│   API Gateway    │
-   │  Service    │            │   (Optional)     │
+   │   Auth      │            │   API Gateway    │
+   │  Service    │            │   Port: 8080     │
    └─────────────┘            └──────────────────┘
         │                             │
-        │ JWT Validation              │
-        │ Authorization               │
+        │                             │ JWT validated here
+        │                             │ X-User-Id + X-User-Roles injected
         │                             │
     ┌───┴───────────────────────────────┐
     │                                   │
@@ -314,7 +314,7 @@ Client → API Gateway (JwtAuthFilter)
 Downstream service (GymRoleInterceptor)
   → reads X-User-Id, X-User-Roles
   → populates UserContextHolder
-  → @PreAuthorize enforces RBAC
+  → @RequiresRole enforces RBAC
 ```
 
 No service-to-service REST calls exist in the current implementation.
@@ -334,9 +334,10 @@ services:
     ports: ["8081:8081"]
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/gym_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
-      - JWT_SECRET_KEY=your-secret-key
+      - SPRING_DATASOURCE_USERNAME=gym_admin
+      - SPRING_DATASOURCE_PASSWORD=gym_password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - postgres
     healthcheck:
@@ -347,7 +348,6 @@ services:
     ports: ["8082:8082"]
     depends_on:
       - postgres
-      - auth-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/training/actuator/health"]
 
@@ -356,7 +356,6 @@ services:
     ports: ["8083:8083"]
     depends_on:
       - postgres
-      - auth-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/tracking/actuator/health"]
 
@@ -365,7 +364,6 @@ services:
     ports: ["8084:8084"]
     depends_on:
       - postgres
-      - auth-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8084/notifications/actuator/health"]
 
@@ -373,7 +371,8 @@ services:
     image: postgres:15
     environment:
       - POSTGRES_DB=gym_db
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=gym_admin
+      - POSTGRES_PASSWORD=gym_password
     volumes:
       - ./dba/initialization/schemas:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data

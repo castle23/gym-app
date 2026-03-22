@@ -249,7 +249,7 @@ Production-ready configuration with:
 ### 4. RBAC (Role-Based Access Control)
 **Why**: Flexible, maintainable permission management
 - Roles: `ROLE_USER`, `ROLE_PROFESSIONAL`, `ROLE_ADMIN`
-- Enforced via `@PreAuthorize` at controller level
+- Enforced via `@RequiresRole` at controller level
 - JWT claims carry roles, validated by API Gateway; injected as `X-User-Roles` header
 
 ### 5. Spring Boot 3.x with Java 17+

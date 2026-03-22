@@ -75,7 +75,7 @@ Auth service overrides the common config with its own `SecurityConfig` because i
 5. Downstream service:
    a. GymRoleInterceptor reads X-User-Id / X-User-Roles
    b. Populates UserContextHolder + MDC userId
-   c. @PreAuthorize annotations enforce RBAC
+   c. @RequiresRole annotations enforce RBAC
 ```
 
 ## JWT Configuration

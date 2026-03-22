@@ -12,7 +12,7 @@ gym_db (PostgreSQL 15, port 5432)
 └── notification_schema ← notification-service
 ```
 
-Each service connects with its own `spring.datasource.url` pointing to `gym_db` with `?currentSchema=<schema>`. DDL is managed by Hibernate (`ddl-auto: update` in dev, `validate` in prod).
+Each service connects with its own `spring.datasource.url` pointing to `gym_db`. Schema is set via `hibernate.default_schema`. DDL is managed by Hibernate (`ddl-auto: update` in dev, `validate` in prod).
 
 ## Connection Configuration
 
@@ -20,14 +20,15 @@ Each service connects with its own `spring.datasource.url` pointing to `gym_db` 
 # Example: auth-service application.yml
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/gym_db?currentSchema=auth_schema
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://postgres:5432/gym_db
+    username: ${DB_USERNAME:gym_admin}
+    password: ${DB_PASSWORD:gym_password}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
-      hibernate.default_schema: auth_schema
+      hibernate:
+        default_schema: auth_schema
 ```
 
 ## Docker Setup
@@ -38,8 +39,8 @@ postgres:
   image: postgres:15
   environment:
     POSTGRES_DB: gym_db
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
+    POSTGRES_USER: gym_admin
+    POSTGRES_PASSWORD: gym_password
   volumes:
     - ./dba/initialization/schemas:/docker-entrypoint-initdb.d
     - postgres_data:/var/lib/postgresql/data

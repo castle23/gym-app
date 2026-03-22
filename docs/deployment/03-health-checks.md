@@ -135,6 +135,9 @@ public class CustomDatabaseHealthIndicator implements HealthIndicator {
     }
 }
 
+> **Note**: The `CacheHealthIndicator` below references Redis, which is not currently configured. Shown as reference for future use.
+
+```java
 @Component
 public class CacheHealthIndicator implements HealthIndicator {
 
@@ -167,6 +170,8 @@ public class CacheHealthIndicator implements HealthIndicator {
     }
 }
 ```
+
+> **Note**: Kubernetes probes, Prometheus scraping, and alert rules described below are aspirational/future features not currently configured.
 
 ## Kubernetes Probes
 
@@ -218,9 +223,9 @@ startupProbe:
 ### Dockerfile Health Check
 
 ```dockerfile
-# Health check endpoint
+# Health check endpoint — use context-path appropriate to the service
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8081/actuator/health || exit 1
+    CMD curl -f http://localhost:8081/auth/actuator/health || exit 1
 ```
 
 ### Docker Compose Health Check
@@ -275,7 +280,7 @@ services:
   postgres:
     image: postgres:15-alpine
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U gym_admin"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -394,13 +399,13 @@ scrape_configs:
 
 ```bash
 # Check database connectivity from container
-docker exec gym-auth-service curl -s http://localhost:8081/actuator/health | jq '.components.db'
+docker exec gym-auth-service curl -s http://localhost:8081/auth/actuator/health | jq '.components.db'
 
 # Manual database test
-docker exec gym-postgres psql -U postgres -c "SELECT 1;"
+docker exec gym-postgres psql -U gym_admin -c "SELECT 1;"
 
 # Test from host machine
-psql -h localhost -U postgres -d postgres -c "SELECT 1;"
+psql -h localhost -U gym_admin -d gym_db -c "SELECT 1;"
 ```
 
 ### Service Not Responding
@@ -416,17 +421,17 @@ docker logs gym-auth-service
 netstat -tuln | grep 8081
 
 # Check connectivity from host
-curl -v http://localhost:8081/actuator/health
+curl -v http://localhost:8081/auth/actuator/health
 ```
 
 ### Timeout Issues
 
 ```bash
 # Increase timeout in health check
-curl --max-time 20 http://localhost:8081/actuator/health
+curl --max-time 20 http://localhost:8081/auth/actuator/health
 
 # Check service performance metrics
-docker exec gym-auth-service curl -s http://localhost:8081/actuator/metrics | jq '.names' | grep 'http'
+docker exec gym-auth-service curl -s http://localhost:8081/auth/actuator/metrics | jq '.names' | grep 'http'
 
 # Monitor service during health check
 docker stats gym-auth-service --no-stream
