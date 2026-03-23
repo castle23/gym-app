@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -100,6 +101,17 @@ public class AuthController {
     public ResponseEntity<AuthResponse> verify(@RequestBody VerifyEmailRequest request) {
         log.info("Verification attempt for email: {}", request.getEmail());
         return ResponseEntity.ok(authService.verifyEmail(request));
+    }
+
+    @PostMapping("/resend-verification")
+    @Operation(summary = "Resend verification code", description = "Resends verification code if expired or not received")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Verification code resent"),
+            @ApiResponse(responseCode = "400", description = "Rate limit or throttling reached")
+    })
+    public ResponseEntity<AuthResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        log.info("Resend verification attempt for email: {}", request.getEmail());
+        return ResponseEntity.ok(authService.requestResendCode(request.getEmail()));
     }
 
     @PostMapping("/refresh")
