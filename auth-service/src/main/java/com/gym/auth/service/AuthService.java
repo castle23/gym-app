@@ -183,6 +183,45 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
+    public AuthResponse requestResendCode(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        Verification verification = verificationRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("No verification found"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // Check 60s throttling
+        if (verification.getLastResendAt() != null && now.isBefore(verification.getLastResendAt().plusSeconds(60))) {
+            throw new InvalidDataException("Please wait 60 seconds before requesting again");
+        }
+
+        // Check daily limit (5)
+        if (verification.getLastResendAt() != null && verification.getLastResendAt().toLocalDate().equals(now.toLocalDate()) 
+            && verification.getResendCount() >= 5) {
+            throw new InvalidDataException("Daily limit for verification code requests reached");
+        }
+
+        // Reset/Update
+        if (verification.getLastResendAt() == null || !verification.getLastResendAt().toLocalDate().equals(now.toLocalDate())) {
+            verification.setResendCount(1);
+        } else {
+            verification.setResendCount(verification.getResendCount() + 1);
+        }
+        
+        String newCode = generateVerificationCode();
+        verification.setCode(newCode);
+        verification.setExpiresAt(now.plusMinutes(15));
+        verification.setLastResendAt(now);
+        
+        verificationRepository.save(verification);
+        emailService.sendVerificationEmail(user.getEmail(), newCode);
+        
+        return AuthResponse.builder().message("New verification code sent").build();
+    }
+
     private String generateVerificationCode() {
         int code = new Random().nextInt(900000) + 100000;
         return String.valueOf(code);
