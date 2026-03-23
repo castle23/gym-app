@@ -35,6 +35,12 @@ public class Verification {
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer resendCount = 0;
+
+    private LocalDateTime lastResendAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
